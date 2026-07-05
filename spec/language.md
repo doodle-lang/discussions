@@ -1,6 +1,6 @@
 # The Doodle Programming Language — Language Specification
 
-**Status:** Draft · **Version:** 0.1 · **Date:** 2026-07-02
+**Status:** Draft · **Version:** 0.1 · **Date:** 2026-07-04
 
 This document specifies the Doodle programming language: its lexical
 structure, syntax, type system, and evaluation semantics. It is derived from
@@ -251,9 +251,16 @@ STRING  = '"' ( CHAR | ESCAPE | INTERP )* '"'
   terminator. (A string literal does not span lines; use a triple-quoted string,
   §3.6.4.)
 - `ESCAPE` is one of: `\"`, `\\`, `\n`, `\t`, `\r`, `\0`, `\xHH` (two hex
-  digits), `\u{H…}` (1–6 hex digits naming a Unicode scalar value).
+  digits), `\u{H…}` (1–6 hex digits naming a Unicode scalar value). A `\u{…}`
+  escape must denote a scalar value in `0..D7FF` or `E000..10FFFF`; a surrogate
+  code point (`D800..DFFF`) is a static error. Unassigned code points,
+  noncharacters, and lone combining marks are permitted — e.g. `"\u{301}"` (a
+  bare combining acute accent) is a valid one-grapheme string.
 - `INTERP` is `{ expression }` (§6.7). To include a literal brace, write `{{`
   for `{` and `}}` for `}`.
+
+The value denoted by a string literal is NFC-normalized (§4.4), so the code
+points of the resulting string may differ from those written in the source.
 
 Examples:
 
@@ -403,20 +410,57 @@ raises an error.
 
 ### 4.4 String
 
-`String` is an immutable sequence of Unicode text. String literals may
-interpolate expressions (§6.7). Concatenation is `+`; repetition is `*` (String
-× Int). A "character" is modeled as a length-one string; there is no distinct
-character type.
+`String` is an **immutable** sequence of Unicode text, stored in Normalization
+Form C (see below). String literals may interpolate expressions (§6.7).
 
-The unit of indexing and length for strings (code point vs. grapheme cluster)
-and the full set of string operations are deferred; see Appendix D. Indexing a
-string with `[i]` (§6.3) yields a length-one string.
+**A character is an extended grapheme cluster.** The unit the language treats as
+one "character" is the user-perceived character — the extended grapheme cluster
+of Unicode Annex #29 — not a byte and not a code point. Consequently:
+
+- `length(s)` counts grapheme clusters, so `length("café") == 4` however the
+  `é` was composed, `length("🎉") == 1`, and `length("👨‍👩‍👧‍👦") == 1`.
+- Iterating a string (`each`) visits one grapheme at a time.
+- Indexing `s[i]` (§6.3) is by grapheme cluster and yields a **length-one
+  string** (the i-th character a human perceives). There is no distinct
+  character type; a character is just a one-grapheme string.
+
+Because grapheme clusters are variable width, `length` is O(n) and `s[i]` is
+O(i); prefer iteration (`each`) to index loops for scanning. Grapheme length is
+also **not additive** across concatenation — two strings that are each one
+grapheme can fuse into a single grapheme when joined (for example, two
+regional-indicator characters forming one flag), so `length(a) + length(b)` need
+not equal `length(a + b)`.
+
+**Normalization.** Every `String` value is normalized to NFC when it is
+constructed — from a literal, from concatenation, or by decoding bytes. This
+makes equality *canonical*: two strings that render identically are `==`
+regardless of how they were typed (§4.13). It also means a `String` is a
+*normalized human-text* value, not a faithful container of arbitrary code
+points: the code points of a string may differ from those written or decoded,
+and round-tripping text through `String` can change its bytes. Byte- or
+code-point-exact work stays in `Bytes` (§4.5); §15 gives the conversions.
+
+**Operations.** Concatenation is `+` (the result is re-normalized to NFC);
+repetition is `*` (String × Int). Ordering (`<`, …) is a simple
+code-point-lexicographic comparison over the NFC form — total and stable, but
+deliberately *not* locale/dictionary collation, which is a standard-library
+concern. The full string API (searching, splitting, case mapping, the code-point
+and byte views, …) is standard-library, built over the language's Unicode
+primitives (§15).
 
 ### 4.5 Bytes
 
 `Bytes` is an immutable sequence of 8-bit values, written with a `b"…"` literal
-(§3.6.5). It supports indexing (yielding an `Int` in 0–255). Richer binary
+(§3.6.5). It supports indexing (yielding an `Int` in 0–255, O(1)). Richer binary
 facilities live in the standard library.
+
+`Bytes` is the **faithful** byte container that complements `String`: the
+language provides conversion between a `String` and its NFC UTF-8 `Bytes` (§15).
+A string's bytes are always its NFC UTF-8 form; decoding arbitrary `Bytes` to a
+`String` validates the UTF-8 (raising on invalid input) and normalizes to NFC,
+so `Bytes → String → Bytes` need not reproduce the original bytes. Work that
+must preserve exact bytes (wire formats, files that must not be altered) stays in
+`Bytes` throughout and never becomes a `String`.
 
 ### 4.6 Nil
 
@@ -500,8 +544,15 @@ language (not user-overridable):
 
 - Two values are `==` only if they have the same type.
 - Numbers compare by mathematical value **within** a type after int→float
-  widening for mixed comparisons (`1 == 1.0` is `true`); otherwise primitives
-  compare by their contents.
+  widening for mixed comparisons (`1 == 1.0` is `true`); other primitives
+  (booleans, bytes, nil) compare by their contents.
+- Strings compare by **canonical (NFC) equivalence**: two strings are `==` iff
+  they are Unicode-canonically equivalent. Because string values are stored in
+  NFC (§4.4), this is just comparison of their normalized contents, so two
+  strings that render identically are equal regardless of how they were typed
+  (`"café"` precomposed equals `"café"` written as `e` + combining acute). This
+  is *canonical*, not *compatibility*, equivalence — `"①" != "1"`, and the `ﬁ`
+  ligature is not equal to `"fi"`.
 - Lists and dicts compare by structure (same length/keys and pairwise-equal
   elements/values).
 - Records compare by type and by structural equality of their fields; this holds
@@ -690,10 +741,20 @@ non-existent field, or a field of a non-record/non-module, raises an error.
 index = expression '[' expression ']'
 ```
 
-`x[k]` indexes a `List` (integer index, `0 <= k < length`), a `Dict` (present
-key), a `String`, or `Bytes`. Out-of-range indices and absent keys raise.
-Indexing is built in for these types only; it is not user-extensible in this
-version, and applying `[]` to any other type raises.
+`x[k]` indexes a built-in sequence or mapping:
+
+- **`List`** — integer index `k`, `0 <= k < length(list)`; O(1).
+- **`Dict`** — the key `k` must be present; (amortized) O(1).
+- **`String`** — integer index by **extended grapheme cluster** (§4.4),
+  `0 <= k < length(s)`, yielding a length-one string (the k-th character a human
+  perceives). Strings are variable-width, so this is O(k), not O(1); prefer
+  iteration (`each`) to index loops for scanning.
+- **`Bytes`** — integer index, yielding an `Int` in 0–255; O(1).
+
+Out-of-range indices and absent keys raise. Indexing is built in for these types
+only; it is not user-extensible in this version, and applying `[]` to any other
+type raises. `[]` denotes indexed access, not necessarily constant-time access;
+its cost is a property of the type.
 
 ### 6.4 Calls
 
@@ -760,9 +821,10 @@ undefined (e.g. a string plus a number, or `<` on records) raises an error.
 
 - Equality/inequality (`==`, `!=`) are structural (§4.13) and total (defined for
   all pairs of values; unequal types compare unequal, never error).
-- Ordering (`<`, `>`, `<=`, `>=`) is defined for numbers and strings (lexicographic
-  by code point for strings, provisional per Appendix D). Applying ordering to
-  values for which it is undefined raises.
+- Ordering (`<`, `>`, `<=`, `>=`) is defined for numbers and strings; for
+  strings it is code-point-lexicographic over the NFC form (§4.4) — not
+  locale/dictionary collation, which is a standard-library concern. Applying
+  ordering to values for which it is undefined raises.
 - Logical `and`/`or`/`not` operate only on Booleans and short-circuit.
 
 ### 6.7 String interpolation
@@ -1482,11 +1544,30 @@ standard library must supply the *behavior*.
    hashable built-in types, and provide a record default. Using a
    non-hashable value (e.g. a list) as a dict key raises.
 
-3. **Iteration and length (informative).** Core syntax does not itself iterate
-   (there is no `for` loop) or measure length; the `Iterable` and `Lengthable`
-   protocols and the functions built upon them (`each`, `map`, `length`, …) are
-   entirely standard-library. They are named here only so that the standard
-   library and language agree on the well-known protocol vocabulary.
+3. **String representation and Unicode data.** The language owns Unicode data —
+   NFC normalization, extended-grapheme-cluster segmentation (UAX #29), and
+   case/property tables — as irreducible runtime primitives, in the same sense as
+   arbitrary-precision arithmetic and I/O. It exposes their *results*, so the
+   standard library and user code build on documented capabilities rather than
+   hidden ones:
+   - **NFC** is applied whenever a `String` value is constructed (§4.4).
+   - **Grapheme access** is the default: `length`, `s[i]`, and iteration over a
+     `String` operate on grapheme clusters, so the standard library's
+     `Lengthable` and `Iterable` implementations for `String` rest on this
+     primitive.
+   - **The byte view** is the one irreducible representation primitive: the
+     language converts between a `String` and its NFC UTF-8 `Bytes`, the decoding
+     direction validating UTF-8 and normalizing (§4.4, §4.5). It round-trips —
+     encoding a string and decoding the result yields the same string.
+   - **Code points** need no further primitive: UTF-8 decoding is table-free, so
+     the standard library derives a string's code points from its byte view in
+     ordinary Doodle — a demonstration that the byte/code-point layering is not
+     magic.
+
+   Core syntax does not itself iterate (there is no `for` loop); the `Iterable`
+   and `Lengthable` protocols and the functions built on them (`each`, `map`,
+   `length`, …) are standard-library, named here only so the two specifications
+   share a vocabulary.
 
 4. **Prelude and core functions.** Every named value a program uses — including
    `print`, `read_line`, `assert`, `type_of`, `is_same`, `copy`, and all
@@ -1685,14 +1766,25 @@ likely to change.
   spec gives the C-struct-like rule.
 - **Built-in type value spellings (§4.12).** `Int`, `Float`, `Number`, `String`,
   `Bytes`, `Bool`, `Nil`, `List`, `Dict`, `Procedure` are provisional names.
+- **String model: grapheme-default, immutable, NFC (§4.4, §6.3, §4.13, §15).**
+  The discussion deferred this. Resolved: strings are immutable and stored in
+  NFC; the default character is the extended grapheme cluster, so `length`,
+  `s[i]`, and iteration are grapheme-based (`s[i]` is human-correct but O(i));
+  `==` is canonical (NFC) equivalence; `<` is code-point-lexicographic over the
+  NFC form. Consequence, adopted deliberately: `String` is a *normalized
+  human-text* type and is lossy with respect to exact bytes/code points, while
+  `Bytes` is the faithful container. The language exposes a String↔UTF-8 `Bytes`
+  primitive as the no-magic floor; code-point access is derived from it in the
+  standard library.
 
 ### D.2 Genuinely open (deferred by the discussion)
 
-- **String model.** What counts as a character and what `length`/indexing return
-  for strings (code points vs. grapheme clusters), plus the full string API and
-  the exact ordering used by `<` on strings. This spec provisionally treats
-  string indexing/length and ordering at the code-point level and defers the
-  rest.
+- **String collation and the full string API.** Core `<` on strings is a simple
+  code-point ordering over the NFC form, deliberately *not* locale/dictionary
+  collation; locale-aware collation, case mapping, splitting, searching, and the
+  rest of the string API are standard-library (resting on the runtime's Unicode
+  data, §15). The specific Unicode version the runtime targets is pinned per
+  release; grapheme counts can therefore shift across Unicode versions.
 - **The standard library.** The prelude, the four well-known protocols and their
   defaults, all collection/math/turtle facilities, `assert`, `copy`, `is_same`,
   `type_of`, byte buffers, fixed-width integers, and bitwise operations — the
