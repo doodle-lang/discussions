@@ -83,9 +83,10 @@ resolved (but see the visibility discrepancy above).
   against the tree at doodle-rust `95d3dc9`, all CI + hygiene green. Zero
   blocker/major. One spec-delta discovered in M0 (top-level `Completed`
   value, E§7.2, due M2a). Minor forward-notes recorded for M1 (conformance
-  runner execute-path coupling; fuzz nightly pinning). Two process points
-  surfaced to the user (staticlib-drop sign-off; whether to escalate the
-  spec-delta to an issue/Appendix C now vs. batched curation).
+  runner execute-path coupling; fuzz nightly pinning). Process points
+  surfaced to the user: staticlib-drop → **resolved** (user chose static; capi
+  is now staticlib-only, `036b615`); spec-delta escalation still open (issue/
+  Appendix C now vs. batched curation).
 - 2026-07-10 — M0.8: contributor docs + issue templates. `CONTRIBUTING.md`
   (build/test/hygiene, don't-game rule, spec-delta process, a two-tier
   review policy) in doodle-rust; GitHub issue forms — `bug` on doodle-rust,
@@ -107,11 +108,12 @@ resolved (but see the visibility discrepancy above).
   version via a process-lifetime `OnceLock<CString>`); cbindgen-generated
   committed `include/doodle.h`; `examples/c-host/main.c` smoke;
   `scripts/capi-header.sh` (currency check + `--write`, cbindgen pinned to
-  0.29.4) and `scripts/capi-smoke.sh`; a `capi` CI job. cdylib-only. All CI
-  + hygiene green. 2-lens review: blocker (invalid `taiki-e/install-action@
-  cbindgen` ref) + major (unpinned cbindgen → non-reproducible header gate)
-  fixed; staticlib dropped rather than shipped untested. doodle-rust
-  `bb56f4e`.
+  0.29.4) and `scripts/capi-smoke.sh`; a `capi` CI job. All CI + hygiene
+  green. 2-lens review: blocker (invalid `taiki-e/install-action@cbindgen`
+  ref) + major (unpinned cbindgen → non-reproducible header gate) fixed.
+  doodle-rust `bb56f4e`. **Revised `036b615`:** staticlib-only (the
+  embedding form; C smoke links statically) — reverses the initial
+  cdylib-only drop, per the user.
 - 2026-07-10 — M0.5: wasm hello-world + size gate. `crates/doodle-wasm`
   (wasm-bindgen cdylib exporting `version()`); `scripts/wasm-size.sh`
   (build release wasm → `wasm-opt -Oz` → brotli → 300 KB budget, plan §6.5;

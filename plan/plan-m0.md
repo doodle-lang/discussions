@@ -126,8 +126,12 @@ via a process-lifetime `OnceLock<CString>`), committed
 `include/doodle.h`, `examples/c-host/main.c`, `scripts/capi-header.sh`
 (currency check + `--write`) and `scripts/capi-smoke.sh`, a `capi` CI job.
 cbindgen is pinned (0.29.4) in the script + CI so header regeneration is
-reproducible. cdylib-only: the untested staticlib output was dropped rather
-than shipped (static embedding gets its own smoke test when needed).
+reproducible. **Revised 2026-07-10 (doodle-rust `036b615`, user call):**
+`doodle-capi` is now **`staticlib`-only** — static linking is the
+embedding-friendly form (one artifact, no runtime loader-path variance); the
+C smoke links the archive statically, pulling native libs from `rustc
+--print native-static-libs`. (The initial M0.6 cdylib-only choice dropped the
+untested staticlib; the correct fix was to test the form we actually want.)
 
 ### M0.7 — insta + fuzz plumbing — **DONE 2026-07-10**
 
@@ -181,8 +185,10 @@ wasm passes the size gate) and every M0.1–M0.8 acceptance. Both CI workflows
 (top-level `Completed` value, E§7.2, due M2a — in `claude-todo.md`).
 Forward-notes for M1: the conformance runner's SKIP→execute tripwire couples
 the first stage-landing item to a runner upgrade; the fuzz nightly must be
-pinned when fuzz enters CI. Sanctioned deferrals: capi staticlib (never in
-the plan of record), fuzz nightly float (documented). M1 is unblocked.
+pinned when fuzz enters CI. Sanctioned deferral: fuzz nightly float
+(documented). (The capi staticlib process point raised here was resolved by
+the user post-exit: capi is now staticlib-only, `036b615` — see M0.6.) M1 is
+unblocked.
 
 **Suggested order:** M0.2 → M0.3 → (M0.4, M0.5, M0.6, M0.7 in any order,
 parallelizable) → M0.8 → M0.9. M0.3 blocks M0.4/M0.5/M0.6 only in that
