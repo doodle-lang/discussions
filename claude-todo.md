@@ -20,14 +20,25 @@ go at the top, per CLAUDE.md.
 
 ## Awaiting the user (blocking)
 
-(none — plans ratified, machine-design v0.2 accepted, repos deliberately
-public, issues enabled on discussions + doodle-rust: all 2026-07-10.
-Still queued for later: the S-27 semantic fork is decided with the user
-at M1.8 start — options + recommendation in plan-m1 M1.8.)
+- **Error-message rubric sign-off** — `plan/error-message-rubric.md` is
+  drafted (M1.1) and marked PENDING USER SIGN-OFF; the agent must not
+  self-certify against a bar it authored (plan M1.1/M1.13). Sign-off is
+  **blocking for M1.13** (broken-syntax message review) and **M1.15** (M1
+  exit); it does **not** block M1.2–M1.12. Review / adjust / ratify at your
+  convenience.
+
+(Context: plans ratified, machine-design v0.2 accepted, repos deliberately
+public, issues enabled on discussions + doodle-rust: all 2026-07-10. The
+S-27 semantic fork is decided with the user at M1.8 start — options +
+recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — **milestone M0 is complete** (M0.1–M0.9 all landed). Next: M1.1.)
+- [~] **M1.1** — code landed (diag module + plain-text renderer, doodle-rust
+  `9c49651`, CI green); the error-message rubric is drafted PENDING USER
+  SIGN-OFF (see "Awaiting the user"). M1.1 fully closes once the rubric is
+  signed off (tracked to M1.13). Provisional choices flagged: D (structured
+  `Replacement`) and F (code-point caret columns, display-width → M1.2/S-1).
 
 ## Next up
 
@@ -35,8 +46,8 @@ Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
 `full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
 
-- [ ] M1.1 — Diagnostics infrastructure + error-message rubric (the rubric
-      needs **user sign-off** by M1.13; agent drafts, user ratifies)
+- [ ] M1.2 — Source model: NFC normalization, spans, positions (S-1). Also
+      the home for the M1.1-discovered CRLF→LF line-ending question (below).
 
 **M1 heads-up (from the M0 exit review):** the conformance runner SKIPs
 until `doodle_core::stage::implemented_through()` returns `Some`; the first
@@ -67,6 +78,25 @@ result register's last value so the acceptance can observe it; real
 top-level completion is expected to be Void (`None`). Resolve in E§7.2 by
 M2a (when the machine core replaces the placeholder). No behavior ships
 before then.
+
+Discovered at M1.1 (diagnostics; resolve in E Appendix B / L Appendix D at
+the milestone that ships the behavior — provisional choices documented in
+code, nothing shipped that contradicts a future spec pin):
+- **Warnings channel at the load boundary** — E§3.2 `load -> Module |
+  LoadError` has no "loaded OK + N warnings" outcome, yet L§5.1 warnings
+  occur on a *successful* load. The `diag` types + renderer already handle a
+  bare `&[Diagnostic]`; pin the boundary shape in E by the milestone `load`
+  lands.
+- **Structured diagnostic schema** — E says only "LoadError carrying
+  positions"; the IDE consumes the structured `Diagnostic`
+  (severity/code/message/module/span/notes/suggestion). Pin the schema in E
+  when a binding/IDE consumer ships.
+- **Diagnostic ordering** — multi-diagnostic order is a producer contract
+  (nondecreasing `span.start`, tie-break production order); the renderer
+  never re-sorts. Pin in E Appendix B.
+- **Line endings (CRLF→LF)** — L§3.1 is silent on whether load normalizes
+  CRLF to LF. The M1.1 renderer strips a stray `\r` defensively; resolve at
+  **M1.2** (source model), its natural home.
 
 ## Open decisions awaiting the user (non-blocking)
 
