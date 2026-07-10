@@ -121,7 +121,9 @@ Newlines are significant at the statement level (§3.2); within the grammar,
 A Doodle source file is a sequence of Unicode code points encoded as UTF-8.
 Before tokenization, source text is normalized to Unicode Normalization Form C
 (NFC); consequently two identifiers that are canonically equivalent are the same
-identifier.
+identifier. Line endings are also canonicalized before tokenization: a CRLF (a
+carriage return immediately followed by a line feed, §3.2) is replaced by a
+single line feed, so the tokenizer and source positions see line-feed-only text.
 
 **Source positions.** A source position is defined over the NFC-normalized text
 above, not over the bytes as written on disk. A position is a 1-based line
@@ -172,12 +174,16 @@ Identifiers follow Unicode Standard Annex #31 (UAX #31) with `_` permitted as a
 start and continue character:
 
 ```
-IDENT       = ID_START ID_CONTINUE*
-ID_START    = '_' | <any character with the Unicode ID_Start property>
-ID_CONTINUE = '_' | <any character with the Unicode ID_Continue property>
+IDENT       = XID_START XID_CONTINUE*
+XID_START    = '_' | <any character with the Unicode XID_Start property>
+XID_CONTINUE = '_' | <any character with the Unicode XID_Continue property>
 ```
 
-Identifiers are compared by NFC-normalized code-point equality. Non-ASCII
+The `XID` properties (UAX #31's recommended default) are used rather than the
+plain `ID` properties because they are closed under NFC: since source is
+NFC-normalized (§3.1) and identifiers are compared by NFC-normalized code-point
+equality, an `XID` identifier stays a valid identifier after normalization,
+whereas an `ID` one need not. Non-ASCII
 identifiers are fully supported (e.g. `角度`, `длина`, `θ`, `café`). Emoji and
 other characters outside UAX #31 are not permitted in identifiers.
 
@@ -1803,6 +1809,14 @@ likely to change.
   and a 1-based code-point column; spans are code-point ranges. This is the unit
   L and the engine (E§8.1) report; a binding or host may convert to bytes,
   UTF-16 code units, or grapheme clusters.
+- **Identifiers use `XID` not `ID` (§3.4).** The discussion (and an earlier
+  draft) wrote `ID_Start`/`ID_Continue`; fixed to `XID_Start`/`XID_Continue`
+  (UAX #31's recommended default). The `XID` properties are closed under NFC,
+  which the plain `ID` properties are not — necessary because source is
+  NFC-normalized (§3.1) and identifiers are compared by NFC equality (§3.4).
+- **Line endings canonicalized to LF on load (§3.1).** Left unstated. A CRLF is
+  replaced by a single LF before tokenization, so positions/spans and the lexer
+  see LF-only text; the on-disk file may use either LF or CRLF (§3.2).
 
 ### D.2 Genuinely open (deferred by the discussion)
 

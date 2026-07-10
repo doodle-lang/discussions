@@ -203,7 +203,7 @@ crates version independently and have historically shipped skewed UCD
 versions, so the pin is **verified per-crate**: the lockfile audit records
 the crate-version→UCD-version mapping, and CI runs generated conformance
 vectors at the pinned UCD version — `NormalizationTest.txt`,
-`GraphemeBreakTest.txt`, **and an ID_Start/ID_Continue vector derived from
+`GraphemeBreakTest.txt`, **and an XID_Start/XID_Continue vector derived from
 `DerivedCoreProperties.txt`** (UAX #31 has no ready-made test file, and
 `unicode-ident` exposes no version constant — the vector run *is* the
 assertion). Strings are NFC UTF-8 (L§4.4).

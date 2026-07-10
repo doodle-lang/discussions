@@ -32,9 +32,10 @@ recommendation in plan-m1 M1.8.)
 
 - [~] **M1.3** — Lexer core (tokens, numbers, newline/continuation, S-2).
   Recon complete (lexer design + the conformance-runner execute-path upgrade
-  that must land atomically with the `Lex` stage bump). Not yet started — two
-  M1.2 spec questions are surfaced to the user first (XID/ID identifiers;
-  CRLF→LF; both below). M1.2 (source model) landed, doodle-rust `6aa0a7b`.
+  that must land atomically with the `Lex` stage bump). The two M1.2 spec
+  questions (XID; CRLF→LF) are now resolved by the user + implemented, so the
+  lexer's identifier and line-ending handling is settled. M1.2 landed
+  (`6aa0a7b`, `8826655`). Ready to implement.
 
 ## Next up
 
@@ -90,26 +91,18 @@ code, nothing shipped that contradicts a future spec pin):
 - **Diagnostic ordering** — multi-diagnostic order is a producer contract
   (nondecreasing `span.start`, tie-break production order); the renderer
   never re-sorts. Pin in E Appendix B.
-- **Line endings (CRLF→LF)** — L§3.1/§3.2 don't say whether load normalizes
-  CRLF to LF. M1.2 deliberately did **not** resolve this (it is beyond S-1's
-  position-units scope, so not pre-approved). Status quo holds: the renderer
-  strips a stray `\r` for display, and `position_at` counts a CR as a code
-  point on its line (`source.rs` test `crlf_column_counts_the_carriage_return`
-  locks this). **Surfaced to the user (2026-07-10)** — awaiting their choice:
-  normalize CRLF→LF at load (changes byte offsets/spans/columns) vs. keep raw.
+- **Line endings (CRLF→LF)** — **RESOLVED (user, 2026-07-10): normalize
+  CRLF→LF at load.** A CRLF (CR immediately before LF, §3.2) is replaced by a
+  single LF before NFC, so the source model, spans, columns, and the lexer see
+  LF-only text (a lone CR is left as is). Landed: `source::normalize` +
+  L§3.1/Appendix D.1 (doodle-rust `8826655`).
 
-Discovered at M1.2 (needs a user decision — a language-semantics change):
-- **Identifiers: `ID_*` vs `XID_*` (L§3.4).** L§3.4's grammar names
-  `ID_Start`/`ID_Continue`, but the implementation (and `unicode-ident`, and
-  UAX#31's recommended default) uses the NFC-**closed** `XID_Start`/
-  `XID_Continue`. XID is the correct choice for a language that NFC-normalizes
-  source and compares identifiers by NFC equality (an `ID_*` identifier can
-  normalize to a non-`ID_*` string; `XID_*` cannot). They differ at a few code
-  points (e.g. U+037A). **Recommend changing L§3.4 to `XID`** (and fixing
-  AD4's CI-vector text, implementation.md ~L206, to derive from the XID
-  columns). Surfaced to the user; the code documents the provisional XID
-  choice. No observable behavior ships until the lexer uses it (M1.3), so
-  resolve the spec before/with M1.3.
+Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
+- **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
+  `XID_Start`/`XID_Continue`.** The NFC-closed variants (matching the code /
+  `unicode-ident` / UAX#31 default), correct for an NFC-normalizing language.
+  Landed: L§3.4 + Appendix D.1 + AD4 CI-vector text; code confirmed; a U+037A
+  test pins it (doodle-rust `8826655`).
 
 ## Open decisions awaiting the user (non-blocking)
 
