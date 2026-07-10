@@ -20,25 +20,21 @@ go at the top, per CLAUDE.md.
 
 ## Awaiting the user (blocking)
 
-- **Error-message rubric sign-off** — `plan/error-message-rubric.md` is
-  drafted (M1.1) and marked PENDING USER SIGN-OFF; the agent must not
-  self-certify against a bar it authored (plan M1.1/M1.13). Sign-off is
-  **blocking for M1.13** (broken-syntax message review) and **M1.15** (M1
-  exit); it does **not** block M1.2–M1.12. Review / adjust / ratify at your
-  convenience.
+(none — the M1.1 error-message rubric was signed off by the user 2026-07-10;
+it stays open to revision and is exercised in earnest at the M1.13 review.
 
-(Context: plans ratified, machine-design v0.2 accepted, repos deliberately
+Context: plans ratified, machine-design v0.2 accepted, repos deliberately
 public, issues enabled on discussions + doodle-rust: all 2026-07-10. The
 S-27 semantic fork is decided with the user at M1.8 start — options +
 recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-- [~] **M1.1** — code landed (diag module + plain-text renderer, doodle-rust
-  `9c49651`, CI green); the error-message rubric is drafted PENDING USER
-  SIGN-OFF (see "Awaiting the user"). M1.1 fully closes once the rubric is
-  signed off (tracked to M1.13). Provisional choices flagged: D (structured
-  `Replacement`) and F (code-point caret columns, display-width → M1.2/S-1).
+- [~] **M1.2** — Source model: NFC normalization, spans, positions (S-1).
+  Starting now. S-1 is resolved in the spec **first** (its stated resolution
+  is pre-approved per the M1 ratification note), with a decision-log entry +
+  conformance test, then the code lands. Also the home for the CRLF→LF
+  line-ending question discovered at M1.1.
 
 ## Next up
 
@@ -107,6 +103,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — **M1.1: diagnostics infrastructure + error-message rubric.**
+  Code (doodle-rust `9c49651`): the `diag` module (`Diagnostic` /
+  `DiagnosticCode` / `Note` / `Replacement` / `Suggestion` / `LoadError`) +
+  a no-ANSI plain-text renderer (source snippets, carets, code-point columns,
+  CRLF-safe, panic-free); 12 insta snapshots; CI green. Rubric
+  (`plan/error-message-rubric.md`, discussions `96f0a4a`): drafted by the
+  agent, **signed off by the user 2026-07-10**. Provisional choices D
+  (structured `Replacement`) + F (code-point caret) **confirmed by the user**.
+  2-lens review: two majors fixed (CRLF leak; test gaps) + minors. Four
+  spec-deltas filed (see queue below).
 - 2026-07-10 — **M0.9: M0 exit review — milestone M0 COMPLETE.** A 3-lens
   audit (exit-criteria / per-item acceptance / gap-hunt) independently
   re-verified all three M0 exit criteria and every M0.1–M0.8 acceptance

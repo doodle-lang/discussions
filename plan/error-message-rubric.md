@@ -8,13 +8,13 @@ diagnostics on the CLI is `doodle-core`'s `diag::render`; the structured form
 
 ## Status
 
-> **PENDING USER SIGN-OFF.** This document was drafted by the implementing
-> agent as a proposal. Per plan-m1 **M1.1/M1.13**, the rubric needs the user's
-> sign-off — *the agent must not both author the quality bar and self-certify
-> against it.* Sign-off is **blocking for M1.13** (the broken-syntax message
-> review) and **M1.15** (the M1 exit).
+> **Signed off by the user (2026-07-10).** Drafted by the implementing agent
+> and ratified by the user; it remains open to revision, and the M1.13
+> broken-syntax message review is where it is exercised in earnest. Per plan-m1
+> M1.1/M1.13 the agent must not self-certify — this bar governs the agent's
+> rubric-pass, but the user approves the M1.13 messages.
 >
-> Signed off by: _(pending)_ · Date: _(pending)_
+> Signed off by: the user · Date: 2026-07-10
 
 ## 1. Purpose & scope
 

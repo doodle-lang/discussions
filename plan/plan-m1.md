@@ -33,7 +33,7 @@ class has a position-asserting negative test; parser fuzzer survives 1 h.
 
 ## Work items
 
-### M1.1 — Diagnostics infrastructure + error-message rubric — **TODO**
+### M1.1 — Diagnostics infrastructure + error-message rubric — **DONE 2026-07-10**
 
 `diag` module for real: `Diagnostic { severity, code, message, span,
 notes, suggestion }`, multi-diagnostic `LoadError`, and a plain-text
@@ -51,6 +51,13 @@ M1.13 review** (the agent must not both author the quality bar and
 self-certify against it).
 *Accept:* renderer snapshots for a hand-built diagnostic set;
 rubric committed (user sign-off tracked for M1.13).
+*Landed* (doodle-rust `9c49651`): the `diag` module + no-ANSI plain-text
+renderer, 12 insta snapshots, CI green. `error-message-rubric.md` committed
+and **signed off by the user 2026-07-10** (stays open to revision; exercised
+at M1.13). Provisional D (structured `Replacement`) + F (code-point caret
+columns; display-width → M1.2/S-1) **confirmed by the user**. Spec-deltas
+filed (warnings channel, structured schema, ordering, CRLF→LF) — see
+`../claude-todo.md`.
 
 ### M1.2 — Source model: NFC normalization, spans, positions (S-1) — **TODO**
 
