@@ -27,13 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.4 landed; M0.5 is next)
+(nothing — M0.5 landed; M0.6 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.5 — wasm hello-world + 300 KB size gate
 - [ ] M0.6 — capi hello-world + committed doodle.h + C smoke
 - [ ] M0.7 — insta + fuzz plumbing
 - [ ] M0.8 — CONTRIBUTING (incl. review policy) + issue templates
@@ -76,6 +75,13 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.5: wasm hello-world + size gate. `crates/doodle-wasm`
+  (wasm-bindgen cdylib exporting `version()`); `scripts/wasm-size.sh`
+  (build release wasm → `wasm-opt -Oz` → brotli → 300 KB budget, plan §6.5;
+  fail-closed; `WASM_BUDGET_BYTES`-overridable); a `wasm-size` CI job that
+  also self-tests the fail path. Hello-world ≈ 8 KB brotli. All CI +
+  hygiene green. 2-lens review: one major (fail-closed) folded in.
+  doodle-rust `ad8bbbe`.
 - 2026-07-10 — M0.4: conformance test format + runner skeleton.
   `conformance/README.md` (ratified format v0, source of truth); a std-only
   `tools/conformance-runner` (discovers `.doodle` tests, parses/validates

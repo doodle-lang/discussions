@@ -97,7 +97,7 @@ canonical in the README (this mini-spec is retained as rationale). 3-lens
 review folded in one major (example clause L6.2→L8.4) + minor
 robustness/fidelity fixes.
 
-### M0.5 — wasm hello-world + size gate — **TODO**
+### M0.5 — wasm hello-world + size gate — **DONE 2026-07-10**
 
 `crates/doodle-wasm` stub (wasm-bindgen, exports one function calling
 `doodle_core::version()`); `scripts/wasm-size.sh` building
@@ -106,6 +106,12 @@ robustness/fidelity fixes.
 `.github/workflows/wasm-size.yml` (or a job in test.yml) running it.
 *Accept:* CI job green; script prints size and budget; deliberately
 breaking the budget (locally, with a test blob) makes it fail.
+*Landed* (doodle-rust `ad8bbbe`): `crates/doodle-wasm` (wasm-bindgen), a
+fail-closed `scripts/wasm-size.sh` (budget 300 KB decimal brotli, plan
+§6.5; `WASM_BUDGET_BYTES`-overridable), and a `wasm-size` CI job that also
+self-tests the fail path. Chose a test.yml job over a separate workflow.
+Hello-world ≈ 8 KB brotli. Forward-note in the script: the M3-binding
+pipeline must run wasm-bindgen-cli before wasm-opt.
 
 ### M0.6 — capi hello-world — **TODO**
 
