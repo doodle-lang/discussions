@@ -785,10 +785,10 @@ provides the complete set plus the interactive facilities of §7–§11.
 
 ### B.2 Open issues, including cross-spec implications
 
-- **Dict iteration order (cross-spec → L§4.8).** Deterministic dict iteration is required
-  for replay (§11). The language spec does not currently fix dict iteration order; it
-  should — most likely to **insertion order** — and L§4.8 should be updated accordingly.
-  This is the one change to the language spec implied by this document.
+- **Dict iteration order (cross-spec, L§4.8).** Deterministic dict iteration is required
+  for replay (§11); the language spec pins dict iteration order to **insertion order**
+  (L§4.8), which satisfies it. Recorded here because the dependency runs from this
+  document into the language spec.
 - **Conditional breakpoints and live edit (§8.6, §8.9).** Both involve running Doodle code
   during observation (evaluating a condition; writing bindings/hot-redefining). Deferred;
   the mechanism (drive a predicate; write a frame binding) is sketched but not specified.

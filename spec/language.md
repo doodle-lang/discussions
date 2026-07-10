@@ -494,6 +494,13 @@ records are usable as keys; lists and dicts are not valid keys. Indexing
 `dict[key]` requires the key to be present and otherwise raises. Iteration and
 lookup-with-default are provided by the standard library.
 
+**Iteration order is insertion order.** Iterating a dict (or its keys/values)
+visits entries in the order their keys were first inserted; reassigning an
+existing key leaves its position unchanged, and removing then reinserting a key
+moves it to the end. This order is deterministic and independent of key hashing
+or allocation — a property the engine relies on for reproducible execution and
+replay (see the engine specification, §11).
+
 ### 4.9 Procedures, functions, and blocks
 
 Procedures (declared with `to`) and functions (declared with `fn`, including
@@ -1776,6 +1783,10 @@ likely to change.
   `Bytes` is the faithful container. The language exposes a String↔UTF-8 `Bytes`
   primitive as the no-magic floor; code-point access is derived from it in the
   standard library.
+- **Dict iteration order = insertion order (§4.8).** Left unspecified by the
+  discussion. Fixed to insertion order — the modern default (Python 3.7+, Ruby),
+  intuitive and stable — and required to be deterministic so that engine-level
+  replay and time-travel work (engine specification §11).
 
 ### D.2 Genuinely open (deferred by the discussion)
 
