@@ -870,12 +870,13 @@ Decisions this plan needs from the project owner (none block M0–M1 except
 D-1):
 
 - **D-1 · Implementation repo.** **RESOLVED (2026-07-10):**
-  `doodle-lang/doodle-rust` (private), a submodule of the
-  `doodle-lang/workspace` container repo alongside `discussions` —
-  the binate workspace structure, chosen over the originally proposed
-  `doodle-lang/doodle` monorepo. AD7's internal layout applies within
-  `doodle-rust`; sibling-vs-internal placement of `js/`/`web/`/`stdlib/`
-  is deferred until they materialize.
+  `doodle-lang/doodle-rust`, a submodule of the `doodle-lang/workspace`
+  container repo alongside `discussions` — the binate workspace
+  structure, chosen over the originally proposed `doodle-lang/doodle`
+  monorepo. All repos are **public** (the user's deliberate choice,
+  2026-07-10, superseding the earlier private posture). AD7's internal
+  layout applies within `doodle-rust`; sibling-vs-internal placement of
+  `js/`/`web/`/`stdlib/` is deferred until they materialize.
 - **D-2 · Spec home.** Keep specs in `discussions` through v0.1 and revisit
   at freeze (recommended), or migrate `spec/` into the monorepo at M0.
 - **D-3 · License.** **RESOLVED (2026-07-10): MIT**, across all project
@@ -929,8 +930,9 @@ medians; M2a and M5 carry the widest error bars.
 Underdetermined or problematic spec points that implementation forces;
 each is discharged per §8 no later than the milestone shown. (L) = language
 spec, (E) = engine spec. Condensed. **This appendix is the spec-delta
-tracker of record** until the GitHub issue tracker opens (plan-m0 M0.8;
-issues are currently disabled on the repos).
+record of substance**; GitHub issues on the `discussions` repo (enabled
+2026-07-10; templates land with plan-m0 M0.8) track and point at its
+entries.
 
 **Front end — resolve by M1.**
 S-1 (L§3.1/E§8.1) Source-position units: define positions on NFC-normalized

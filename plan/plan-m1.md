@@ -1,7 +1,7 @@
 # Working Plan: Milestone M1 — Front End
 
-**Status:** Draft — submitted for user ratification 2026-07-10. Blocked
-on M0.3 (core API), M0.4 (conformance runner + format), and M0.7
+**Status:** Ratified by the user 2026-07-10 (as revised after review).
+Blocked on M0.3 (core API), M0.4 (conformance runner + format), and M0.7
 (insta/fuzz plumbing). · **Parent:** `implementation.md` §5 M1 `[M]`
 
 Decomposition of M1 (lexer, parser, resolver, diagnostics) into

@@ -1,6 +1,6 @@
 # Working Plan: Milestone M0 — Scaffolding
 
-**Status:** Draft — submitted for user ratification 2026-07-10 ·
+**Status:** Ratified by the user 2026-07-10 (as revised after review) ·
 **Parent:** `implementation.md` §5 M0 `[S]`
 
 Decomposition of M0 into session-sized work items. Each item is one
@@ -119,12 +119,9 @@ section, S-number, provisional choice, resolve-by milestone) and in
 **doodle-rust** (bug template referencing the Bug Discovery Protocol).
 Decision recorded here: **spec-delta issues live on the `discussions`
 tracker** (they are spec work); implementation bugs on `doodle-rust`.
-**Blocker needing the user:** issues are currently *disabled* on all
-doodle-lang repos — enabling them is a repo-settings action the user must
-take or explicitly delegate. Until then, `implementation.md` Appendix C
-is the spec-delta tracker of record.
-*Accept:* issues enabled (user action); templates render on GitHub's
-new-issue pages.
+Issues were enabled by the user on both repos 2026-07-10; Appendix C
+remains the spec-delta record of substance (issues track/point at it).
+*Accept:* templates render on GitHub's new-issue pages.
 
 ### M0.9 — M0 exit review — **TODO**
 

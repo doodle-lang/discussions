@@ -20,21 +20,10 @@ go at the top, per CLAUDE.md.
 
 ## Awaiting the user (blocking)
 
-- [ ] **Ratify `plan/plan-m0.md` and `plan/plan-m1.md`** (both marked
-      "submitted for ratification"): ratification pre-approves their
-      stated S-item resolutions and scheduled CI wiring. Until then, a
-      session may only execute items that need no spec edit or CI wiring.
-- [ ] **Accept `plan/machine-design.md` v0.2** — the gate for M2a (and
-      its §3 `Value` shape is used by M0.3 scaffolding; see plan-m0).
-- [ ] **Repo visibility discrepancy:** §10 D-1 and the original request
-      say the repos are private, but workspace/doodle-rust/discussions
-      are all currently **PUBLIC** on GitHub. Confirm intended
-      visibility; update D-1's text (and D-6/D-7 posture) to match.
-- [ ] **Enable GitHub issues** on discussions + doodle-rust (currently
-      disabled on all repos; needed by M0.8). Until then,
-      implementation.md Appendix C is the spec-delta tracker of record.
-- [ ] **S-27 semantic fork** (docstring vs. lone-string body): decide at
-      M1.8 start — options + recommendation are written in plan-m1 M1.8.
+(none — plans ratified, machine-design v0.2 accepted, repos deliberately
+public, issues enabled on discussions + doodle-rust: all 2026-07-10.
+Still queued for later: the S-27 semantic fork is decided with the user
+at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
@@ -53,16 +42,15 @@ Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 - [ ] M0.6 — capi hello-world + committed doodle.h + C smoke
 - [ ] M0.7 — insta + fuzz plumbing
 - [ ] M0.8 — CONTRIBUTING (incl. review policy) + issue templates
-      (needs issues enabled — see Awaiting the user)
 - [ ] M0.9 — M0 exit review
 
 Then milestone **M1** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
 `full` at the M1.10 checkpoint.
 
-**Gate before M2a:** `plan/machine-design.md` (v0.2, revised after
-adversarial review) must be accepted by the user before any machine-core
-code.
+**M2a gate:** satisfied — `plan/machine-design.md` v0.2 accepted by the
+user 2026-07-10. (Mechanism changes still require revising that document
+first.)
 
 ## Spec-delta queue (near-term)
 

@@ -1,8 +1,9 @@
 # Doodle Machine Design (doodle-core internals)
 
-**Status:** Draft v0.2, revised after adversarial review — this document is
-the **gate for milestone M2a**: no machine-core implementation lands until
-it is accepted by the user. · **Date:** 2026-07-10
+**Status:** v0.2 — **accepted by the user 2026-07-10** (after adversarial
+review and revision); the M2a gate is satisfied. Changing the *mechanisms*
+pinned here still requires revising this document first (§ intro).
+· **Date:** 2026-07-10
 
 This document pins the load-bearing internal design of `doodle-core`'s
 execution machine, refining the implementation plan's AD2 (CESK-style AST
