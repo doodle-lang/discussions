@@ -113,7 +113,7 @@ self-tests the fail path. Chose a test.yml job over a separate workflow.
 Hello-world ≈ 8 KB brotli. Forward-note in the script: the M3-binding
 pipeline must run wasm-bindgen-cli before wasm-opt.
 
-### M0.6 — capi hello-world — **TODO**
+### M0.6 — capi hello-world — **DONE 2026-07-10**
 
 `crates/doodle-capi` stub: one `extern "C"` function
 (`doodle_version()`), cbindgen generating `include/doodle.h` (committed;
@@ -121,6 +121,13 @@ CI check that the committed header is current), and a 20-line C smoke
 program in `examples/c-host/` compiled+run in CI (ubuntu).
 *Accept:* C smoke test green in CI; regenerating the header produces no
 diff.
+*Landed* (doodle-rust `bb56f4e`): `crates/doodle-capi` (`doodle_version()`
+via a process-lifetime `OnceLock<CString>`), committed
+`include/doodle.h`, `examples/c-host/main.c`, `scripts/capi-header.sh`
+(currency check + `--write`) and `scripts/capi-smoke.sh`, a `capi` CI job.
+cbindgen is pinned (0.29.4) in the script + CI so header regeneration is
+reproducible. cdylib-only: the untested staticlib output was dropped rather
+than shipped (static embedding gets its own smoke test when needed).
 
 ### M0.7 — insta + fuzz plumbing — **TODO**
 

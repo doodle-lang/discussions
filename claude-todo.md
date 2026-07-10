@@ -27,13 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.5 landed; M0.6 is next)
+(nothing — M0.6 landed; M0.7 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.6 — capi hello-world + committed doodle.h + C smoke
 - [ ] M0.7 — insta + fuzz plumbing
 - [ ] M0.8 — CONTRIBUTING (incl. review policy) + issue templates
 - [ ] M0.9 — M0 exit review
@@ -75,6 +74,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.6: C ABI hello-world. `crates/doodle-capi`
+  (`#[unsafe(no_mangle)] extern "C" doodle_version()` → NUL-terminated
+  version via a process-lifetime `OnceLock<CString>`); cbindgen-generated
+  committed `include/doodle.h`; `examples/c-host/main.c` smoke;
+  `scripts/capi-header.sh` (currency check + `--write`, cbindgen pinned to
+  0.29.4) and `scripts/capi-smoke.sh`; a `capi` CI job. cdylib-only. All CI
+  + hygiene green. 2-lens review: blocker (invalid `taiki-e/install-action@
+  cbindgen` ref) + major (unpinned cbindgen → non-reproducible header gate)
+  fixed; staticlib dropped rather than shipped untested. doodle-rust
+  `bb56f4e`.
 - 2026-07-10 — M0.5: wasm hello-world + size gate. `crates/doodle-wasm`
   (wasm-bindgen cdylib exporting `version()`); `scripts/wasm-size.sh`
   (build release wasm → `wasm-opt -Oz` → brotli → 300 KB budget, plan §6.5;
