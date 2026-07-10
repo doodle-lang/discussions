@@ -300,11 +300,15 @@ programs complete in a few slices.
 
 ### AD7 — Repo and packaging
 
-**Choice.** A new implementation monorepo (proposed: **`doodle-lang/doodle`**;
-§10 D-1):
+**Choice (as resolved by D-1, 2026-07-10).** The implementation lives in
+**`doodle-lang/doodle-rust`**, a submodule of the
+**`doodle-lang/workspace`** container repo alongside `discussions`
+(mirroring the binate workspace structure). The internal layout below
+applies to `doodle-rust`; whether `js/`, `web/`, and `stdlib/` ultimately
+live inside it or as sibling submodules is decided when they materialize.
 
 ```
-doodle/
+doodle-rust/
 ├── crates/
 │   ├── doodle-core/      # front end + machine + heap + engine API (safe Rust)
 │   ├── doodle-capi/      # C ABI cdylib; cbindgen → include/doodle.h
@@ -864,10 +868,13 @@ string work).
 Decisions this plan needs from the project owner (none block M0–M1 except
 D-1):
 
-- **D-1 · Implementation repo.** Create **`doodle-lang/doodle`** (private
-  initially, per the org's current posture) with the AD7 layout?
-  Alternatives: implement inside `discussions` (rejected: it is a
-  design-docs repo), or one-repo-per-crate (rejected: lockstep churn).
+- **D-1 · Implementation repo.** **RESOLVED (2026-07-10):**
+  `doodle-lang/doodle-rust` (private), a submodule of the
+  `doodle-lang/workspace` container repo alongside `discussions` —
+  the binate workspace structure, chosen over the originally proposed
+  `doodle-lang/doodle` monorepo. AD7's internal layout applies within
+  `doodle-rust`; sibling-vs-internal placement of `js/`/`web/`/`stdlib/`
+  is deferred until they materialize.
 - **D-2 · Spec home.** Keep specs in `discussions` through v0.1 and revisit
   at freeze (recommended), or migrate `spec/` into the monorepo at M0.
 - **D-3 · License.** Recommend dual **MIT OR Apache-2.0** (Rust-ecosystem
