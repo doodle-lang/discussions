@@ -146,7 +146,7 @@ build check is `cargo +nightly fuzz build` (documented in `fuzz/README.md`),
 not plain `cargo fuzz build`. Nightly + fuzz deps are unpinned until fuzz
 enters CI at M1.
 
-### M0.8 — Contributor docs + spec-delta tracker conventions — **TODO**
+### M0.8 — Contributor docs + spec-delta tracker conventions — **DONE 2026-07-10**
 
 `CONTRIBUTING.md` in doodle-rust (build/test/hygiene how-to, the
 don't-game-hygiene rule, link to workspace CLAUDE.md, and the **review
@@ -160,6 +160,11 @@ tracker** (they are spec work); implementation bugs on `doodle-rust`.
 Issues were enabled by the user on both repos 2026-07-10; Appendix C
 remains the spec-delta record of substance (issues track/point at it).
 *Accept:* templates render on GitHub's new-issue pages.
+*Landed*: `CONTRIBUTING.md` + a `bug` issue form (doodle-rust `95d3dc9`); a
+`spec-delta` issue form (this repo, + a new `spec-delta` label). Both forms
+are GitHub issue **forms** (structured YAML), schema-validated. The review
+policy adds a user-sign-off tier for certifying against an agent-authored
+quality bar (M1.1 rubric / M1.13 message review), per the ratified plan.
 
 ### M0.9 — M0 exit review — **TODO**
 

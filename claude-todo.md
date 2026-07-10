@@ -27,13 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.7 landed; M0.8 is next)
+(nothing — M0.8 landed; M0.9 (M0 exit review) is next — the last M0 item)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.8 — CONTRIBUTING (incl. review policy) + issue templates
 - [ ] M0.9 — M0 exit review
 
 Then milestone **M1** (see `plan/plan-m1.md`): M1.1 … M1.15, with
@@ -73,6 +72,14 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.8: contributor docs + issue templates. `CONTRIBUTING.md`
+  (build/test/hygiene, don't-game rule, spec-delta process, a two-tier
+  review policy) in doodle-rust; GitHub issue forms — `bug` on doodle-rust,
+  `spec-delta` on discussions (new `spec-delta` label created). Render lens
+  confirmed both forms validate against GitHub's schema. 2-lens review: one
+  major fixed — the review policy had contradicted the ratified M1.13/M1.1
+  ("Reviewer = the user" for the message-quality bar). doodle-rust
+  `95d3dc9`; discussions template in this commit.
 - 2026-07-10 — M0.7: insta + fuzz plumbing. `insta` dev-dep + a committed
   deterministic snapshot of the M0.3 AST Debug (`tests/snapshots/`), run by
   ordinary `cargo test`; a `#[doc(hidden)]` `doodle_core::fuzz_smoke` seam

@@ -1,0 +1,46 @@
+name: Spec delta
+description: A divergence from, or an open decision left by, the language (L) or engine (E) spec.
+title: "[spec-delta] "
+labels: ["spec-delta"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Record a spec delta per the implementation plan §8. The record of
+        substance lives in `plan/implementation.md` Appendix C (the S-number
+        backlog); this issue tracks and points at it. Implementation bugs go on
+        the **doodle-rust** repo instead.
+  - type: input
+    id: clause
+    attributes:
+      label: Spec clause (L/E section)
+      description: The affected section, e.g. L§6.5 or E§7.2.
+      placeholder: L§...
+    validations:
+      required: true
+  - type: input
+    id: s-number
+    attributes:
+      label: S-number
+      description: The Appendix C backlog id, if assigned (e.g. S-27).
+      placeholder: S-...
+  - type: textarea
+    id: divergence
+    attributes:
+      label: The divergence or open decision
+      description: What the spec says (or leaves open) versus what the implementation needs.
+    validations:
+      required: true
+  - type: textarea
+    id: provisional
+    attributes:
+      label: Provisional choice
+      description: The documented interim behavior, if proceeding before the spec is resolved.
+  - type: input
+    id: resolve-by
+    attributes:
+      label: Resolve-by milestone
+      description: The milestone by which the spec must be updated (plan §8).
+      placeholder: e.g. M1.8, M2a
+    validations:
+      required: true
