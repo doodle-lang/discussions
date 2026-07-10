@@ -70,7 +70,7 @@ mechanisms. 3-lens adversarial review found no blocker/major; minor
 findings folded in. One spec-delta filed (top-level `Completed` value,
 E§7.2, due M2a — see `../claude-todo.md`).
 
-### M0.4 — Conformance test file format (mini-spec below) + runner skeleton — **TODO**
+### M0.4 — Conformance test file format (mini-spec below) + runner skeleton — **DONE 2026-07-10**
 
 Implement `tools/conformance-runner` (workspace member) per §"Conformance
 file format v0" below: discovers `conformance/**/*.doodle`, parses
@@ -90,6 +90,12 @@ M1.15 (and fully at M10).
 *Accept:* runner runs example tests (SKIP at M0 per the policy); output
 includes the overall `=== N passed, N failed, N skipped ===` line; wired
 as a CI job (in scope per this plan's ratification note), green.
+*Landed* (doodle-rust `2c8ae7e`): `conformance/README.md` (format v0),
+`tools/conformance-runner` (std-only), doodle-core `stage` module, four
+examples (all SKIP), a `conformance` CI job. The format text is now
+canonical in the README (this mini-spec is retained as rationale). 3-lens
+review folded in one major (example clause L6.2→L8.4) + minor
+robustness/fidelity fixes.
 
 ### M0.5 — wasm hello-world + size gate — **TODO**
 

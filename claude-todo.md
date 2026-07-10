@@ -27,14 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.3 landed; M0.4 is next)
+(nothing — M0.4 landed; M0.5 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.4 — Conformance runner skeleton + format → `conformance/README.md`
-      (SKIP-until-implemented pass policy; green CI from day one)
 - [ ] M0.5 — wasm hello-world + 300 KB size gate
 - [ ] M0.6 — capi hello-world + committed doodle.h + C smoke
 - [ ] M0.7 — insta + fuzz plumbing
@@ -78,6 +76,15 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.4: conformance test format + runner skeleton.
+  `conformance/README.md` (ratified format v0, source of truth); a std-only
+  `tools/conformance-runner` (discovers `.doodle` tests, parses/validates
+  `#!` directives, SKIPs by doodle-core's `stage::implemented_through()`,
+  prints `=== N passed, N failed, N skipped ===`); doodle-core `stage`
+  module; four example tests (all SKIP at M0); a `conformance` CI job. All
+  CI + hygiene green. 3-lens review: one major (a seed example misfiled
+  under L6.2 vs L8.4) + minor robustness/fidelity items, all folded in.
+  doodle-rust `2c8ae7e`.
 - 2026-07-10 — M0.3: core pipeline skeleton in `doodle-core` — `span`,
   `diag`, `ast`, `machine` (`Value` per machine-design §3; `InstanceState`
   per E§3.3; result register + step cursor), `drive` (`Outcome` per E§7.2;
