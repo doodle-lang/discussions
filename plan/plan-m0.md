@@ -46,7 +46,7 @@ declared components + wasm32 target, and is shell-agnostic across the
 Linux/macOS bash and Windows PowerShell default shells). All four jobs
 verified green on GitHub-hosted runners.
 
-### M0.3 — Core pipeline skeleton — **TODO**
+### M0.3 — Core pipeline skeleton — **DONE 2026-07-10**
 
 In `doodle-core`, the module skeleton the front end and machine will fill
 in: `span` (Span, ModuleId), `diag` (Diagnostic, LoadError shell), `ast`
@@ -63,6 +63,12 @@ churns and that is acceptable.
 an integer literal expression statement), drives it to
 `Completed`, and observes the result value through the public API — the
 plan's M0 acceptance, mechanically checkable. Hygiene green.
+*Landed* (doodle-rust `c60c336`): five module files under
+`crates/doodle-core/src/` (`span`, `diag`, `ast`, `machine`, `drive`) plus
+`tests/drive_smoke.rs`; `Value` and `Outcome` shapes per spec, no M2a
+mechanisms. 3-lens adversarial review found no blocker/major; minor
+findings folded in. One spec-delta filed (top-level `Completed` value,
+E§7.2, due M2a — see `../claude-todo.md`).
 
 ### M0.4 — Conformance test file format (mini-spec below) + runner skeleton — **TODO**
 

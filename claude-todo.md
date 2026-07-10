@@ -27,14 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.2 landed; M0.3 is next)
+(nothing — M0.3 landed; M0.4 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.3 — Core pipeline skeleton (span/diag/ast/machine/drive shells;
-      hard-coded AST runs to Completed)
 - [ ] M0.4 — Conformance runner skeleton + format → `conformance/README.md`
       (SKIP-until-implemented pass policy; green CI from day one)
 - [ ] M0.5 — wasm hello-world + 300 KB size gate
@@ -62,6 +60,15 @@ user decision), S-45 (M1.11). Later: S-41 by M2a; **S-9** (machine-design
 §12 carries the proposed resolution) by M2a; **S-46** (new: non-local
 exits through native consumers) by M2b.
 
+Discovered at M0.3 (needs an S-number when the user next curates Appendix
+C): **top-level `Completed` value** — E§7.2 pins the `Completed(value?)`
+payload only for a returning `fn`; it does not say what a *top-level*
+module drive completes with. The M0.3 skeleton provisionally returns the
+result register's last value so the acceptance can observe it; real
+top-level completion is expected to be Void (`None`). Resolve in E§7.2 by
+M2a (when the machine core replaces the placeholder). No behavior ships
+before then.
+
 ## Open decisions awaiting the user (non-blocking)
 
 From `plan/implementation.md` §10: D-2 (spec home at freeze), D-4 (names/
@@ -71,6 +78,14 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.3: core pipeline skeleton in `doodle-core` — `span`,
+  `diag`, `ast`, `machine` (`Value` per machine-design §3; `InstanceState`
+  per E§3.3; result register + step cursor), `drive` (`Outcome` per E§7.2;
+  `run()` drives a hand-built one-statement program to `Completed`). No
+  parser, no machine-core mechanisms (M2a gate). Acceptance test observes
+  `Int(42)` through the public API; hygiene + CI green. 3-lens adversarial
+  review: no blocker/major; minor findings folded in. Spec-delta filed
+  above (top-level `Completed` value). doodle-rust `c60c336`.
 - 2026-07-10 — M0.2: build/test CI workflow — `.github/workflows/test.yml`
   with four jobs (`cargo test --workspace` on ubuntu/macos/windows +
   `cargo check --workspace --target wasm32-unknown-unknown` on ubuntu); the
