@@ -27,17 +27,22 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.8 landed; M0.9 (M0 exit review) is next — the last M0 item)
+(nothing — **milestone M0 is complete** (M0.1–M0.9 all landed). Next: M1.1.)
 
 ## Next up
 
-Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
-
-- [ ] M0.9 — M0 exit review
-
-Then milestone **M1** (see `plan/plan-m1.md`): M1.1 … M1.15, with
+Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
-`full` at the M1.10 checkpoint.
+`full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
+
+- [ ] M1.1 — Diagnostics infrastructure + error-message rubric (the rubric
+      needs **user sign-off** by M1.13; agent drafts, user ratifies)
+
+**M1 heads-up (from the M0 exit review):** the conformance runner SKIPs
+until `doodle_core::stage::implemented_through()` returns `Some`; the first
+M1 item that bumps it above `None` (the lexer, ~M1.3–M1.5) **must** land the
+runner's execute + expectation-matching path atomically (else the runner's
+forcing-`Err` fires and reddens CI). Verify that item owns the runner upgrade.
 
 **M2a gate:** satisfied — `plan/machine-design.md` v0.2 accepted by the
 user 2026-07-10. (Mechanism changes still require revising that document
@@ -72,6 +77,15 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — **M0.9: M0 exit review — milestone M0 COMPLETE.** A 3-lens
+  audit (exit-criteria / per-item acceptance / gap-hunt) independently
+  re-verified all three M0 exit criteria and every M0.1–M0.8 acceptance
+  against the tree at doodle-rust `95d3dc9`, all CI + hygiene green. Zero
+  blocker/major. One spec-delta discovered in M0 (top-level `Completed`
+  value, E§7.2, due M2a). Minor forward-notes recorded for M1 (conformance
+  runner execute-path coupling; fuzz nightly pinning). Two process points
+  surfaced to the user (staticlib-drop sign-off; whether to escalate the
+  spec-delta to an issue/Appendix C now vs. batched curation).
 - 2026-07-10 — M0.8: contributor docs + issue templates. `CONTRIBUTING.md`
   (build/test/hygiene, don't-game rule, spec-delta process, a two-tier
   review policy) in doodle-rust; GitHub issue forms — `bug` on doodle-rust,

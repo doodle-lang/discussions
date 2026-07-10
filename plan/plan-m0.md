@@ -166,11 +166,23 @@ are GitHub issue **forms** (structured YAML), schema-validated. The review
 policy adds a user-sign-off tier for certifying against an agent-authored
 quality bar (M1.1 rubric / M1.13 message review), per the ratified plan.
 
-### M0.9 — M0 exit review — **TODO**
+### M0.9 — M0 exit review — **DONE 2026-07-10 · MILESTONE M0 COMPLETE**
 
 Walk the plan's M0 acceptance; update `claude-todo.md` and this file's
 status markers; confirm hygiene + all CI workflows green; note any
 discovered spec deltas.
+*Exit review:* a 3-lens audit (exit-criteria / per-item acceptance /
+gap-hunt) independently re-verified — against the tree at doodle-rust
+`95d3dc9` — all three M0 exit criteria (pipeline compiles on
+ubuntu/macos/windows + wasm32; a hand-built AST drives one statement to
+`Completed` through the public API, `tests/drive_smoke.rs`; the placeholder
+wasm passes the size gate) and every M0.1–M0.8 acceptance. Both CI workflows
++ hygiene green. **Zero blocker/major.** Discovered spec deltas: one
+(top-level `Completed` value, E§7.2, due M2a — in `claude-todo.md`).
+Forward-notes for M1: the conformance runner's SKIP→execute tripwire couples
+the first stage-landing item to a runner upgrade; the fuzz nightly must be
+pinned when fuzz enters CI. Sanctioned deferrals: capi staticlib (never in
+the plan of record), fuzz nightly float (documented). M1 is unblocked.
 
 **Suggested order:** M0.2 → M0.3 → (M0.4, M0.5, M0.6, M0.7 in any order,
 parallelizable) → M0.8 → M0.9. M0.3 blocks M0.4/M0.5/M0.6 only in that
