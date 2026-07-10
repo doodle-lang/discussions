@@ -877,8 +877,10 @@ D-1):
   is deferred until they materialize.
 - **D-2 · Spec home.** Keep specs in `discussions` through v0.1 and revisit
   at freeze (recommended), or migrate `spec/` into the monorepo at M0.
-- **D-3 · License.** Recommend dual **MIT OR Apache-2.0** (Rust-ecosystem
-  norm) for the implementation; the specs' license can differ.
+- **D-3 · License.** **RESOLVED (2026-07-10): MIT**, across all project
+  repos (workspace, discussions/specs, doodle-rust), matching the binate
+  projects. Crates declare `license = "MIT"`; cargo-deny's
+  private-crate exception is dropped.
 - **D-4 · Names.** Crate prefix `doodle-*`; npm scope `@doodle-lang`
   (`@doodle` is likely taken); CLI binary `doodle`. Confirm or rename.
 - **D-5 · Unicode pin.** Pin v0.1 to a single UCD version across all three
