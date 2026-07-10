@@ -27,13 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — next session starts M0.2)
+(nothing — M0.2 landed; M0.3 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.2 — Build/test CI workflow (3-OS test + wasm32 check)
 - [ ] M0.3 — Core pipeline skeleton (span/diag/ast/machine/drive shells;
       hard-coded AST runs to Completed)
 - [ ] M0.4 — Conformance runner skeleton + format → `conformance/README.md`
@@ -72,6 +71,12 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.2: build/test CI workflow — `.github/workflows/test.yml`
+  with four jobs (`cargo test --workspace` on ubuntu/macos/windows +
+  `cargo check --workspace --target wasm32-unknown-unknown` on ubuntu); the
+  toolchain (channel + wasm32 target) is provisioned by an argument-free
+  `rustup toolchain install` reading `rust-toolchain.toml`. All four jobs
+  green on GitHub-hosted runners. doodle-rust `5354c38`.
 - 2026-07-10 — Working plans `plan-m0.md`/`plan-m1.md` +
   `machine-design.md` drafted, adversarially reviewed (3 reviewers), and
   revised: machine-design v0.2 (unwinding redesigned around

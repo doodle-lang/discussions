@@ -30,7 +30,7 @@ workspace, pinned toolchain 1.97.0, `crates/doodle-core` stub),
 license everywhere. Tools installed (rustup/rustfmt/clippy/wasm32 target,
 cargo-deny, cbindgen, binaryen, cargo-insta, cargo-fuzz).
 
-### M0.2 — Build/test CI workflow — **TODO**
+### M0.2 — Build/test CI workflow — **DONE 2026-07-10**
 
 `.github/workflows/test.yml`: `cargo test --workspace` on
 ubuntu/macos/windows; `cargo check --workspace --target
@@ -40,6 +40,11 @@ completeness): *Node-executed* wasm tests start at M3 with the JS facade;
 a Miri job is deferred to M2a, when doodle-core first has nontrivial
 code.
 *Accept:* workflow green on all four jobs for the current tree.
+*Landed* (doodle-rust `5354c38`): the warm step is an argument-free
+`rustup toolchain install` (reads `rust-toolchain.toml`, installs the
+declared components + wasm32 target, and is shell-agnostic across the
+Linux/macOS bash and Windows PowerShell default shells). All four jobs
+verified green on GitHub-hosted runners.
 
 ### M0.3 — Core pipeline skeleton — **TODO**
 
