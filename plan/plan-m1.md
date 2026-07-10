@@ -1,0 +1,240 @@
+# Working Plan: Milestone M1 — Front End
+
+**Status:** Draft — submitted for user ratification 2026-07-10. Blocked
+on M0.3 (core API), M0.4 (conformance runner + format), and M0.7
+(insta/fuzz plumbing). · **Parent:** `implementation.md` §5 M1 `[M]`
+
+Decomposition of M1 (lexer, parser, resolver, diagnostics) into
+session-sized work items. Conventions as in `plan-m0.md`. Spec-delta
+items (S-…) listed on a work item are **resolved in the spec as part of
+that item** (edit + decision-log entry — L Appendix D or E Appendix B as
+relevant — + conformance test citing the clause; plan §8); do not start
+the code before pinning the spec text.
+
+**Ratification note.** Once the user ratifies this plan, the S-item
+resolutions *stated on the work items below* are pre-approved: a spec
+edit implementing exactly the stated resolution needs no further
+sign-off; anything beyond it — including any S-item marked "decide with
+the user" — needs a fresh ask (CLAUDE.md: never change semantics without
+asking).
+
+**Conformance staging.** Work items land conformance tests at the stage
+the pipeline supports when they close (`#! stage: lex` for M1.3–M1.5,
+`stage: parse` for M1.6–M1.9 — see plan-m0's format v0); M1.10 upgrades
+the suite to `full` where intended and is the checkpoint at which all
+earlier conformance tests must be green at their final stage.
+
+**M1 exit criteria (from the plan):** every code example in L parses to a
+golden AST; a ~40-program broken-syntax corpus produces reviewed,
+snapshot-tested diagnostics pointing at correct spans; every static-error
+class has a position-asserting negative test; parser fuzzer survives 1 h.
+
+---
+
+## Work items
+
+### M1.1 — Diagnostics infrastructure + error-message rubric — **TODO**
+
+`diag` module for real: `Diagnostic { severity, code, message, span,
+notes, suggestion }`, multi-diagnostic `LoadError`, and a plain-text
+renderer with source snippets + caret spans (the CLI/CI rendering; the
+IDE renders its own from the structured form). Diagnostic `code` scheme
+(pinned here): **provisional kebab-case slugs** (e.g.
+`chained-comparison`, `const-reassignment`); a numbered scheme, if ever
+wanted, is a future spec delta. Snapshot-test the renderer (insta).
+**Write the error-message rubric** the plan references (§4.2) as
+`discussions/plan/error-message-rubric.md`: names the value/operation,
+points at the span, suggests the fix, kid-readable wording — with
+examples of good/bad phrasings; every diagnostic-adding work item cites
+it in review. The rubric itself needs **user sign-off no later than the
+M1.13 review** (the agent must not both author the quality bar and
+self-certify against it).
+*Accept:* renderer snapshots for a hand-built diagnostic set;
+rubric committed (user sign-off tracked for M1.13).
+
+### M1.2 — Source model: NFC normalization, spans, positions (S-1) — **TODO**
+
+Source text NFC-normalized on load (L§3.1); `Span` = byte range into the
+NFC'd text + derived line/col (1-based, code-point columns) per **S-1**
+(resolve S-1's exact wording in L first: positions refer to
+post-normalization text; positions/columns are in code-point units;
+bindings may convert). Reconciliation note (so this doesn't read as a
+conflict with Appendix C): the *internal* `Span` representation is byte
+offsets; the *spec-facing* units are code points, derived at the
+diagnostic/API boundary — that conversion is exactly what S-1's
+"bindings may convert" licenses. UAX#31 identifier classification via
+`unicode-ident` + `_`; module-name restriction (L§3.4).
+*Accept:* unit + insta tests (identifier classification: é
+composed/decomposed are one identifier; column derivation per S-1). The
+corresponding conformance cases land with M1.3 (`stage: lex`), since no
+`.doodle` file can be processed before the lexer exists.
+
+### M1.3 — Lexer core: tokens, numbers, newline/continuation (S-2) — **TODO**
+
+Token set (L§3.5–3.7); integer/float literals with underscore rules and
+all bases; comments/shebang; **conditional NEWLINE emission** per the
+continuation rules — resolve **S-2** first (pin the trigger set: symbolic
+binary operators, comma, `and`/`or`/`is`; trailing `-`/`+` continue; `=`
+does not; comments transparent) and land the L§3.2 edit with the tests.
+*Accept:* token-dump snapshot tests incl. every continuation case in S-2;
+negative tests (bad underscores, bad floats) with positions; conformance
+`L3.2-*`/`L3.6.1-*`/`L3.6.2-*` tests green at `stage: lex` (plus the
+M1.2 identifier cases).
+
+### M1.4 — Lexer: strings, escapes, interpolation modes — **TODO**
+
+String literals with the full escape set; surrogate `\u{…}` as a static
+error (L§3.6.3); the string↔expression **mode stack** for `{expr}`
+interpolation (nested strings, nested braces, `{{`/`}}`); bytes literals
+(ASCII-only source, `\u` rejected, no interpolation; L§3.6.5); NFC
+applied to literal values.
+*Accept:* snapshot token dumps for nested-interpolation torture cases;
+`L3.6.3-*`/`L3.6.5-*` conformance tests (`stage: lex`) incl. positions of
+escape errors *inside* interpolations.
+
+### M1.5 — Lexer: triple-quoted strings + margins (S-3) — **TODO**
+
+Raw-span capture, closing-delimiter margin computation, per-line
+validation, strip, then escape/interpolation processing (machine-design
+n/a; order per plan §3.1). Resolve **S-3** first (tabs = exact-prefix
+match, blank-line exemption, margin-before-escapes) and land the L§3.6.4
+edit.
+*Accept:* `L3.6.4-*` tests (`stage: lex`): margin stripping goldens,
+under-indented line error with position, escapes-don't-create-lines case.
+
+### M1.6 — Parser: expressions (Pratt) — **TODO**
+
+Primary/postfix/unary/binary per the 9-level table (L§6.5, App A/C);
+right-assoc `**`; **non-associative comparisons** rejected with the
+write-`a < b and b < c` guidance diagnostic; `if`/`try` expression forms;
+anonymous `fn`; list/dict literals with trailing commas; keyword
+arguments in call syntax (`name: expr`, positional-before-keyword).
+*Accept:* golden AST dumps for an expression corpus; `L6.5-*` tests
+(`stage: parse`) incl. the chained-comparison diagnostic with span.
+
+### M1.7 — Parser: statements + construct headers (S-4) — **TODO**
+
+Statement separation; `let`/`const`/assignment (lvalue grammar);
+`if`/`while`/`loop`/`with` statements; `return`/`break`/`continue`/
+`raise`; `try`/`rescue`. Resolve **S-4** first (header expressions parse
+in no-trailing-block mode; block arg in a header requires parens) and
+land the L§6.4/§7 edit.
+*Accept:* `while f() do … end` parses as while-body (golden AST);
+`while f() do … end do … end`-style ambiguities produce the S-4
+diagnostic; statement-form conformance tests green at `stage: parse`.
+
+### M1.8 — Parser: declarations + docstrings (S-27) — **TODO**
+
+`to`/`fn` declarations (params, defaults, `do body` block param —
+at most one, last); `record`/`ref record`; `protocol`/`extends` with
+required-vs-default members; `implement … for …`; `module`; `parameter`;
+`exports`; docstring capture as metadata. Resolve **S-27** with the
+L§8.6 edit: interpolation-in-docstrings = raw text (already pinned in
+Appendix C); the **body-is-only-a-string corner is a genuine semantic
+fork — decide with the user at item start.** Recommended resolution, for
+that discussion: a string literal is the docstring only when **followed
+by at least one more statement**; a lone string is an ordinary
+expression (an `fn`'s result — so `fn greeting() "hello" end` works —
+and a discarded value in a `to`). Cost: a body-less `to` cannot carry a
+docstring. Alternatives: lone-string-is-docstring (Python-like, but
+makes the constant-returning `fn` a falls-off-end error), or
+per-kind asymmetry. The user picks; the L§8.6 edit states it.
+*Accept:* golden ASTs for every declaration form in L's examples;
+`L8.6-*` docstring tests (`stage: parse`); placement-rule negatives
+(module-level-only declarations, L§7.1) with positions.
+
+### M1.9 — Parser: imports + calls + blocks — **TODO**
+
+Import forms (`m`, `m as x`, `m.item`, `m.item as x`, `m.*`,
+comma-separated; `.*` not renamable) with the **S-7 grammar note**
+(module-vs-member is *resolved at load*, not parse — the parser produces
+the dotted path; resolve S-7's resolution-order text in L§11.2 here,
+implementation follows at M6); call argument lists; trailing block
+arguments `do (params) … end`.
+*Accept:* golden ASTs for L§11.2's example list; `L11.2-*` tests
+(`stage: parse`; `.* as` rejected, keyword-after-positional enforced
+elsewhere).
+
+### M1.10 — Resolver: scopes, slots, static-error battery (S-5, S-6) — **TODO**
+
+Scope construction (module/body/block, per-invocation scopes are a
+runtime matter); slot assignment; capture marking (cell-boxed, per
+machine-design §7 — includes the S-11 read: `fn` closures may mutate
+captures, resolve S-11's L§6.10/§8.5 wording here); **static links**
+(hop, slot) for block-body outer references (machine-design §7);
+**free-name classification** — every unresolved name compiled to a
+module-cell reference site (`name_refs`, machine-design §2/AD5), the
+output M2a's machine consumes; **the static-error battery**: duplicate
+declaration, `const` reassignment, undeclared-assignment (lexically
+determinable cases), `return`/`break`/`continue` placement +
+**lexical exit-target annotation** (machine-design §12),
+fn-falls-off-end, chained comparison (from M1.6), surrogate escapes
+(from M1.4), placement rules. (The S-39 imported-alias-assignment error
+is deliberately *not* here — it needs import resolution and lands at M5,
+per Appendix C.) Resolve **S-5** (define the "static where determinable"
+boundary — the resolver's rules become the normative list) and **S-6 in
+full** (the L§6.11/§8.4/§8.5 spec text: Void rejected at the consuming
+site; static where detectable at resolve time, runtime otherwise —
+runtime conformance tests land at M2a) with L edits.
+*Accept:* every static-error class has ≥1 position-asserting conformance
+test (`mode: static`, now `stage: full`; all earlier-stage tests
+re-verified green at their final stages — this is the staging
+checkpoint); the S-5 spec text enumerates exactly what M1 rejects (no
+more, no less).
+
+### M1.11 — Resolver: shadowing warning + tail marking — **TODO**
+
+The L§5.1 shadowing **warning** (a Diagnostic with severity=warning; does
+not fail loads; surfaced by runner/CLI); tail-position marking per L§8.7
++ machine-design §11 including the **S-45** exclusion (calls passing
+block arguments are not tail — resolve S-45's L§8.7 amendment here, ahead
+of its M2a consumer).
+*Accept:* warning snapshot tests; tail-marking unit tests over an
+annotated corpus (marked tail sites match hand-annotations, incl.
+with/try/block-arg barriers).
+
+### M1.12 — Golden corpus: every example in L — **TODO**
+
+Extract the code examples from `spec/language.md` into
+`conformance/v0.1/lang/…` static tests (or, where an example is
+deliberately ill-formed, negative tests); golden AST dumps (insta) for
+the well-formed set. **Prerequisite spec edit (part of this item):** L's
+~109 code fences are untagged and many are grammar/EBNF, not Doodle —
+land a fence-tagging pass on language.md (```doodle vs ```grammar; also
+improves rendering) or, failing that, a committed per-block manifest
+(include/exclude/wrap-with-reason) that the extraction consumes;
+fragmentary examples get a documented wrap or an exclusion reason.
+*Accept:* the M1 exit criterion "every code example in L parses to a
+golden AST" is mechanically true over the tagged/manifested set;
+extraction script + manifest committed so spec edits flag stale examples.
+
+### M1.13 — Broken-syntax corpus + message review — **TODO**
+
+~40 hand-written broken programs (one mistake each, kid-plausible:
+missing `end`, `=` vs `==`, unclosed string, stray `do`, tab-margin
+mix…), snapshot-tested through the M1.1 renderer, **each message reviewed
+against the rubric. Reviewer = the user** (an agent rubric-pass first
+writes per-program notes into the corpus README; the user then approves —
+this review, and the rubric sign-off from M1.1, are **blocking for
+M1.15**).
+*Accept:* the corpus README contains the filled review table with user
+sign-off for all 40; each diagnostic points at the correct span.
+
+### M1.14 — Parser fuzz targets + soak — **TODO**
+
+cargo-fuzz targets: lexer (arbitrary bytes) and parser (token-level or
+text); a short fuzz job in CI (minutes); a 1 h local soak for the exit
+criterion.
+*Accept:* 1 h soak with zero panics/hangs/OOMs; CI fuzz-smoke job green.
+
+### M1.15 — M1 exit review — **TODO**
+
+Walk the plan's M1 acceptance; S-item audit (S-1…S-7, S-11, S-27, S-45
+resolved in spec with tests); update `claude-todo.md` + status markers;
+hygiene + CI green; file discovered deltas.
+
+**Suggested order / parallelism:** M1.1 → M1.2 → M1.3 → {M1.4, M1.5} →
+M1.6 → {M1.7, M1.8, M1.9} → M1.10 → M1.11 → {M1.12, M1.13, M1.14} →
+M1.15. Braced groups are parallelizable across sessions **only if**
+working on separate branches with the interfaces from earlier items
+frozen; single-session-at-a-time is the default assumption.

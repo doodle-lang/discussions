@@ -345,7 +345,8 @@ wasm builds) enforced from the first wasm build. Contributor hygiene
 depends on, review policy for a 2-person team) is an M0 work item.
 Error-message quality is a reviewed artifact: every diagnostic has a
 snapshot test, and a rubric (names the value, points at the span, suggests
-the fix — L's stated bar) is applied in review.
+the fix — the bar the design discussion set; see also the L§10.3
+example) is applied in review.
 
 ---
 
@@ -927,7 +928,9 @@ medians; M2a and M5 carry the widest error bars.
 
 Underdetermined or problematic spec points that implementation forces;
 each is discharged per §8 no later than the milestone shown. (L) = language
-spec, (E) = engine spec. Condensed; the tracker holds full detail.
+spec, (E) = engine spec. Condensed. **This appendix is the spec-delta
+tracker of record** until the GitHub issue tracker opens (plan-m0 M0.8;
+issues are currently disabled on the repos).
 
 **Front end — resolve by M1.**
 S-1 (L§3.1/E§8.1) Source-position units: define positions on NFC-normalized
@@ -981,7 +984,12 @@ report). Resolve by M2a. ·
 S-43 (E§5.5/L§11.4) Provisional pre-module native-intrinsic registration
 (global-scope foreign bindings) so core names exist before the module
 system; superseded by the prelude star-import at M5 — specify the
-mechanism and its retirement. Resolve by M2b.
+mechanism and its retirement. Resolve by M2b. ·
+S-45 (L§8.7) A call that passes a block argument is **not** a tail
+position: the block references the caller's frame, so the frame cannot be
+reused (found during machine design — see `machine-design.md` §11). Amend
+L§8.7's non-tail list alongside the with/try barriers. Resolve by M1
+(tail marking), consumed by M2a (frame reuse).
 
 **Modules/protocols — resolve by M5.**
 S-13 (L§11.2) Wildcard-collision rule: second wildcard supplying an
@@ -1042,7 +1050,15 @@ safe points) on the drive operation and a dedicated `Paused(SliceEnd)`
 reason, keeping `HostPause` a genuine host request. Resolve by M3. ·
 S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
 are represented (value handles vs engine-evaluated) and block-parameter
-declaration; conformance-tested through the C ABI. Resolve by M7.
+declaration; conformance-tested through the C ABI. Resolve by M7. ·
+S-46 (E§7.2/§5.4) Non-local exits (`break`/`return`) crossing a **native
+block-consuming callee**: a nested drive returns a distinguished
+`NonLocalExit{kind}` outcome; the foreign callback must return promptly
+without a result; the engine resumes the parked unwind at the foreign
+call's apply site (a Break targeting that call completes it with the
+value; anything else keeps unwinding); a host that returns a value or
+raises after `NonLocalExit` faults. Found by the machine-design review
+(v0.2 §12 — S-16 covers abandoned drives, not this). Resolve by M2b.
 
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
