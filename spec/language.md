@@ -123,6 +123,16 @@ Before tokenization, source text is normalized to Unicode Normalization Form C
 (NFC); consequently two identifiers that are canonically equivalent are the same
 identifier.
 
+**Source positions.** A source position is defined over the NFC-normalized text
+above, not over the bytes as written on disk. A position is a 1-based line
+(§3.2) and a 1-based column, where the column counts **Unicode code points** from
+the start of the line (the first code point of a line is column 1). A span is a
+range of source text between two positions, measured in code points — not in the
+grapheme-cluster "characters" of §4.4. Code points are the position unit the
+language and the engine's observation interface (E§8.1) report; a binding or host
+may convert them to another unit (bytes, UTF-16 code units, or grapheme
+clusters) for display or editor integration.
+
 Doodle is **case-sensitive**: `Point` and `point` are distinct.
 
 The file name extension is `.doodle`. A file whose name matches `*_test.doodle`
@@ -1787,6 +1797,12 @@ likely to change.
   discussion. Fixed to insertion order — the modern default (Python 3.7+, Ruby),
   intuitive and stable — and required to be deterministic so that engine-level
   replay and time-travel work (engine specification §11).
+- **Source-position units (§3.1; resolves implementation-plan Appendix C S-1).**
+  The discussion left source positions unspecified. Positions are defined over
+  the NFC-normalized source and measured in Unicode code points — a 1-based line
+  and a 1-based code-point column; spans are code-point ranges. This is the unit
+  L and the engine (E§8.1) report; a binding or host may convert to bytes,
+  UTF-16 code units, or grapheme clusters.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

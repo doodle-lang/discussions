@@ -30,11 +30,11 @@ recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-- [~] **M1.2** — Source model: NFC normalization, spans, positions (S-1).
-  Starting now. S-1 is resolved in the spec **first** (its stated resolution
-  is pre-approved per the M1 ratification note), with a decision-log entry +
-  conformance test, then the code lands. Also the home for the CRLF→LF
-  line-ending question discovered at M1.1.
+- [~] **M1.3** — Lexer core (tokens, numbers, newline/continuation, S-2).
+  Recon complete (lexer design + the conformance-runner execute-path upgrade
+  that must land atomically with the `Lex` stage bump). Not yet started — two
+  M1.2 spec questions are surfaced to the user first (XID/ID identifiers;
+  CRLF→LF; both below). M1.2 (source model) landed, doodle-rust `6aa0a7b`.
 
 ## Next up
 
@@ -90,9 +90,26 @@ code, nothing shipped that contradicts a future spec pin):
 - **Diagnostic ordering** — multi-diagnostic order is a producer contract
   (nondecreasing `span.start`, tie-break production order); the renderer
   never re-sorts. Pin in E Appendix B.
-- **Line endings (CRLF→LF)** — L§3.1 is silent on whether load normalizes
-  CRLF to LF. The M1.1 renderer strips a stray `\r` defensively; resolve at
-  **M1.2** (source model), its natural home.
+- **Line endings (CRLF→LF)** — L§3.1/§3.2 don't say whether load normalizes
+  CRLF to LF. M1.2 deliberately did **not** resolve this (it is beyond S-1's
+  position-units scope, so not pre-approved). Status quo holds: the renderer
+  strips a stray `\r` for display, and `position_at` counts a CR as a code
+  point on its line (`source.rs` test `crlf_column_counts_the_carriage_return`
+  locks this). **Surfaced to the user (2026-07-10)** — awaiting their choice:
+  normalize CRLF→LF at load (changes byte offsets/spans/columns) vs. keep raw.
+
+Discovered at M1.2 (needs a user decision — a language-semantics change):
+- **Identifiers: `ID_*` vs `XID_*` (L§3.4).** L§3.4's grammar names
+  `ID_Start`/`ID_Continue`, but the implementation (and `unicode-ident`, and
+  UAX#31's recommended default) uses the NFC-**closed** `XID_Start`/
+  `XID_Continue`. XID is the correct choice for a language that NFC-normalizes
+  source and compares identifiers by NFC equality (an `ID_*` identifier can
+  normalize to a non-`ID_*` string; `XID_*` cannot). They differ at a few code
+  points (e.g. U+037A). **Recommend changing L§3.4 to `XID`** (and fixing
+  AD4's CI-vector text, implementation.md ~L206, to derive from the XID
+  columns). Surfaced to the user; the code documents the provisional XID
+  choice. No observable behavior ships until the lexer uses it (M1.3), so
+  resolve the spec before/with M1.3.
 
 ## Open decisions awaiting the user (non-blocking)
 
@@ -103,6 +120,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — **M1.2: source model — NFC, spans, positions (resolves S-1).**
+  Spec: pinned S-1 in **L§3.1** (new "Source positions" paragraph), **L
+  Appendix D.1**, and **E§8.1** (line/column span, code points). Code
+  (doodle-rust `6aa0a7b`): `src/unicode.rs` (AD4 wrapper: NFC + UAX#31
+  identifiers + module names) and `src/source.rs` (`Position`, `normalize`,
+  `LineIndex` byte→code-point-column); `diag/render.rs` refactored onto it
+  (snapshots byte-unchanged). Deps unicode-normalization + unicode-ident
+  (license-clean). Conformance cases deferred to M1.3 (nothing lexable yet).
+  2-lens review: one major (XID/ID divergence — filed + surfaced) + minors
+  folded in. Two spec questions surfaced to the user (XID/ID; CRLF→LF).
 - 2026-07-10 — **M1.1: diagnostics infrastructure + error-message rubric.**
   Code (doodle-rust `9c49651`): the `diag` module (`Diagnostic` /
   `DiagnosticCode` / `Note` / `Replacement` / `Suggestion` / `LoadError`) +

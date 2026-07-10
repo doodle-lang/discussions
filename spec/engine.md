@@ -499,8 +499,8 @@ driving in a `Step*` directive.
 ### 8.1 Current position
 
 The engine exposes the **current source position**: the module's `canonical_id` and
-the line and character span of the statement (or, in fine mode, the subexpression)
-about to execute or just executed. The engine exposes positions, not source text;
+the line/column span (columns in code points, per L§3.1) of the statement (or, in
+fine mode, the subexpression) about to execute or just executed. The engine exposes positions, not source text;
 the host holds the source it loaded and renders it (consistent with L§13, which
 exposes provenance but not source/AST).
 

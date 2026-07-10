@@ -59,7 +59,7 @@ columns; display-width → M1.2/S-1) **confirmed by the user**. Spec-deltas
 filed (warnings channel, structured schema, ordering, CRLF→LF) — see
 `../claude-todo.md`.
 
-### M1.2 — Source model: NFC normalization, spans, positions (S-1) — **TODO**
+### M1.2 — Source model: NFC normalization, spans, positions (S-1) — **DONE 2026-07-10**
 
 Source text NFC-normalized on load (L§3.1); `Span` = byte range into the
 NFC'd text + derived line/col (1-based, code-point columns) per **S-1**
@@ -75,6 +75,13 @@ diagnostic/API boundary — that conversion is exactly what S-1's
 composed/decomposed are one identifier; column derivation per S-1). The
 corresponding conformance cases land with M1.3 (`stage: lex`), since no
 `.doodle` file can be processed before the lexer exists.
+*Landed* (doodle-rust `6aa0a7b`): S-1 pinned in L§3.1 + Appendix D.1 + E§8.1;
+`src/unicode.rs` (NFC + UAX#31 identifiers + module names) and `src/source.rs`
+(`Position`, `LineIndex`, `normalize`); `diag/render.rs` refactored onto the
+promoted position API (snapshots byte-unchanged). Two follow-on spec questions
+surfaced to the user (`claude-todo.md`): **XID vs ID** in L§3.4 (the code uses
+NFC-closed XID; recommend the spec follow) and **CRLF→LF** normalization
+(beyond S-1, deferred to a user decision).
 
 ### M1.3 — Lexer core: tokens, numbers, newline/continuation (S-2) — **TODO**
 
