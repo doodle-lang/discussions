@@ -129,7 +129,7 @@ cbindgen is pinned (0.29.4) in the script + CI so header regeneration is
 reproducible. cdylib-only: the untested staticlib output was dropped rather
 than shipped (static embedding gets its own smoke test when needed).
 
-### M0.7 — insta + fuzz plumbing — **TODO**
+### M0.7 — insta + fuzz plumbing — **DONE 2026-07-10**
 
 `insta` dev-dependency + one snapshot test (e.g. Debug format of the M0.3
 hard-coded AST) establishing snapshot conventions
@@ -137,6 +137,14 @@ hard-coded AST) establishing snapshot conventions
 cargo-fuzz target stub over a placeholder function (real lexer/parser
 targets are M1). Not wired into CI yet (fuzz CI comes with M1 targets).
 *Accept:* `cargo insta test` green; `cargo fuzz build` succeeds.
+*Landed* (doodle-rust `8d789d9`): `insta` dev-dep + a committed
+deterministic snapshot of the M0.3 AST Debug; a `#[doc(hidden)]`
+`doodle_core::fuzz_smoke` seam + a detached `fuzz/` cargo-fuzz crate.
+**Acceptance reconciliation:** fuzzing is nightly-only (cargo-fuzz uses
+`-Zbuild-std` + ASan), while the engine stays on the stable pin, so the
+build check is `cargo +nightly fuzz build` (documented in `fuzz/README.md`),
+not plain `cargo fuzz build`. Nightly + fuzz deps are unpinned until fuzz
+enters CI at M1.
 
 ### M0.8 — Contributor docs + spec-delta tracker conventions — **TODO**
 

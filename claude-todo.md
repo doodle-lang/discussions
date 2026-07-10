@@ -27,13 +27,12 @@ at M1.8 start — options + recommendation in plan-m1 M1.8.)
 
 ## In progress
 
-(nothing — M0.6 landed; M0.7 is next)
+(nothing — M0.7 landed; M0.8 is next)
 
 ## Next up
 
 Milestone **M0** (see `plan/plan-m0.md` for scope + acceptance):
 
-- [ ] M0.7 — insta + fuzz plumbing
 - [ ] M0.8 — CONTRIBUTING (incl. review policy) + issue templates
 - [ ] M0.9 — M0 exit review
 
@@ -74,6 +73,14 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-10 — M0.7: insta + fuzz plumbing. `insta` dev-dep + a committed
+  deterministic snapshot of the M0.3 AST Debug (`tests/snapshots/`), run by
+  ordinary `cargo test`; a `#[doc(hidden)]` `doodle_core::fuzz_smoke` seam
+  and a detached `fuzz/` cargo-fuzz crate (own `[workspace]`; nightly-only,
+  `cargo +nightly fuzz build` succeeds; not in CI at M0). A nightly
+  toolchain (1.99.0) was installed locally for fuzzing; the engine stays on
+  the stable pin. 2-lens review: no blocker/major; minor items M1-deferred.
+  doodle-rust `8d789d9`.
 - 2026-07-10 — M0.6: C ABI hello-world. `crates/doodle-capi`
   (`#[unsafe(no_mangle)] extern "C" doodle_version()` → NUL-terminated
   version via a process-lifetime `OnceLock<CString>`); cbindgen-generated
