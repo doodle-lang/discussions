@@ -44,13 +44,19 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.5** — Lexer: triple-quoted strings + S-3 margins. Landing now
-  (doodle-rust commit in Done log): spec gate (L§3.6.4 body from S-3),
-  the `scan_triple_string` two-pass scanner (find close + margin, then strip +
-  emit with `\n`-join StrText chunks), 3 `L3.6.4` fixtures, and a 2-lens
-  read-only review (both SHIP; a double-advance bug caught by tests + fixed;
-  two multibyte-span nits fixed; one line-final-`\` note filed for M1.6).
-  **M1.4 is fully closed** (S-50 (b) implemented). Next: M1.6 (parser).
+- [~] **M1.6** — Parser (Pratt expressions). **M1.6a landed** (doodle-rust
+  commit in Done log): the operator-precedence tower (L§6.5) — literal/ident
+  primaries, prefix `-`/`+`/`not`, the 9 binary levels (right-assoc `**`,
+  non-assoc comparison → chained-comparison), grouping; numeric value lowering
+  (i64/bignum/f64). AST-dump tests. No stage bump. Remaining M1.6 pieces:
+  - **M1.6b** — string assembly (StrStart/StrText/interp/StrEnd → a String node
+    with escape decoding + interpolation parts) and bytes; also the M1.5
+    line-final-`\` decode decision (spec-delta queue).
+  - **M1.6c** — postfix `.`/`[]`/`()` with keyword args (`name: expr`,
+    positional-before-keyword); list/dict literals with trailing commas.
+  - **M1.6d** — `if`/`try` expression forms; anonymous `fn`.
+  - **M1.6e** — stage bump to `Parse` + conformance-runner parse-path
+    (run_parse) + `L6.5-*` `stage: parse` fixtures (atomic, like M1.3b).
 
 ## Next up
 
@@ -178,6 +184,15 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.6a: Pratt expression parser core** (L§6.5 tower). New
+  `parse.rs` (precedence climbing; binding powers per the 9-level table;
+  right-assoc `**`; non-assoc comparison → chained-comparison, tracked per
+  climb level so `(a==b)==c` is not misflagged; MAX_DEPTH guard vs stack
+  overflow) + numeric value lowering (i64/bignum/f64). `ast.rs` grown with the
+  expression `Node`/`UnaryOp`/`BinaryOp` (machine-design §2 flat arena).
+  AST-dump tests make precedence/associativity/lowering visible. Read-only
+  review found 2 majors (parenthesized-comparison misflag; unbounded recursion)
+  — both fixed + regression-tested. No stage bump. doodle-rust `da9f830`.
 - 2026-07-11 — **M1.5: triple-quoted strings + S-3 margins** (code). Spec gate
   `b7bbebb` (S-3 into L§3.6.4). Code (doodle-rust commit below): `lex/string.rs`
   `scan_triple_string` — two-pass (find the closing `"""` + its margin, then
