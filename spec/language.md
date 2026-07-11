@@ -152,8 +152,19 @@ A statement continues onto the following physical line, without an explicit
 continuation marker, when the current line:
 
 - ends inside an unclosed `(`, `[`, or `{`; or
-- ends with a binary operator (e.g. `+`, `and`, `==`); or
-- ends with a comma `,`.
+- ends with a **continuation-trigger token**: one of the binary operators `+`,
+  `-`, `*`, `/`, `//`, `%`, `**`, `==`, `!=`, `<`, `>`, `<=`, `>=`, the word
+  operators `and`, `or`, `is`, or a comma `,`.
+
+A trailing `-` or `+` continues the line even though the same token also begins a
+unary expression: whether it is unary or binary is a parsing question, so
+continuation keys on the token, not on its role. The assignment `=` is **not** a
+continuation trigger (a line ending in `=` terminates, so an incomplete `let x =`
+is reported at the `=`), and neither is the unary `not`, the access `.`, nor the
+punctuation `:`. When finding a line's last token, trailing whitespace and a
+trailing comment (§3.3) are ignored — a comment between an operator and the
+newline does not break continuation. Only a *trailing* trigger continues; a
+leading operator never joins to the previous line.
 
 There is no automatic insertion of separators in any other circumstance; because
 blocks are delimited by keywords and `end` rather than by layout, no
@@ -231,11 +242,19 @@ base prefix) and are ignored.
 
 ```
 INT     = DEC | HEX | BIN | OCT
-DEC     = DIGIT (DIGIT | '_')*
-HEX     = '0x' HEXDIGIT (HEXDIGIT | '_')*
-BIN     = '0b' ('0' | '1') (('0' | '1') | '_')*
-OCT     = '0o' OCTDIGIT (OCTDIGIT | '_')*
+DEC     = DIGIT ('_'? DIGIT)*
+HEX     = '0x' HEXDIGIT ('_'? HEXDIGIT)*
+BIN     = '0b' ('0' | '1') ('_'? ('0' | '1'))*
+OCT     = '0o' OCTDIGIT ('_'? OCTDIGIT)*
 ```
+
+An underscore must fall between two digits: a leading, trailing, doubled, or
+prefix-adjacent underscore (`_1`, `1_`, `1__0`, `0x_F`) is a static error. A base
+prefix must be followed by at least one valid digit; an empty prefix (`0x`) or a
+digit not valid for the base (`0xG`) is a static error. Base prefixes are
+lowercase, so `0XFF` is not an integer literal (it lexes as `0` followed by the
+identifier `XFF`). A base-10 literal may begin with `0` (`0123` is 123; there is
+no C-style octal).
 
 Examples: `42`, `1_000_000`, `0xFF`, `0xdead_beef`, `0b1010_0101`, `0o755`.
 Hexadecimal letters are case-insensitive. A leading `-` is the unary minus
@@ -247,12 +266,14 @@ operator (§6.5), not part of the literal.
 FLOAT   = DIGITS '.' DIGITS EXP?
         | DIGITS EXP
 EXP     = ('e' | 'E') ('+' | '-')? DIGITS
-DIGITS  = DIGIT (DIGIT | '_')*
+DIGITS  = DIGIT ('_'? DIGIT)*
 ```
 
 Examples: `3.14`, `2.0`, `1e6`, `1.5e-3`, `3.141_592`. A float has both an
 integer and fractional part around the point (there is no `.5` or `2.` form); a
-digit is required on each side of `.`. Floats are IEEE-754 binary64.
+digit is required on each side of `.`. An exponent requires at least one digit
+(`1e` and `1e+` are static errors), and the between-digits underscore rule of
+§3.6.1 applies. Floats are IEEE-754 binary64.
 
 #### 3.6.3 String literals
 
@@ -1817,6 +1838,22 @@ likely to change.
 - **Line endings canonicalized to LF on load (§3.1).** Left unstated. A CRLF is
   replaced by a single LF before tokenization, so positions/spans and the lexer
   see LF-only text; the on-disk file may use either LF or CRLF (§3.2).
+- **Continuation-trigger token set (§3.2; resolves implementation-plan Appendix
+  C S-2).** The draft §3.2 said a line continues when it "ends with a binary
+  operator" without enumerating the set. Resolved: the triggers are exactly the
+  binary arithmetic/comparison operators (`+ - * / // % ** == != < > <= >=`),
+  the comma, and the word operators `and`/`or`/`is`. A trailing `-`/`+`
+  continues (continuation keys on the token, not on its unary/binary role, which
+  is a parse-time distinction); the assignment `=`, the unary `not`, the access
+  `.`, and the punctuation `:` do **not** continue. A trailing comment between
+  the operator and the newline is transparent. Only the trailing token matters;
+  a leading operator never joins to the previous line.
+- **Numeric-literal lexing (§3.6.1/§3.6.2).** The EBNF `(DIGIT | '_')*` formally
+  permitted `1_`/`1__0`/`0x_F`, contradicting the prose. Resolved
+  prose-authoritative: an underscore must fall between two digits. A base prefix
+  requires a valid digit (`0x`, `0xG` are static errors); prefixes are lowercase
+  (`0XFF` is not a literal); an exponent requires a digit (`1e`, `1e+` are
+  errors); a base-10 literal may have leading zeros (no C-style octal).
 
 ### D.2 Genuinely open (deferred by the discussion)
 

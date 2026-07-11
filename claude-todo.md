@@ -31,11 +31,17 @@ recommendation in plan-m1 M1.8.)
 ## In progress
 
 - [~] **M1.3** — Lexer core (tokens, numbers, newline/continuation, S-2).
-  Recon complete (lexer design + the conformance-runner execute-path upgrade
-  that must land atomically with the `Lex` stage bump). The two M1.2 spec
-  questions (XID; CRLF→LF) are now resolved by the user + implemented, so the
-  lexer's identifier and line-ending handling is settled. M1.2 landed
-  (`6aa0a7b`, `8826655`). Ready to implement.
+  Being landed in **3 pieces** (recon-recommended, each keeps CI green):
+  (1) **spec gate — DONE**: S-2 continuation triggers (L§3.2) + numeric-literal
+  lexing (L§3.6.1/§3.6.2) resolved + Appendix D.1 + Appendix C markers;
+  (2) M1.3a — the `lex/` module in doodle-core (no stage bump); (3) M1.3b —
+  stage bump to `Lex` + the conformance-runner execute/match path (atomic).
+  **Note:** the user stepped away mid-decision; per "proceed on best judgment"
+  I applied the recommended rulings (split into 3; prose-authoritative number
+  lexing; include plain-string boundaries; `.`/`:` are not continuation
+  triggers). All reversible — **user to confirm the number-lexing spec edits
+  when back**, before the lexer builds on them. M1.2 landed (`6aa0a7b`,
+  `8826655`).
 
 ## Next up
 

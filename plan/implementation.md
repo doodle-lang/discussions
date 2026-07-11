@@ -936,9 +936,11 @@ entries.
 
 **Front end — resolve by M1.**
 S-1 (L§3.1/E§8.1) Source-position units: define positions on NFC-normalized
-text, spans in code points (bindings may convert). ·
+text, spans in code points (bindings may convert). **[resolved M1.2 — L§3.1 +
+App D.1]** ·
 S-2 (L§3.2) Exact continuation-trigger token set (trailing `-`/`+`, word
-operators, `=`; comments between operator and newline). ·
+operators, `=`; comments between operator and newline). **[resolved M1.3 —
+L§3.2 + App D.1; `=` is NOT a trigger]** ·
 S-3 (L§3.6.4) Triple-string margin details: tabs vs spaces (exact-prefix
 match), blank-line exemption, margin-before-escapes ordering. ·
 S-4 (L§6.4/§7) `do`-attachment in construct headers (`while f() do`):
