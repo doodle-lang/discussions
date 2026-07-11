@@ -44,14 +44,11 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.6** — Parser (Pratt expressions). **M1.6a landed** (doodle-rust
-  commit in Done log): the operator-precedence tower (L§6.5) — literal/ident
-  primaries, prefix `-`/`+`/`not`, the 9 binary levels (right-assoc `**`,
-  non-assoc comparison → chained-comparison), grouping; numeric value lowering
-  (i64/bignum/f64). AST-dump tests. No stage bump. Remaining M1.6 pieces:
-  - **M1.6b** — string assembly (StrStart/StrText/interp/StrEnd → a String node
-    with escape decoding + interpolation parts) and bytes; also the M1.5
-    line-final-`\` decode decision (spec-delta queue).
+- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–b landed** (Done log):
+  (a) the operator-precedence tower (L§6.5) + numeric lowering; (b) string/bytes
+  literals — escape/value decoding + `{ … }` interpolation assembled from the
+  lexer's structured stream, plus the line-final-`\` decode decision
+  (provisional: a decode error; spec-delta queue). No stage bump. Remaining:
   - **M1.6c** — postfix `.`/`[]`/`()` with keyword args (`name: expr`,
     positional-before-keyword); list/dict literals with trailing commas.
   - **M1.6d** — `if`/`try` expression forms; anonymous `fn`.
@@ -155,18 +152,24 @@ that contradicts a future pin):
   (continuation only); real bracket **matching** and mismatch diagnostics are
   the parser's job (M1.6). Both are noted in code.
 
-Discovered at M1.5 (triple-quoted review; needs a user/spec call, non-blocking):
-- **Line-final backslash in a triple-quoted string** — the closed escape set
-  (L§3.6.3) says "a backslash followed by anything else is a static error," but
-  `lex/escape.rs` treats `\` immediately before a newline/EOF as *not an escape*
-  and consumes it silently (no diagnostic). In a **single-line** string this is
-  masked by the unterminated-string error; in a **triple-quoted** string the
-  newline is a valid line break (S-3 rule 4 forbids backslash-newline
-  continuation), so a dangling `\` becomes an un-diagnosed literal in the value.
-  This is really an **M1.6 escape-decoding** question — decide whether a trailing
-  `\` before a line break is an error or a literal, and pin it in L§3.6.3/§3.6.4.
-  Surfaced by the M1.5 review; nothing wrong ships (the lexer captures raw spans;
-  decoding is M1.6).
+Discovered at M1.5, provisionally resolved at M1.6b (user to confirm + pin):
+- **Line-final backslash in a triple-quoted string** — a `\` at the end of a
+  content line (before the `\n` line break). **Provisional (M1.6b): a decode-time
+  error** ("a backslash here isn't a valid escape"), consistent with the closed
+  escape set (L§3.6.3: "a backslash followed by anything else is a static error")
+  and S-3 rule 4 (no backslash-newline continuation). Implemented in the parser's
+  string decode + tested. **User to confirm and pin the sentence in
+  L§3.6.3/§3.6.4.** (A single-line unterminated string ending in `\` gets both
+  unterminated-string and this — minor, on already-errored input.)
+
+Discovered at M1.6b (parser string decode; non-blocking):
+- **NFC normalization of string-literal values** — L§3.6.3/§4.4 make a String's
+  value NFC-normalized. The parser stores the decoded literal text in the AST
+  *un-normalized* (`"e\u{301}"` → 2 code points, not composed `é`). This is fine
+  at the AST layer — normalization is specified to happen at String
+  *construction*, which the evaluator (M2) does (and re-does on concatenation) —
+  but the literal→`String` construction must apply NFC (including to a pure
+  single-text-part literal). Flagged so it isn't forgotten when eval lands.
 
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
@@ -184,6 +187,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.6b: string/bytes literal assembly + escape decoding.** New
+  `parse/decode.rs` (closed escape set; `\xHH`=U+00HH in strings / byte in bytes;
+  `\u{…}`; `{{`/`}}` → `{`/`}`; panic-free best-effort on lexer-errored input) +
+  `string_lit` assembling `StrStart/StrText/interp/StrEnd` into a `StrLit` (merged
+  text parts, parsed interpolations, nested strings) and `BytesLit`. Line-final-`\`
+  → a decode error (provisional S-resolution). Read-only review found a CRITICAL
+  char-boundary panic on a malformed `\x` before a multibyte char (`"\x1é"`) —
+  fixed (advance only past real hex digits) + regression + ~13.8k-combo brute
+  stress, no panic; two minors folded in (bytes suffix-strip; interp double-error).
+  doodle-rust `bef25ab`.
 - 2026-07-11 — **M1.6a: Pratt expression parser core** (L§6.5 tower). New
   `parse.rs` (precedence climbing; binding powers per the 9-level table;
   right-assoc `**`; non-assoc comparison → chained-comparison, tracked per
