@@ -83,8 +83,12 @@ first.)
 Full backlog: `plan/implementation.md` Appendix C (S-1…S-49; the
 appendix is the tracker of record until GitHub issues open). Due with M1
 work items (resolve in spec *before/with* the implementing item —
-pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), S-3
-(M1.5), S-4 (M1.7), S-5 + S-6-in-full (M1.10), S-7 (M1.9), S-11 (M1.10),
+pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), **S-3
+(M1.5 — margins resolved with the user 2026-07-10: exact-prefix; empty
+lines exempt, whitespace-only nonempty lines are content lines; preserve
+trailing whitespace; no line-join; no comment after opener — full text in
+App C; M1.5 lands the L§3.6.4 edit)**, S-4 (M1.7), S-5 + S-6-in-full
+(M1.10), S-7 (M1.9), S-11 (M1.10),
 S-27 (M1.8, user decision), S-45 (M1.11), **S-47/S-48/S-49 (M1.4:
 interpolations never contain line terminators in any string form; empty
 `{}` is a lex error; closed escape set + `\xHH` = U+00HH in strings —

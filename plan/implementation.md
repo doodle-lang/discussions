@@ -941,8 +941,27 @@ App D.1]** ·
 S-2 (L§3.2) Exact continuation-trigger token set (trailing `-`/`+`, word
 operators, `=`; comments between operator and newline). **[resolved M1.3 —
 L§3.2 + App D.1; `=` is NOT a trigger]** ·
-S-3 (L§3.6.4) Triple-string margin details: tabs vs spaces (exact-prefix
-match), blank-line exemption, margin-before-escapes ordering. ·
+S-3 (L§3.6.4) Triple-string margin details. **RESOLVED (user,
+2026-07-10):** (1) the margin is the exact whitespace *string* before the
+closing `"""` (byte-for-byte prefix match; no tab-width or column
+arithmetic anywhere); the mismatch diagnostic names the first differing
+character ("a tab where the margin has spaces"). (2) A truly **empty**
+line (zero characters) is exempt and contributes `""`; a whitespace-only
+**nonempty** line is an ordinary content line — full margin required, the
+remainder is content — so `margin + "␣␣"` contributes a two-space line
+(note: editors that strip trailing whitespace silently degrade such lines
+to empty; `\x20` escapes are the robust idiom for intentional whitespace
+lines). (3) Content lines preserve everything after the margin, trailing
+whitespace included (Java-style munging rejected). (4) Split→margin→strip
+operates on raw physical lines *before* escape/interpolation processing;
+`\n` escapes do not create margin-checked lines; there is **no**
+backslash-newline line-join (Swift's considered and rejected — under S-49
+it is an unknown escape). (5) Nothing (not even a comment) may follow the
+opening `"""` on its line ("the contents start on the next line");
+ordinary code may follow the closing `"""`; a mid-line `"""` in content is
+literal; a line-initial literal `"""` is written `\"""`. (6) Value =
+stripped content lines joined with `\n`; zero content lines = `""`.
+Land the L§3.6.4 edit with M1.5. ·
 S-4 (L§6.4/§7) `do`-attachment in construct headers (`while f() do`):
 header expressions parse in no-trailing-block mode. ·
 S-5 (L§5.3/§6.11/§8.4) Define the "static where determinable" analysis

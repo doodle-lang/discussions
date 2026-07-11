@@ -120,12 +120,22 @@ error, and S-49 unknown/malformed-escape + `"\xE9" == "\u{E9}"` cases.
 ### M1.5 — Lexer: triple-quoted strings + margins (S-3) — **TODO**
 
 Raw-span capture, closing-delimiter margin computation, per-line
-validation, strip, then escape/interpolation processing (machine-design
-n/a; order per plan §3.1). Resolve **S-3** first (tabs = exact-prefix
-match, blank-line exemption, margin-before-escapes) and land the L§3.6.4
-edit.
-*Accept:* `L3.6.4-*` tests (`stage: lex`): margin stripping goldens,
-under-indented line error with position, escapes-don't-create-lines case.
+validation, strip, then escape/interpolation processing (order per plan
+§3.1). **S-3 is resolved (user, 2026-07-10 — full text in App C):**
+exact-prefix margins (whitespace-string identity, no column arithmetic);
+truly empty lines exempt → `""`, whitespace-only nonempty lines are
+ordinary content lines (full margin + remainder-is-content); content
+lines preserve trailing whitespace; no backslash-newline line-join;
+nothing (incl. comments) after the opener, code may follow the closer;
+mid-line `"""` is content, line-initial literal `"""` via `\"""`; value =
+lines joined with `\n`, zero lines = `""`. Land the L§3.6.4 edit with
+this item.
+*Accept:* `L3.6.4-*` tests (`stage: lex`): margin stripping goldens
+(incl. whitespace-only-line-contributes-whitespace and empty-line cases);
+under-indented and **tab-vs-space mismatch** errors with position and the
+first-differing-character diagnostic; escapes-don't-create-lines;
+comment-after-opener error; `\"""` line-initial-literal case;
+zero-content-lines = `""`.
 
 ### M1.6 — Parser: expressions (Pratt) — **TODO**
 
