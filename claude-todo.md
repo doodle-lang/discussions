@@ -103,6 +103,29 @@ code, nothing shipped that contradicts a future spec pin):
   LF-only text (a lone CR is left as is). Landed: `source::normalize` +
   L§3.1/Appendix D.1 (doodle-rust `8826655`).
 
+Discovered at M1.3 (lexer; resolve in L / L Appendix D at the milestone that
+ships the behavior — provisional choices documented in code, nothing shipped
+that contradicts a future pin):
+- **Inline-whitespace set** — L§3.2 speaks of "whitespace" between tokens but
+  never enumerates it. The lexer treats **space (U+0020) and tab (U+0009)** as
+  inline whitespace (plus a lone CR, below); no other Unicode space separators
+  are recognized (a kid-first language wants exactly one invisible indent
+  character story, and NBSP-as-space is a classic footgun). Pin the set in L§3.2
+  when the lexer's whitespace behavior is spec-fixed.
+- **Lone CR** — the CRLF→LF resolution (above) leaves a **lone** CR (a CR not
+  immediately before LF) in the source. The lexer's `skip_inline` then treats
+  that lone CR as inline whitespace (so an old Mac `\r`-terminated line does not
+  wedge the lexer). This is a lexer choice not yet stated in L; pin it alongside
+  the inline-whitespace set. (Columns still count the CR as one code point, per
+  the §3.1 position model.)
+- **Forward notes (not spec-deltas), for M1.4 string/grapheme work:** (a)
+  `lex/string.rs` currently scans string *bytes* only far enough to find the
+  closing quote (backslash-escaped quotes don't close) — escape **decoding**,
+  the grapheme model, and interpolation are M1.4+, and the scanner is
+  deliberately value-free. (b) `bracket_depth` is a single un-matched counter
+  (continuation only); real bracket **matching** and mismatch diagnostics are
+  the parser's job (M1.6). Both are noted in code.
+
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
   `XID_Start`/`XID_Continue`.** The NFC-closed variants (matching the code /
