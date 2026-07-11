@@ -156,13 +156,15 @@ that contradicts a future pin):
 
 Discovered at M1.5, provisionally resolved at M1.6b (user to confirm + pin):
 - **Line-final backslash in a triple-quoted string** — a `\` at the end of a
-  content line (before the `\n` line break). **Provisional (M1.6b): a decode-time
-  error** ("a backslash here isn't a valid escape"), consistent with the closed
-  escape set (L§3.6.3: "a backslash followed by anything else is a static error")
-  and S-3 rule 4 (no backslash-newline continuation). Implemented in the parser's
-  string decode + tested. **User to confirm and pin the sentence in
-  L§3.6.3/§3.6.4.** (A single-line unterminated string ending in `\` gets both
-  unterminated-string and this — minor, on already-errored input.)
+  content line. **CONFIRMED (spec author, 2026-07-11): a decode-time error** —
+  the forced intersection of S-49 (closed escape set) and S-3 rule 4 (no
+  backslash-newline join), not a new fork. Code landed (doodle-rust `35229e3`):
+  decode-time error, message upgraded to address both intents (literal `\` vs
+  continuation), the last-content-line edge (`\` at end of value) covered, and
+  single-line precedence pinned (unterminated-string wins; the triple case
+  reports). **Bookkeeping owned by the spec author:** record as a clarification
+  on Appendix C **S-49** (not a new S-number); the one-sentence L§3.6.3/§3.6.4
+  pin rides with M1.5's spec batch.
 
 Discovered at M1.6b (parser string decode; non-blocking):
 - **NFC normalization of string-literal values** — L§3.6.3/§4.4 make a String's
