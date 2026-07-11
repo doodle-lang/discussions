@@ -901,6 +901,13 @@ expression binds a local first. An empty interpolation `{}` — or whitespace-on
 expression, or `{{` for a literal brace. (Interpolating an empty dict is still
 written `{ {} }`.)
 
+A `#` **may not appear inside an interpolation** (in any string form). A `#`
+comment runs to end of line (§3.3), which would swallow the closing `}`, so a
+`#` inside `{…}` is a static error at the `#` — "a comment can't appear inside a
+string's `{…}`" — suggesting the fix: move the comment outside the string, or
+bind the expression to a named local. (Whitespace inside `{…}` is still
+insignificant; only `#` is affected.)
+
 ### 6.8 `if` as an expression
 
 `if` may be used as an expression (§7.5 gives the statement form). As an
