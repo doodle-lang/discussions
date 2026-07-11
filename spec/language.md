@@ -287,14 +287,22 @@ STRING  = '"' ( CHAR | ESCAPE | INTERP )* '"'
 - `CHAR` is any code point other than `"`, `\`, an unescaped `{`, or a line
   terminator. (A string literal does not span lines; use a triple-quoted string,
   §3.6.4.)
-- `ESCAPE` is one of: `\"`, `\\`, `\n`, `\t`, `\r`, `\0`, `\xHH` (two hex
-  digits), `\u{H…}` (1–6 hex digits naming a Unicode scalar value). A `\u{…}`
+- `ESCAPE` is one of a **closed** set: `\"`, `\\`, `\n`, `\t`, `\r`, `\0`,
+  `\xHH` (exactly two hex digits), `\u{H…}` (1–6 hex digits naming a Unicode
+  scalar value). A backslash followed by anything else — e.g. `\q` — is a static
+  error that names the unknown escape (write `\\` for a literal backslash), and a
+  *malformed* form of a known escape (`\x` with fewer than two hex digits, `\u`
+  without braces, an empty `\u{}`, or a `\u{…}` with more than six digits) is a
+  distinct "malformed escape" error. `\xHH` denotes the code point `U+00HH`
+  (`0..FF`), so `"\xE9"` and `"\u{E9}"` denote the same string. A `\u{…}`
   escape must denote a scalar value in `0..D7FF` or `E000..10FFFF`; a surrogate
   code point (`D800..DFFF`) is a static error. Unassigned code points,
   noncharacters, and lone combining marks are permitted — e.g. `"\u{301}"` (a
   bare combining acute accent) is a valid one-grapheme string.
 - `INTERP` is `{ expression }` (§6.7). To include a literal brace, write `{{`
-  for `{` and `}}` for `}`.
+  for `{` and `}}` for `}`. The expression may not contain a line terminator
+  (§6.7), and an empty interpolation `{}` — or whitespace-only `{ }` — is a
+  static error.
 
 The value denoted by a string literal is NFC-normalized (§4.4), so the code
 points of the resulting string may differ from those written in the source.
@@ -331,6 +339,10 @@ Rules:
   indented less than the margin is a static error.
 - The newline immediately after the opening `"""` and the newline immediately
   before the closing `"""` are not part of the value.
+- An interpolation `{expr}` still may not contain a line terminator (§6.7).
+  Margin stripping applies to physical content lines *before* interpolation is
+  parsed, so a `{expr}` is confined to a single already-stripped line and margin
+  stripping never operates on an expression's interior.
 
 Example (margin = 4 spaces):
 
@@ -356,9 +368,11 @@ A bytes literal denotes an immutable sequence of 8-bit values.
 BYTES   = 'b"' ( BYTECHAR | BYTEESCAPE )* '"'
 ```
 
-The source between the quotes must be ASCII. `BYTEESCAPE` supports `\"`, `\\`,
-`\n`, `\t`, `\r`, `\0`, and `\xHH`. The `\u{…}` escape is **not** valid in a
-bytes literal (it denotes a character, not a byte) and is a static error there.
+The source between the quotes must be ASCII. `BYTEESCAPE` is the same **closed**
+set minus `\u{…}`: `\"`, `\\`, `\n`, `\t`, `\r`, `\0`, and `\xHH` — where `\xHH`
+here denotes the byte `0xHH` (`0..FF`), the type's natural unit. The `\u{…}`
+escape is **not** valid in a bytes literal (it denotes a character, not a byte)
+and is a static error there, as is any unknown or malformed escape.
 Interpolation is not performed in bytes literals.
 
 Examples: `b"GET / HTTP/1.1\r\n"`, `b"\x00\x01\x02"`.
@@ -878,7 +892,14 @@ textual rendering of the expression's value. The value is converted to a string
 via the `to_string` hook (§15); built-in types and records have a rendering
 supplied by the standard library. `{{` and `}}` denote literal braces. The
 interpolated expression is any expression (it may contain further calls,
-operators, and even strings).
+operators, and even strings) but **may not contain a line terminator**, in any
+string form — a `{expr}` is confined to a single line. This keeps a missing `}`
+from swallowing the rest of the file and, for triple-quoted strings, keeps
+margin stripping (§3.6.4) from ever operating inside an expression; a long
+expression binds a local first. An empty interpolation `{}` — or whitespace-only
+`{ }` — is a static error whose diagnostic offers both intents: write an
+expression, or `{{` for a literal brace. (Interpolating an empty dict is still
+written `{ {} }`.)
 
 ### 6.8 `if` as an expression
 
@@ -1854,6 +1875,19 @@ likely to change.
   requires a valid digit (`0x`, `0xG` are static errors); prefixes are lowercase
   (`0XFF` is not a literal); an exponent requires a digit (`1e`, `1e+` are
   errors); a base-10 literal may have leading zeros (no C-style octal).
+- **String escapes, interpolation newlines, and empty `{}`
+  (§3.6.3/§3.6.4/§3.6.5/§6.7; resolves implementation-plan Appendix C
+  S-47/S-48/S-49).** Left underspecified by the draft. Resolved: (1) the escape
+  set is **closed** — an unknown escape (`\q`) is a static error naming it, and a
+  malformed known escape (`\x` short, or braceless/empty/over-long `\u`) is a
+  distinct one; `\xHH` denotes code point `U+00HH` in a string and byte `0xHH`
+  in `b"…"` (Rust's ≤`0x7F` restriction on string `\x` was considered and
+  rejected — the String/Bytes split already prevents the confusion it guards).
+  (2) An interpolation `{expr}` may not contain a line terminator in **any**
+  string form — one uniform rule that preserves end-of-line error recovery and
+  keeps §3.6.4 margin stripping out of expression interiors. (3) An empty
+  `{}`/`{ }` is a static error offering both intents; `{ {} }` still interpolates
+  an empty dict.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

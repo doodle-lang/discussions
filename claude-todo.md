@@ -37,7 +37,17 @@ not blocking further work.
 
 ## In progress
 
-(none — M1.3 fully landed; M1.4 is next up)
+- [~] **M1.4** — Lexer: strings, escapes, interpolation, bytes. Landing in
+  pieces (each keeps CI green; no stage bump — already at `Lex`):
+  (1) **spec gate — DONE**: S-47/S-48/S-49 written into L§3.6.3/§3.6.4/§3.6.5/
+  §6.7 + Appendix D.1; Appendix C markers set (closed escape set; `\xHH`=U+00HH
+  in strings / byte in bytes; interpolations never contain line terminators in
+  any string form; empty `{}`/`{ }` is an error). (2) the string/escape/
+  interpolation lexer — single-line + bytes, interpolation via a structured
+  mode-stack token stream (needed to report escape/empty-interp errors *inside*
+  `{…}` at `stage: lex`); escape *decoding* deferred to M1.6 (the number
+  pattern). (3) `L3.6.3-*`/`L3.6.5-*` `stage: lex` fixtures. Triple-quoted
+  strings + S-3 margins are **M1.5**, not here.
 
 ## Next up
 
