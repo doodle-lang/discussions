@@ -975,7 +975,15 @@ U+00HH (0–255; so `"\xE9"` ≡ `"\u{E9}"`, NFC applied to the value as
 always), in a *bytes* literal a byte — the same spelling, the type's
 natural unit. (Rejected: Rust's ≤0x7F restriction on string `\x`, which
 guards a bytes/chars confusion the String/Bytes split already prevents.)
-**[resolved M1.4 — L§3.6.3/§3.6.5 + App D.1]**
+**[resolved M1.4 — L§3.6.3/§3.6.5 + App D.1]** ·
+S-50 (L§6.7/§3.3) Comments inside an interpolation: L§3.3 makes `#` a
+comment to end of line with no exception, so a `#` inside `{…}` eats the
+closing `}` and the interpolation reads as unterminated (found in M1.4
+review). Options: (a) keep the universal rule (no special case; confusing
+error); (b) make `#` inside an interpolation a distinct error ("comments
+aren't allowed here"; a clearer diagnostic); (c) let the comment end at the
+interpolation's `}`. Provisional: (a), documented in `lex/string.rs` +
+a pinning test. **User decision pending; resolve with M1.4.**
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,

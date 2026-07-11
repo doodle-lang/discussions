@@ -35,19 +35,22 @@ boundaries lexed now) — were made on the user's "go"/best-judgment while
 away. All reversible; the lexer now builds on them, so flag for a look but
 not blocking further work.
 
+**S-50 decision pending (M1.4):** comments inside an interpolation. The M1.4
+review found that `#` (a comment to end of line, L§3.3) inside `{…}` eats the
+closing `}`, so the string reads as unterminated. Asked the user (3 options:
+distinct error / universal rule / comment-ends-at-`}`); no response, so
+proceeded with the **provisional universal rule (a)** — no code change, most
+consistent with the user's uniform-rule preference (cf. the S-47 extension) —
+documented in `lex/string.rs` + a pinning test, filed as Appendix C S-50.
+Resolve in L§6.7 with the user before M1.4 is considered closed.
+
 ## In progress
 
-- [~] **M1.4** — Lexer: strings, escapes, interpolation, bytes. Landing in
-  pieces (each keeps CI green; no stage bump — already at `Lex`):
-  (1) **spec gate — DONE**: S-47/S-48/S-49 written into L§3.6.3/§3.6.4/§3.6.5/
-  §6.7 + Appendix D.1; Appendix C markers set (closed escape set; `\xHH`=U+00HH
-  in strings / byte in bytes; interpolations never contain line terminators in
-  any string form; empty `{}`/`{ }` is an error). (2) the string/escape/
-  interpolation lexer — single-line + bytes, interpolation via a structured
-  mode-stack token stream (needed to report escape/empty-interp errors *inside*
-  `{…}` at `stage: lex`); escape *decoding* deferred to M1.6 (the number
-  pattern). (3) `L3.6.3-*`/`L3.6.5-*` `stage: lex` fixtures. Triple-quoted
-  strings + S-3 margins are **M1.5**, not here.
+- [~] **M1.4** — Lexer: strings, escapes, interpolation, bytes. Code landed;
+  **blocked only on the S-50 user decision** (comments inside interpolations —
+  provisional behavior shipped, see below). Spec gate, lexer, fixtures, and a
+  3-lens adversarial review all done (doodle-rust commit in Done log). Next
+  lexer item is **M1.5** (triple-quoted strings + S-3 margins).
 
 ## Next up
 
@@ -158,6 +161,19 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.4: lexer strings/escapes/interpolation/bytes** (code).
+  Spec gate `4501c00`. Code (doodle-rust commit below): `lex/string.rs`
+  (structured string stream `StrStart (StrText | interp)* StrEnd`, recursion
+  for nested interpolation with a depth cap; bytes as one `Bytes` token) +
+  `lex/escape.rs` (closed escape set, shape-only; decode deferred to M1.6) +
+  new diagnostic codes + `"`/`b"` dispatch. 8 `stage: lex` fixtures
+  (L3.6.3/L3.6.5/L6.7) incl. an escape error *inside* an interpolation; suite
+  13/0/3. 3-lens adversarial review (termination/recovery + escape/spec clean;
+  2 minor interp findings): empty-interp false-positive on a token-less error
+  body **fixed** (`saw_content` flag + regression test); comments-in-interp is
+  **S-50** (provisional, user decision pending). Process note: a review agent
+  reverted `tests/lex.rs` via `git checkout` mid-run — recovered; CLAUDE.md
+  guard added (review agents run read-only).
 - 2026-07-11 — **M1.3b: stage gate → Lex + conformance-runner execute/match
   path (atomic).** `stage::implemented_through()` → `Some(Stage::Lex)`; the
   runner now executes `stage: lex` tests instead of SKIPping, matching
