@@ -44,16 +44,18 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–b landed** (Done log):
-  (a) the operator-precedence tower (L§6.5) + numeric lowering; (b) string/bytes
-  literals — escape/value decoding + `{ … }` interpolation assembled from the
-  lexer's structured stream, plus the line-final-`\` decode decision
-  (provisional: a decode error; spec-delta queue). No stage bump. Remaining:
-  - **M1.6c** — postfix `.`/`[]`/`()` with keyword args (`name: expr`,
-    positional-before-keyword); list/dict literals with trailing commas.
-  - **M1.6d** — `if`/`try` expression forms; anonymous `fn`.
-  - **M1.6e** — stage bump to `Parse` + conformance-runner parse-path
+- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–c landed** (Done log):
+  (a) operator-precedence tower + numeric lowering; (b) string/bytes literals
+  (escape/value decoding + interpolation assembly); (c) postfix `.`/`[]`/`()`
+  with keyword args. No stage bump yet. Remaining:
+  - **M1.6d** — list `[…]` and dict `{ k: v }` literals (trailing commas).
+  - **M1.6e** — `if`/`try` expression forms; anonymous `fn`.
+  - **M1.6f** — stage bump to `Parse` + conformance-runner parse-path
     (run_parse) + `L6.5-*` `stage: parse` fixtures (atomic, like M1.3b).
+  - Minor recovery follow-ups (M1.6c review, non-blocking): a malformed
+    postfix/arg with more tokens after it (`f(1 2)`, `a[b, c]`) double-reports
+    and drops the tail; multiple positionals after a keyword each report. Both
+    recovery-noise on already-errored input; tighten when convenient.
 
 ## Next up
 
@@ -187,6 +189,14 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.6c: postfix operators — access/index/calls + keyword args**
+  (L§6.3/§6.4). `Field`/`Index`/`Call`/`Arg` nodes + `parse/postfix.rs`
+  (`postfix_chain`, tightest-binding, left-assoc; keyword args via `Ident :`;
+  positional-before-keyword enforced; trailing commas). Read-only review: SHIP
+  (precedence vs L§6.5 all correct, no panic/loop — flat chains loop, nested
+  route through MAX_DEPTH); the user-visible `a.1` double-report fixed. Split
+  postfix into a submodule to keep `parse.rs` under the length limit. doodle-rust
+  `2e0b386`.
 - 2026-07-11 — **M1.6b: string/bytes literal assembly + escape decoding.** New
   `parse/decode.rs` (closed escape set; `\xHH`=U+00HH in strings / byte in bytes;
   `\u{…}`; `{{`/`}}` → `{`/`}`; panic-free best-effort on lexer-errored input) +
