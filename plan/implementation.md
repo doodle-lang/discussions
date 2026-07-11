@@ -953,7 +953,29 @@ value-less — error at the consuming site, uniformly (amends §8.4's
 S-7 (L§11.2) `import a.b` module-vs-member resolution order (try module
 path first, member fallback; native registry precedence). ·
 S-27 (L§8.6) Docstring corners: body that is only a string; interpolation
-in docstrings (treat as raw text — not executed).
+in docstrings (treat as raw text — not executed). ·
+S-47 (L§3.6.3/§3.6.4/§6.7) Interpolations never contain line terminators,
+in **any** string form: a single-line string's `{expr}` cannot introduce a
+newline the literal itself forbids (and preserves end-of-line error
+recovery — a missing `}` must not swallow the file), and the uniform rule
+extends to triple-quoted strings, sidestepping the margin-stripping-
+inside-expressions interaction entirely (S-3 strips physical lines before
+interpolation parsing). Long expressions bind a local first. Resolve with
+M1.4. ·
+S-48 (L§3.6.3) Empty interpolation `{}` (including whitespace-only
+`{ }`) is a lex-time error ("this interpolation is empty"), with the
+diagnostic offering both intents: write an expression, or `{{` for a
+literal brace. Interpolating an empty dict remains expressible as
+`{ {} }`. Resolve with M1.4. ·
+S-49 (L§3.6.3/§3.6.5) The escape set is **closed**: an unknown escape
+(e.g. `\q`) is a lex-time error naming the escape (suggest `\\` for a
+literal backslash); malformed forms of known escapes get a distinct
+"malformed escape" diagnostic. `\xHH` in a *string* denotes code point
+U+00HH (0–255; so `"\xE9"` ≡ `"\u{E9}"`, NFC applied to the value as
+always), in a *bytes* literal a byte — the same spelling, the type's
+natural unit. (Rejected: Rust's ≤0x7F restriction on string `\x`, which
+guards a bytes/chars confusion the String/Bytes split already prevents.)
+Resolve with M1.4.
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,

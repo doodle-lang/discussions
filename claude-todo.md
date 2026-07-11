@@ -49,7 +49,9 @@ M1.1, M1.2, and M1.3 (lexer core + stage:lex conformance) have landed.
 - [ ] **M1.4** — next: string literals proper (escape decoding, the grapheme
       model, triple-quoted strings, interpolation per L§3.6.3/§3.6.4/§6.7).
       The M1.3 `lex/string.rs` only scans plain-string boundaries (value-free);
-      M1.4 does the decoding. See the M1.3 forward notes in the spec-delta queue.
+      M1.4 does the decoding. See the M1.3 forward notes in the spec-delta
+      queue, and **S-47/S-48/S-49** (filed 2026-07-10 with user-agreed
+      resolutions — pairings + stated text in plan-m1 M1.4 / App C).
 
 **Resolved at M1.3b (was an M0-exit heads-up):** the runner's stage gate is
 now lifted — `implemented_through()` returns `Some(Stage::Lex)` and the
@@ -64,14 +66,18 @@ first.)
 
 ## Spec-delta queue (near-term)
 
-Full backlog: `plan/implementation.md` Appendix C (S-1…S-46; the
+Full backlog: `plan/implementation.md` Appendix C (S-1…S-49; the
 appendix is the tracker of record until GitHub issues open). Due with M1
 work items (resolve in spec *before/with* the implementing item —
-pairings in `plan-m1.md`): S-1 (M1.2), S-2 (M1.3), S-3 (M1.5), S-4
-(M1.7), S-5 + S-6-in-full (M1.10), S-7 (M1.9), S-11 (M1.10), S-27 (M1.8,
-user decision), S-45 (M1.11). Later: S-41 by M2a; **S-9** (machine-design
-§12 carries the proposed resolution) by M2a; **S-46** (new: non-local
-exits through native consumers) by M2b.
+pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), S-3
+(M1.5), S-4 (M1.7), S-5 + S-6-in-full (M1.10), S-7 (M1.9), S-11 (M1.10),
+S-27 (M1.8, user decision), S-45 (M1.11), **S-47/S-48/S-49 (M1.4:
+interpolations never contain line terminators in any string form; empty
+`{}` is a lex error; closed escape set + `\xHH` = U+00HH in strings —
+resolutions discussed with and agreed by the user 2026-07-10)**. Later:
+S-41 by M2a; **S-9** (machine-design §12 carries the proposed
+resolution) by M2a; **S-46** (non-local exits through native consumers)
+by M2b.
 
 Discovered at M0.3 (needs an S-number when the user next curates Appendix
 C): **top-level `Completed` value** — E§7.2 pins the `Completed(value?)`

@@ -95,16 +95,27 @@ negative tests (bad underscores, bad floats) with positions; conformance
 `L3.2-*`/`L3.6.1-*`/`L3.6.2-*` tests green at `stage: lex` (plus the
 M1.2 identifier cases).
 
-### M1.4 — Lexer: strings, escapes, interpolation modes — **TODO**
+### M1.4 — Lexer: strings, escapes, interpolation modes (S-47, S-48, S-49) — **TODO**
 
 String literals with the full escape set; surrogate `\u{…}` as a static
 error (L§3.6.3); the string↔expression **mode stack** for `{expr}`
 interpolation (nested strings, nested braces, `{{`/`}}`); bytes literals
 (ASCII-only source, `\u` rejected, no interpolation; L§3.6.5); NFC
-applied to literal values.
+applied to literal values. Resolve (stated resolutions in App C,
+discussed with the user 2026-07-10): **S-47** — interpolations never
+contain line terminators, in any string form (single-line stays
+single-line; end-of-line error recovery preserved; no margin-stripping-
+inside-expressions); **S-48** — empty `{}` (incl. whitespace-only) is a
+lex error offering both intents (expression vs `{{`); **S-49** — the
+escape set is closed (unknown escape = lex error; malformed known escape
+= distinct diagnostic) and `\xHH` in a string denotes code point U+00HH
+(byte in a bytes literal). Land the L§3.6.3/§3.6.4/§3.6.5/§6.7 edits +
+App D.1 entries with the tests.
 *Accept:* snapshot token dumps for nested-interpolation torture cases;
 `L3.6.3-*`/`L3.6.5-*` conformance tests (`stage: lex`) incl. positions of
-escape errors *inside* interpolations.
+escape errors *inside* interpolations, the S-47 newline-in-interpolation
+error (single-line and triple-quoted cases), S-48 empty-interpolation
+error, and S-49 unknown/malformed-escape + `"\xE9" == "\u{E9}"` cases.
 
 ### M1.5 — Lexer: triple-quoted strings + margins (S-3) — **TODO**
 
