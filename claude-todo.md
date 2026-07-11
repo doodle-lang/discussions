@@ -28,35 +28,35 @@ public, issues enabled on discussions + doodle-rust: all 2026-07-10. The
 S-27 semantic fork is decided with the user at M1.8 start — options +
 recommendation in plan-m1 M1.8.)
 
+**Non-blocking, for confirmation:** the M1.3 lexer spec edits — S-2
+continuation triggers (L§3.2), numeric-literal lexing (L§3.6.1/§3.6.2), and
+the M1.3-split rulings (`.`/`:` are not continuation triggers; plain-string
+boundaries lexed now) — were made on the user's "go"/best-judgment while
+away. All reversible; the lexer now builds on them, so flag for a look but
+not blocking further work.
+
 ## In progress
 
-- [~] **M1.3** — Lexer core (tokens, numbers, newline/continuation, S-2).
-  Being landed in **3 pieces** (recon-recommended, each keeps CI green):
-  (1) **spec gate — DONE**: S-2 continuation triggers (L§3.2) + numeric-literal
-  lexing (L§3.6.1/§3.6.2) resolved + Appendix D.1 + Appendix C markers;
-  (2) M1.3a — the `lex/` module in doodle-core (no stage bump); (3) M1.3b —
-  stage bump to `Lex` + the conformance-runner execute/match path (atomic).
-  **Note:** the user stepped away mid-decision; per "proceed on best judgment"
-  I applied the recommended rulings (split into 3; prose-authoritative number
-  lexing; include plain-string boundaries; `.`/`:` are not continuation
-  triggers). All reversible — **user to confirm the number-lexing spec edits
-  when back**, before the lexer builds on them. M1.2 landed (`6aa0a7b`,
-  `8826655`).
+(none — M1.3 fully landed; M1.4 is next up)
 
 ## Next up
 
 Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
 `full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
+M1.1, M1.2, and M1.3 (lexer core + stage:lex conformance) have landed.
 
-- [ ] M1.2 — Source model: NFC normalization, spans, positions (S-1). Also
-      the home for the M1.1-discovered CRLF→LF line-ending question (below).
+- [ ] **M1.4** — next: string literals proper (escape decoding, the grapheme
+      model, triple-quoted strings, interpolation per L§3.6.3/§3.6.4/§6.7).
+      The M1.3 `lex/string.rs` only scans plain-string boundaries (value-free);
+      M1.4 does the decoding. See the M1.3 forward notes in the spec-delta queue.
 
-**M1 heads-up (from the M0 exit review):** the conformance runner SKIPs
-until `doodle_core::stage::implemented_through()` returns `Some`; the first
-M1 item that bumps it above `None` (the lexer, ~M1.3–M1.5) **must** land the
-runner's execute + expectation-matching path atomically (else the runner's
-forcing-`Err` fires and reddens CI). Verify that item owns the runner upgrade.
+**Resolved at M1.3b (was an M0-exit heads-up):** the runner's stage gate is
+now lifted — `implemented_through()` returns `Some(Stage::Lex)` and the
+conformance runner's execute + expectation-matching path landed atomically
+(doodle-rust `7210c3b`), so the old forcing-`Err` coupling is gone. Future
+stage bumps (parse/full/run) must likewise co-land their executor arm in
+`tools/conformance-runner/src/matcher.rs`.
 
 **M2a gate:** satisfied — `plan/machine-design.md` v0.2 accepted by the
 user 2026-07-10. (Mechanism changes still require revising that document
@@ -142,6 +142,30 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.3b: stage gate → Lex + conformance-runner execute/match
+  path (atomic).** `stage::implemented_through()` → `Some(Stage::Lex)`; the
+  runner now executes `stage: lex` tests instead of SKIPping, matching
+  `expect-*` against real lexer diagnostics (new `matcher.rs`: errors are an
+  order-insensitive set match on (substring, position) with no unlisted error
+  and distinct per-expectation claims; warnings lenient). Structured
+  `Expectation` model retained (was a bare count). Four `stage: lex` fixtures
+  (valid forms; double-underscore, unterminated-string, emoji — each an
+  expect-static-error; the emoji pins codepoint-column counting). Suite: 5
+  passed, 0 failed, 3 skipped. Review done inline (the two review subagents
+  were killed by a monthly-spend-limit API error mid-run): matcher set-match
+  semantics stress-verified via a scratch suite; stale `stage.rs` M0 doc fixed;
+  `num-001` given an `L3.6.2` secondary clause; empty-substring expectation
+  now rejected. doodle-rust `7210c3b`.
+- 2026-07-11 — **M1.3a: lexer core** (`crate::lex`) — tokens, numeric-literal
+  shape (L§3.6.1/§3.6.2), plain-string boundaries, the S-2 newline/continuation
+  state machine, UAX#31 identifiers, operator maximal munch, error recovery;
+  diagnostics malformed-number + unexpected-character. Token-dump snapshots are
+  the authoritative S-2 evidence (a mis-emitted NEWLINE is invisible at
+  `stage: lex`). `lex()` requires load-normalized (CRLF→LF, NFC) source and
+  debug_asserts it. No stage bump (that is M1.3b). 2-lens review (prior
+  session): zero blocker/major; minors folded in (all-underscore message,
+  bracket-depth note, NFC precondition, added coverage). Lexer spec gaps filed
+  (inline-whitespace set, lone-CR). doodle-rust `898a602`.
 - 2026-07-10 — **M1.2: source model — NFC, spans, positions (resolves S-1).**
   Spec: pinned S-1 in **L§3.1** (new "Source positions" paragraph), **L
   Appendix D.1**, and **E§8.1** (line/column span, code points). Code
