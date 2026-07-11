@@ -35,22 +35,23 @@ boundaries lexed now) — were made on the user's "go"/best-judgment while
 away. All reversible; the lexer now builds on them, so flag for a look but
 not blocking further work.
 
-**S-50 decision pending (M1.4):** comments inside an interpolation. The M1.4
-review found that `#` (a comment to end of line, L§3.3) inside `{…}` eats the
-closing `}`, so the string reads as unterminated. Asked the user (3 options:
-distinct error / universal rule / comment-ends-at-`}`); no response, so
-proceeded with the **provisional universal rule (a)** — no code change, most
-consistent with the user's uniform-rule preference (cf. the S-47 extension) —
-documented in `lex/string.rs` + a pinning test, filed as Appendix C S-50.
-Resolve in L§6.7 with the user before M1.4 is considered closed.
+**S-50 RESOLVED (user, 2026-07-10): option (b).** `#` inside any string's
+`{…}` is a distinct lex-time error at the `#`'s span ("a comment can't
+appear inside a string's `{…}`"; suggest moving the comment outside or
+binding a named local); uniform across string forms. Full rationale +
+rejected alternatives in Appendix C S-50. **To do (closes M1.4):** flip
+the provisional (a) behavior in `lex/string.rs` to the targeted
+diagnostic, update the pinning test, land the L§6.7/§3.3 note with
+M1.4's spec batch.
 
 ## In progress
 
 - [~] **M1.4** — Lexer: strings, escapes, interpolation, bytes. Code landed;
-  **blocked only on the S-50 user decision** (comments inside interpolations —
-  provisional behavior shipped, see below). Spec gate, lexer, fixtures, and a
-  3-lens adversarial review all done (doodle-rust commit in Done log). Next
-  lexer item is **M1.5** (triple-quoted strings + S-3 margins).
+  spec gate, lexer, fixtures, and a 3-lens adversarial review all done
+  (doodle-rust commit in Done log). **Unblocked: S-50 is resolved as (b)**
+  (see above) — remaining to close M1.4: flip the provisional (a) behavior
+  to the targeted diagnostic + update the pinning test + the L§6.7/§3.3
+  note. Next lexer item is **M1.5** (triple-quoted strings + S-3 margins).
 
 ## Next up
 

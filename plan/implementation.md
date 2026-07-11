@@ -979,11 +979,20 @@ guards a bytes/chars confusion the String/Bytes split already prevents.)
 S-50 (L§6.7/§3.3) Comments inside an interpolation: L§3.3 makes `#` a
 comment to end of line with no exception, so a `#` inside `{…}` eats the
 closing `}` and the interpolation reads as unterminated (found in M1.4
-review). Options: (a) keep the universal rule (no special case; confusing
-error); (b) make `#` inside an interpolation a distinct error ("comments
-aren't allowed here"; a clearer diagnostic); (c) let the comment end at the
-interpolation's `}`. Provisional: (a), documented in `lex/string.rs` +
-a pinning test. **User decision pending; resolve with M1.4.**
+review). **RESOLVED (user, 2026-07-10): (b)** — `#` inside any string's
+`{…}` is a **distinct lex-time error** at the `#`'s span ("a comment
+can't appear inside a string's `{…}`"), suggesting the fix per the
+rubric: move the comment outside the string, or bind the expression to a
+named local. Uniform across string forms (triple-quoted included; under
+S-47 interpolations are single-line everywhere, so a comment inside one
+is *structurally impossible* — the options only ever differed in which
+error the kid reads). Rejected: (a) universal-rule fallthrough (right
+behavior class, but the resulting "unterminated" diagnostic never names
+the `#` that caused it — fails the rubric; was the provisional, now
+flipped); (c) comment-ends-at-`}` (a novel comment form found nowhere
+else, with bad brace-counting interactions, for negligible value).
+Implementation: replace the provisional (a) behavior + pinning test in
+`lex/string.rs`; land the L§6.7/§3.3 note with M1.4's spec batch.
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
