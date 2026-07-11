@@ -35,23 +35,22 @@ boundaries lexed now) — were made on the user's "go"/best-judgment while
 away. All reversible; the lexer now builds on them, so flag for a look but
 not blocking further work.
 
-**S-50 RESOLVED (user, 2026-07-10): option (b).** `#` inside any string's
-`{…}` is a distinct lex-time error at the `#`'s span ("a comment can't
-appear inside a string's `{…}`"; suggest moving the comment outside or
-binding a named local); uniform across string forms. Full rationale +
-rejected alternatives in Appendix C S-50. **To do (closes M1.4):** flip
-the provisional (a) behavior in `lex/string.rs` to the targeted
-diagnostic, update the pinning test, land the L§6.7/§3.3 note with
-M1.4's spec batch.
+**S-50 RESOLVED (user, 2026-07-10): option (b) — DONE.** `#` inside any
+string's `{…}` is a distinct lex-time error at the `#`'s span ("a comment
+can't appear inside a string's `{…}`"; suggest moving the comment outside or
+binding a named local); uniform across string forms. Implemented: the
+targeted diagnostic + pinning test (doodle-rust `0a75678`) and the L§6.7
+body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.4** — Lexer: strings, escapes, interpolation, bytes. Code landed;
-  spec gate, lexer, fixtures, and a 3-lens adversarial review all done
-  (doodle-rust commit in Done log). **Unblocked: S-50 is resolved as (b)**
-  (see above) — remaining to close M1.4: flip the provisional (a) behavior
-  to the targeted diagnostic + update the pinning test + the L§6.7/§3.3
-  note. Next lexer item is **M1.5** (triple-quoted strings + S-3 margins).
+- [~] **M1.5** — Lexer: triple-quoted strings + S-3 margins. Landing now
+  (doodle-rust commit in Done log): spec gate (L§3.6.4 body from S-3),
+  the `scan_triple_string` two-pass scanner (find close + margin, then strip +
+  emit with `\n`-join StrText chunks), 3 `L3.6.4` fixtures, and a 2-lens
+  read-only review (both SHIP; a double-advance bug caught by tests + fixed;
+  two multibyte-span nits fixed; one line-final-`\` note filed for M1.6).
+  **M1.4 is fully closed** (S-50 (b) implemented). Next: M1.6 (parser).
 
 ## Next up
 
@@ -150,6 +149,19 @@ that contradicts a future pin):
   (continuation only); real bracket **matching** and mismatch diagnostics are
   the parser's job (M1.6). Both are noted in code.
 
+Discovered at M1.5 (triple-quoted review; needs a user/spec call, non-blocking):
+- **Line-final backslash in a triple-quoted string** — the closed escape set
+  (L§3.6.3) says "a backslash followed by anything else is a static error," but
+  `lex/escape.rs` treats `\` immediately before a newline/EOF as *not an escape*
+  and consumes it silently (no diagnostic). In a **single-line** string this is
+  masked by the unterminated-string error; in a **triple-quoted** string the
+  newline is a valid line break (S-3 rule 4 forbids backslash-newline
+  continuation), so a dangling `\` becomes an un-diagnosed literal in the value.
+  This is really an **M1.6 escape-decoding** question — decide whether a trailing
+  `\` before a line break is an error or a literal, and pin it in L§3.6.3/§3.6.4.
+  Surfaced by the M1.5 review; nothing wrong ships (the lexer captures raw spans;
+  decoding is M1.6).
+
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
   `XID_Start`/`XID_Continue`.** The NFC-closed variants (matching the code /
@@ -166,6 +178,19 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.5: triple-quoted strings + S-3 margins** (code). Spec gate
+  `b7bbebb` (S-3 into L§3.6.4). Code (doodle-rust commit below): `lex/string.rs`
+  `scan_triple_string` — two-pass (find the closing `"""` + its margin, then
+  strip byte-for-byte per line and emit content as `StrText` with inter-line
+  `\n`-join chunks; empty-line exemption; nothing-after-open + margin-mismatch
+  diagnostics); reuses the M1.4 stream/interp machinery via a `triple` flag on
+  `scan_text_run`. 3 `L3.6.4` fixtures; suite 17/0/3. A double-advance bug
+  (extra `pos += 1` after an `emit`) was caught by the value tests and fixed;
+  two multibyte-span nits fixed. 2-lens read-only review: both SHIP (margin/
+  value + termination/panic/recovery/interp all clean; 400k-iter fuzz clean).
+- 2026-07-11 — **S-50 (b): comment inside interpolation is a distinct error.**
+  doodle-rust `2aeb49c` (code) + `0a75678` (message aligned to the ratified
+  wording); L§6.7 body rule `d96cc33`. Closes M1.4.
 - 2026-07-11 — **M1.4: lexer strings/escapes/interpolation/bytes** (code).
   Spec gate `4501c00`. Code (doodle-rust commit below): `lex/string.rs`
   (structured string stream `StrStart (StrText | interp)* StrEnd`, recursion
