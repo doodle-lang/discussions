@@ -331,18 +331,36 @@ content line
 
 Rules:
 
-- The opening `"""` must be the last token on its line; the closing `"""` must
-  be the first token on its line (apart from leading whitespace).
-- The **indentation of the closing `"""`** defines the *margin*. That margin is
-  removed from the start of every content line.
-- Every content line must be indented **at least** to the margin. A content line
-  indented less than the margin is a static error.
+- The opening `"""` must be the **last token on its line** — not even a comment
+  may follow it; the contents begin on the next line. The closing `"""` must be
+  the **first token on its line**, apart from the leading whitespace that forms
+  the margin; ordinary code may follow the closing `"""`. A `"""` in the middle
+  of a content line is literal text, and a content line that must *begin* with a
+  literal `"""` is written `\"""`.
+- The **margin** is the exact whitespace *string* preceding the closing `"""`,
+  matched **byte-for-byte** as a prefix of each content line — there is no
+  tab-width or column arithmetic anywhere. It is removed from the start of every
+  content line. A content line whose start does not match the margin is a static
+  error that names the first differing character (e.g. "a tab where the margin
+  has spaces").
+- A **truly empty** content line (zero characters) is exempt from the margin
+  check and contributes an empty line. A **whitespace-only but nonempty** line is
+  an ordinary content line: it must carry the full margin, and its remainder is
+  content — so `margin` + two spaces contributes a two-space line. (Editors that
+  trim trailing whitespace silently reduce such a line to empty; `\x20` is the
+  robust idiom for intentional trailing spaces.)
+- Content after the margin is preserved verbatim, **including trailing
+  whitespace** (no trailing-whitespace munging).
+- Splitting into lines, margin validation, and stripping happen on the **raw
+  physical lines**, *before* escape and interpolation processing: a `\n` escape
+  does not create a new margin-checked line, and there is **no** backslash-newline
+  line continuation.
 - The newline immediately after the opening `"""` and the newline immediately
-  before the closing `"""` are not part of the value.
-- An interpolation `{expr}` still may not contain a line terminator (§6.7).
-  Margin stripping applies to physical content lines *before* interpolation is
-  parsed, so a `{expr}` is confined to a single already-stripped line and margin
-  stripping never operates on an expression's interior.
+  before the closing `"""` are not part of the value. The **value** is the
+  stripped content lines joined with `\n` (zero content lines yield `""`).
+- An interpolation `{expr}` still may not contain a line terminator (§6.7); since
+  stripping has already run on physical lines, a `{expr}` stays within one
+  stripped line and margin stripping never operates on an expression's interior.
 
 Example (margin = 4 spaces):
 
