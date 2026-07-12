@@ -1031,7 +1031,17 @@ the `#` that caused it — fails the rubric; was the provisional, now
 flipped); (c) comment-ends-at-`}` (a novel comment form found nowhere
 else, with bad brace-counting interactions, for negligible value).
 Implementation: replace the provisional (a) behavior + pinning test in
-`lex/string.rs`; land the L§6.7/§3.3 note with M1.4's spec batch.
+`lex/string.rs`; land the L§6.7/§3.3 note with M1.4's spec batch. ·
+S-51 (L§5.3/App A) Parenthesized assignment targets. **RESOLVED (user,
+2026-07-11): accepted** — parentheses are transparent around a target as
+around any expression; `'(' lvalue ')'` added to the lvalue grammar, so
+`(a) = 5` assigns to `a` (matching the shipped M1.7 parens-transparent
+parser). Survey basis: the expression-lvalue family (C, C++, Go, JS,
+Rust, Python) accepts; the strict-grammar family (Java, C#, Lua) rejects;
+rejection was declined since it buys no safety and needs paren-tracking
+the AST deliberately erases (redundant parens are IDE-lint territory).
+**[resolved — L§5.3 + App A + App D.1 landed with this entry; a pinning
+`(a) = 5` accept-side test rides with the next parser work item]**
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,

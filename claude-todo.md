@@ -93,21 +93,12 @@ body rule (discussions `d96cc33`).
 
 (none — M1.6 and M1.7 landed; see Done log. Next is M1.8.)
 
-## Awaiting the user (non-blocking) — M1.7 spec question
-
-- **Does the bare-name `lvalue` permit redundant parentheses?** Discovered at
-  M1.7 review. Appendix A grammar: `lvalue = IDENT | expr '.' IDENT | expr '['
-  expression ']'`. The parser treats parens as fully transparent (no `Paren`
-  node — `grouping()` returns the inner node), so `is_lvalue` sees `(a)` as the
-  `Ident` `a` and accepts `(a) = c` with **no** diagnostic. Note the field/index
-  lvalue forms already allow a parenthesized head (`(a).b = c`, since their LHS
-  is `expr`), so a strict reading gives an odd asymmetry (`(a).b =` legal, `(a) =`
-  not). Current behavior is internally consistent (parens transparent
-  everywhere) and harmless (it assigns to `a`). Decision for the user: accept +
-  clarify L§5.3/Appendix A that a parenthesized target is fine, or reject bare
-  parenthesized lvalues (needs paren-tracking the AST deliberately omits). No
-  behavior blocked; the current choice ships provisionally. No test pins the
-  reject side yet (nothing to assert until decided).
+**S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
+transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
+App A; rationale + language survey in App C S-51 and L App D.1). Matches
+the shipped M1.7 parens-transparent parser; no code change. **Small
+follow-up for the next parser work item:** a pinning accept-side test
+(`(a) = 5` assigns to `a`, no diagnostic).
 
 ## Next up
 

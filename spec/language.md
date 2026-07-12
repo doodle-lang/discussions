@@ -708,12 +708,15 @@ assign-stmt = lvalue '=' expression
 lvalue      = IDENT
             | expression '.' IDENT
             | expression '[' expression ']'
+            | '(' lvalue ')'
 ```
 
 `name = value` reassigns an existing binding; assigning to a name that is not in
 scope, or to a `const` binding, is an error (static where determinable).
 `target.field = value` mutates a record field; `target[key] = value` mutates a
-list element or dict entry.
+list element or dict entry. Parentheses are transparent around an assignment
+target, as they are around any expression: a parenthesized target denotes the
+same place as the target it wraps (`(a) = 5` assigns to `a`).
 
 Assignment is a **statement, not an expression**: it produces no value and may
 not appear where an expression is expected. This removes the `if (x = y)` class
@@ -1709,6 +1712,7 @@ let-stmt    = 'let' IDENT '=' expression
 const-stmt  = 'const' IDENT '=' expression
 assign-stmt = lvalue '=' expression
 lvalue      = IDENT | expression '.' IDENT | expression '[' expression ']'
+            | '(' lvalue ')'
 
 if-stmt     = 'if' expression 'then' body
               ( 'else' 'if' expression 'then' body )*
@@ -1934,6 +1938,16 @@ likely to change.
   keeps §3.6.4 margin stripping out of expression interiors. (3) An empty
   `{}`/`{ }` is a static error offering both intents; `{ {} }` still interpolates
   an empty dict.
+- **Parenthesized assignment targets (§5.3, App A; resolves
+  implementation-plan Appendix C S-51).** The draft's `lvalue` grammar was
+  silent on parentheses while the field/index forms admitted parenthesized
+  heads (`(a).b = c`), leaving `(a) = c` ambiguous. Resolved: parentheses are
+  transparent around a target as around any expression — `'(' lvalue ')'` is an
+  lvalue denoting the same place. This matches the expression-lvalue family
+  (C, C++, Go, JavaScript, Rust, Python); the strict-grammar alternative
+  (Java/C#/Lua reject `(a) = c`) was considered and rejected, since it buys no
+  safety and would require the parser to track parentheses it deliberately
+  erases. Redundant parentheses are IDE-lint territory, not an error.
 
 ### D.2 Genuinely open (deferred by the discussion)
 
