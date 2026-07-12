@@ -44,18 +44,18 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–c landed** (Done log):
-  (a) operator-precedence tower + numeric lowering; (b) string/bytes literals
-  (escape/value decoding + interpolation assembly); (c) postfix `.`/`[]`/`()`
-  with keyword args. No stage bump yet. Remaining:
-  - **M1.6d** — list `[…]` and dict `{ k: v }` literals (trailing commas).
-  - **M1.6e** — `if`/`try` expression forms; anonymous `fn`.
+- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–d landed** (Done log):
+  (a) operator-precedence tower + numeric lowering; (b) string/bytes literals;
+  (c) postfix `.`/`[]`/`()` with keyword args; (d) list/dict literals. No stage
+  bump yet. Remaining:
+  - **M1.6e** — `if`/`try` expression forms (L§6.8/§6.9); anonymous `fn`
+    (L§6.10). These parse block bodies (`do … end`), so they overlap with M1.7.
   - **M1.6f** — stage bump to `Parse` + conformance-runner parse-path
     (run_parse) + `L6.5-*` `stage: parse` fixtures (atomic, like M1.3b).
-  - Minor recovery follow-ups (M1.6c review, non-blocking): a malformed
-    postfix/arg with more tokens after it (`f(1 2)`, `a[b, c]`) double-reports
-    and drops the tail; multiple positionals after a keyword each report. Both
-    recovery-noise on already-errored input; tighten when convenient.
+  - Minor recovery follow-up (M1.6c/d reviews, non-blocking): a missing
+    separator (`f(1 2)`, `[1 2]`, `{a:1 b:2}`) drops the tail and double-reports;
+    multiple positionals after a keyword each report. Recovery-noise on
+    already-errored input; tighten when convenient.
 
 ## Next up
 
@@ -191,6 +191,12 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.6d: list and dict literals** (L§4.7/§4.8). `List`/`Dict`/
+  `DictEntry`/`DictKey` nodes + `parse/collection.rs` (`list_lit`/`dict_lit`;
+  bare-word key = string key via the shared `at_ident_colon`; computed keys;
+  trailing commas; `{}` = empty dict). Read-only review: SHIP; folded in its
+  finding — a stray closer `)`/`]`/`}` is no longer swallowed by `primary`, so
+  enclosing collections recover to the right shape. doodle-rust `58f6d51`.
 - 2026-07-11 — **M1.6c: postfix operators — access/index/calls + keyword args**
   (L§6.3/§6.4). `Field`/`Index`/`Call`/`Arg` nodes + `parse/postfix.rs`
   (`postfix_chain`, tightest-binding, left-assoc; keyword args via `Ident :`;
