@@ -1245,10 +1245,30 @@ end
 ### 8.6 Docstrings
 
 If the **first** element of a procedure body, function body, record body (§9),
-or module/file body (§11) is a string literal (ordinary or triple-quoted), that
-string is the unit's **docstring**. A docstring is not an executed statement; it
-is attached as metadata and is available through reflection (§13). Docstrings
-are the idiomatic use of triple-quoted strings.
+protocol body (§10), or module/file body (§11) is a string literal (ordinary or
+triple-quoted), that string may be the unit's **docstring** — metadata, not an
+executed statement, available through reflection (§13). Docstrings are the
+idiomatic use of triple-quoted strings.
+
+A string that is a body's first element **but not its only statement** (at least
+one more statement follows) is the docstring, in every body kind. A string that
+is a body's **only** statement is classified by the body kind (S-27):
+
+- In a **function** body (a named `fn` or an anonymous `fn`, §6.10) a lone string
+  is the function's **result**, not a docstring: `fn greeting() "hello" end`
+  returns `"hello"`. A function docstring therefore needs a following statement.
+- In a **procedure** (`to`) body or a **module/file** body — neither yields a
+  value — a lone string is the **docstring**: `to stub() "TODO." end` and a file
+  that opens with a string keep their documentation.
+- A **record** or **protocol** body is docstring-only (§9.1, §10.1), so a lone
+  string there is always the docstring.
+
+The classification also fixes the string's meaning: a **docstring is raw** — its
+interpolations (§6.7) are inert text, captured but never evaluated — whereas a
+function's lone-string **result** is an ordinary literal whose interpolations
+evaluate. (Accepted consequence: deleting a function's implementation while
+keeping its documentation line turns that line into the return value — rarer than
+constant-returning functions, and detectable.)
 
 ```
 fn distance(a, b)
