@@ -95,11 +95,10 @@ conformance tests landing at `stage: lex/parse` per item and upgraded to
 M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
 conformance) have landed.
 
-- [~] **M1.8** — **declarations + docstrings (S-27).** All parser work landed
-      (a/b/c1/c2 + the S-52 flip); **only the S-53 lexer arm remains** (a
-      separate M1.5 follow-up). (Boundary: `import`, call-site **block arguments**
-      `f() do … end`, and the S-4 no-block-arg *enforcement* are **M1.9** — not
-      M1.8; only the block *parameter* `do name` is M1.8.)
+- [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
+      + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
+      **block arguments** `f() do … end`, and the S-4 no-block-arg *enforcement*
+      are **M1.9** — not M1.8; only the block *parameter* `do name` is M1.8.)
   - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
   - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
         (L§9/§10) + `capture_docstring`. Done log. (Its provisional protocol-`end`
@@ -109,11 +108,9 @@ conformance) have landed.
   - [x] **M1.8c2** — `module`/`parameter`/`exports` + module-level-only placement
         rules (L§7.1, via a `nested` flag). Done log. doodle-rust `77ad3a5`.
         Read-only review: no defects.
-  - [ ] **S-53 lexer arm** (separate M1.5 lexer follow-up): single-line
-        `"""x"""` in `scan_triple_string` (inline value, no margin, unescaped
-        `"` ok, escapes+interp) + the hybrid `malformed-triple-quote` message +
-        tests (incl. `""""""` = empty, quote-runs at the closer). Once it lands,
-        the §8.6/§10.1 single-line-triple examples lex as written.
+  - [x] **S-53 lexer arm** — single-line `"""x"""` in `scan_triple_string`
+        (speculative scan + rollback; a review-caught MAJOR fixed). Done log.
+        The §8.6/§10.1 single-line-triple examples now lex as written.
 
 **Stage gate — now at Parse (M1.7):** `implemented_through()` returns
 `Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
@@ -247,6 +244,18 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **S-53: single-line triple-quoted strings + split `lex/triple.rs`.**
+  `"""x"""` (closes on its opening line) is the single-line form (inline value,
+  no margin, unescaped `"` ok, escapes+interp); multi-line unchanged; the hybrid
+  (content after opener, no same-line close) is a `malformed-triple-quote` with
+  both fixes. The triple-quoted machinery moved out of the over-length `string.rs`
+  into `lex/triple.rs`. A read-only review (5.38M-input fuzz) caught a MAJOR in
+  the first draft — a byte-level close pre-scan latched onto a `"""` inside a
+  cleanly-closing interpolation and rewound the cursor (non-monotonic tokens);
+  fixed by scanning the single-line form speculatively with the real
+  `scan_interp` and rolling back on failure. Regression test asserts monotonic
+  spans over the fuzz cases. Also updated the §8.6/§10.1 examples' fixtures to
+  single-line. lex 25/0, conformance 31/0/2. doodle-rust `25c3588`.
 - 2026-07-11 — **M1.8c2: module/parameter/exports + module-level placement**
   (L§7.1/§11.1/§5.5). `ModuleDecl`/`Parameter`/`Exports` nodes; `parse/moddecl.rs`.
   Placement via a `nested` Parser flag (set by `block`/`body_with_doc`, false at
