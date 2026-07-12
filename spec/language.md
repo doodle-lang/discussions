@@ -854,6 +854,17 @@ block-params= IDENT sep-by ','
 - A trailing `do … end` supplies a **block argument** to a callee that declares
   a block parameter (§8.5). A zero-parameter block may omit the `()`.
 
+A block argument attaches to a call only where the call is not in a
+**construct header** — the condition expression of a `while` (§7.6) or the value
+expression of a `with` (§5.5), each of which is itself followed by `do`. In a
+header, the expression is parsed in **no-trailing-block mode**: a `do … end`
+after it opens the *construct's* body, never a block argument to a call within
+the header. So `while f() do … end` is unambiguously a `while` whose body is
+`do … end`. To pass a block argument to a call in a header, parenthesize the
+call, which delimits the block: `while (f() do … end) do … end` runs the block
+`do … end` on the call `f()` and uses the outer `do … end` as the loop body.
+(The `if` header uses `then`, not `do`, so it raises no such ambiguity.)
+
 Calling a **procedure** (a `to`) yields no value; using such a call where a value
 is required is an error (§6.11). Calling a **function** (an `fn`) yields its
 result.
@@ -1050,6 +1061,9 @@ The condition (a `Bool`) is evaluated before each iteration; the body runs while
 it is `true`. `while` is a keyword (rather than a library function) because its
 condition must be evaluated repeatedly. There is no `until`, no `unless`, and no
 `do`/`while`; the last is expressed with `loop` and `break` (§7.7).
+
+The condition is a header expression: a trailing `do … end` opens the loop body,
+not a block argument to a call in the condition (§6.4, no-trailing-block mode).
 
 ### 7.7 `loop`
 
@@ -1826,6 +1840,13 @@ likely to change.
   keyword to the enumerated list. Because sigil-free reads require the compiler to
   know a name is dynamic, this specification introduces `parameter name =
   default` and adds `parameter` to the reserved words (bringing the count to 36).
+- **Block arguments do not attach in construct headers (§6.4, §7.6, S-4).** A
+  call in a `while` condition or `with` value is followed by `do`, which also
+  introduces a block argument (§8.5) — an ambiguity the grammar alone does not
+  resolve. This spec parses header expressions in *no-trailing-block mode*: the
+  `do … end` opens the construct body, and a block argument to a call in the
+  header must be parenthesized. This keeps the common `while f() do … end`
+  unambiguous at the cost of parentheses in the rare header-block case.
 - **`/` always yields `Float` (§4.2).** The discussion said `/` "produces a float
   when the result isn't a whole number" but pointed at Python 3, where `/` is
   always float. This spec adopts the Python-3 rule (`4 / 2` is `2.0`) as the

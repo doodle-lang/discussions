@@ -44,49 +44,53 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-- [~] **M1.6** — Parser (Pratt expressions). **M1.6a–d landed** (Done log):
-  (a) operator-precedence tower + numeric lowering; (b) string/bytes literals;
-  (c) postfix `.`/`[]`/`()` with keyword args; (d) list/dict literals. No stage
-  bump yet. **Sequencing finding (2026-07-11):** the pure-expression parser
-  (a–d) is complete, but both remaining pieces sit on M1.7's statement/`body`
-  machinery, so they should land *with* M1.7, not before it:
-  - **M1.6e** — `if`/`try` forms (L§6.8/§6.9) and anonymous `fn` (L§6.10) all
-    use `body = statement ((NEWLINE|';') statement)*` (grammar L§8.4/§7) —
-    statement sequences, not single expressions. So they need the statement
-    parser first (M1.7); the if/try *expression* vs *statement* split is
-    semantic (does the last statement yield a value — S-5/S-6, M1.10), not
-    syntactic.
-  - **M1.6f** — stage bump to `Parse` + conformance parse-path (run_parse) +
-    `L6.5` `stage: parse` fixtures. The runner parses a whole `.doodle` file =
-    a program of statements, so this also needs the program/statement parser
-    (M1.7). Do it once M1.7's `parse_program` exists (atomic, like M1.3b).
-  - Net: **next is M1.7** (statements + `body` + `parse_program`), which lights
-    up if/try/fn, program parsing, the stage bump, and conformance together.
-  - Minor recovery follow-up (M1.6c/d reviews, non-blocking): a missing
-    separator (`f(1 2)`, `[1 2]`, `{a:1 b:2}`) drops the tail and double-reports;
-    multiple positionals after a keyword each report. Recovery-noise on
-    already-errored input; tighten when convenient.
+(none — M1.6 and M1.7 landed; see Done log. Next is M1.8.)
+
+## Awaiting the user (non-blocking) — M1.7 spec question
+
+- **Does the bare-name `lvalue` permit redundant parentheses?** Discovered at
+  M1.7 review. Appendix A grammar: `lvalue = IDENT | expr '.' IDENT | expr '['
+  expression ']'`. The parser treats parens as fully transparent (no `Paren`
+  node — `grouping()` returns the inner node), so `is_lvalue` sees `(a)` as the
+  `Ident` `a` and accepts `(a) = c` with **no** diagnostic. Note the field/index
+  lvalue forms already allow a parenthesized head (`(a).b = c`, since their LHS
+  is `expr`), so a strict reading gives an odd asymmetry (`(a).b =` legal, `(a) =`
+  not). Current behavior is internally consistent (parens transparent
+  everywhere) and harmless (it assigns to `a`). Decision for the user: accept +
+  clarify L§5.3/Appendix A that a parenthesized target is fine, or reject bare
+  parenthesized lvalues (needs paren-tracking the AST deliberately omits). No
+  behavior blocked; the current choice ships provisionally. No test pins the
+  reject side yet (nothing to assert until decided).
 
 ## Next up
 
 Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
 `full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
-M1.1, M1.2, and M1.3 (lexer core + stage:lex conformance) have landed.
+M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
+conformance) have landed.
 
-- [ ] **M1.4** — next: string literals proper (escape decoding, the grapheme
-      model, triple-quoted strings, interpolation per L§3.6.3/§3.6.4/§6.7).
-      The M1.3 `lex/string.rs` only scans plain-string boundaries (value-free);
-      M1.4 does the decoding. See the M1.3 forward notes in the spec-delta
-      queue, and **S-47/S-48/S-49** (filed 2026-07-10 with user-agreed
-      resolutions — pairings + stated text in plan-m1 M1.4 / App C).
+- [ ] **M1.8** — next: **declarations + docstrings (S-27).** Named `to`/`fn`
+      declarations, `record`/`protocol`/`implement`, `module`/`parameter`/
+      `import`/`exports`, anonymous `fn` (L§6.10), and **block arguments**
+      (`f() do … end`, L§6.4/§8.5) — these share the `params`/`block-params`
+      grammar, which is why M1.7 deferred them here (Option-1 scope, user away;
+      revisit if the user wanted block-args/anon-fn pulled into M1.7). **S-4
+      residual for M1.8:** once block arguments parse, the header must keep *not*
+      consuming a trailing `do … end` (the no-block-arg mode — spec pinned in
+      L§6.4 at M1.7); wire the enforcement flag then, and enrich the `stray_do`
+      diagnostic (currently withholds the `(f() do … end)` escape-hatch hint
+      because block-args don't parse yet). Resolve **S-27** first (docstring
+      corners). **Sequencing gotcha (M1.7 review):** don't add `stage: parse`
+      fixtures exercising declaration keywords (`to`/`fn`/`record`/`import`/…)
+      before M1.8 — they currently fall through `statement_dispatch` to the
+      expression parser and would emit spurious "expected an expression".
 
-**Resolved at M1.3b (was an M0-exit heads-up):** the runner's stage gate is
-now lifted — `implemented_through()` returns `Some(Stage::Lex)` and the
-conformance runner's execute + expectation-matching path landed atomically
-(doodle-rust `7210c3b`), so the old forcing-`Err` coupling is gone. Future
-stage bumps (parse/full/run) must likewise co-land their executor arm in
-`tools/conformance-runner/src/matcher.rs`.
+**Stage gate — now at Parse (M1.7):** `implemented_through()` returns
+`Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
+`stage: parse` (matcher `run_static`, parametrized by stage — lexer vs.
+`parse_to_diagnostics`). Future stage bumps (full/run) must likewise co-land
+their executor arm in `tools/conformance-runner/src/matcher.rs` atomically.
 
 **M2a gate:** satisfied — `plan/machine-design.md` v0.2 accepted by the
 user 2026-07-10. (Mechanism changes still require revising that document
@@ -101,7 +105,8 @@ pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), **S-3
 (M1.5 — margins resolved with the user 2026-07-10: exact-prefix; empty
 lines exempt, whitespace-only nonempty lines are content lines; preserve
 trailing whitespace; no line-join; no comment after opener — full text in
-App C; M1.5 lands the L§3.6.4 edit)**, S-4 (M1.7), S-5 + S-6-in-full
+App C; M1.5 lands the L§3.6.4 edit)**, **S-4 (M1.7, done — no-trailing-block
+header parsing; L§6.4/§7.6 + App D.1)**, S-5 + S-6-in-full
 (M1.10), S-7 (M1.9), S-11 (M1.10),
 S-27 (M1.8, user decision), S-45 (M1.11), **S-47/S-48/S-49 (M1.4:
 interpolations never contain line terminators in any string form; empty
@@ -185,6 +190,18 @@ Discovered at M1.6b (parser string decode; non-blocking):
   but the literal→`String` construction must apply NFC (including to a pure
   single-text-part literal). Flagged so it isn't forgotten when eval lands.
 
+Discovered at M1.7 (statement parser; non-blocking recovery-quality):
+- **Noisy recovery on already-errored input** (carried from M1.6c/d + M1.7
+  reviews): a missing statement separator, `a = b = c`, `with a = b, c = d do…`,
+  and a missing collection separator each emit several diagnostics rather than
+  one. All correct rejections and terminating — just noisier than the
+  one-diagnostic discipline used for the depth bail. Tighten when convenient;
+  the earnest message-quality pass is M1.13.
+- **Cosmetic exit-span nit**: a bare `return`/`break`/… immediately followed by
+  a non-boundary, non-operand token (e.g. `return)`) parses an operand, adding an
+  "expected an expression" and stretching the exit node's span over the stray
+  token. Malformed-input only.
+
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
   `XID_Start`/`XID_Continue`.** The NFC-closed variants (matching the code /
@@ -201,6 +218,25 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.7: statement parser + stage → Parse** (L§7). Recursive-
+  descent statements on the Pratt expression parser: `ast` statement nodes
+  (Let/Const/Assign, Block, If, While, Loop, With, Try, Return/Break/Continue/
+  Raise); `parse_program`/`parse_to_diagnostics`; `if`/`try` as expression
+  primaries (same node in expr/stmt position); `parse/stmt.rs` (bodies,
+  separators, let/const, assignment + lvalue check, exits) and
+  `parse/control.rs` (if with else-if flattening + nearest-`end` else binding,
+  try/rescue, while/loop/with). Shared `guard_depth` gives bodies + expressions
+  one MAX_DEPTH budget (no bypass). **S-4** resolved: header expressions parse in
+  no-trailing-block mode + a `stray_do` diagnostic for a `do` that starts a
+  statement; spec pinned (discussions below). Stage gate → `Parse`; matcher
+  `run_lex` → stage-parametrized `run_static` + `parse_to_diagnostics`; four
+  `stage: parse` fixtures (L3.2 bumped, L5.3, L7.1, L7.6). Two read-only reviews
+  (parser correctness — 400k-input fuzz + 1–8 MB deep-nest stack tests, no
+  panic/overflow; integration + spec fidelity): no critical/major; folded the
+  one actionable MINOR (softened the `stray_do` message so it doesn't advertise
+  the M1.8-only parenthesized escape hatch). Filed the parenthesized-lvalue
+  spec question (above) and the recovery-noise/exit-span nits (below). Suite:
+  parse 20/0, conformance 21/0/2, hygiene 6/6. doodle-rust `962d207`.
 - 2026-07-11 — **M1.6d: list and dict literals** (L§4.7/§4.8). `List`/`Dict`/
   `DictEntry`/`DictKey` nodes + `parse/collection.rs` (`list_lit`/`dict_lit`;
   bare-word key = string key via the shared `at_ident_colon`; computed keys;

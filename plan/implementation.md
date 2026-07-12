@@ -963,7 +963,8 @@ literal; a line-initial literal `"""` is written `\"""`. (6) Value =
 stripped content lines joined with `\n`; zero content lines = `""`.
 Land the L§3.6.4 edit with M1.5. ·
 S-4 (L§6.4/§7) `do`-attachment in construct headers (`while f() do`):
-header expressions parse in no-trailing-block mode. ·
+header expressions parse in no-trailing-block mode. **[resolved M1.7 —
+L§6.4/§7.6 + App D.1]** ·
 S-5 (L§5.3/§6.11/§8.4) Define the "static where determinable" analysis
 boundary so conforming implementations reject the same programs. ·
 S-6 (L§6.11, §8.4, §8.5) Void semantics: block/fn whose last statement is
