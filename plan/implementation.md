@@ -971,7 +971,9 @@ S-6 (L§6.11, §8.4, §8.5) Void semantics: block/fn whose last statement is
 value-less — error at the consuming site, uniformly (amends §8.4's
 "raises at runtime" and §8.5's block-value sentence accordingly). ·
 S-7 (L§11.2) `import a.b` module-vs-member resolution order (try module
-path first, member fallback; native registry precedence). ·
+path first, member fallback; native registry precedence). **[resolved M1.9a
+— L§11.2 note; parser records the dotted path, resolution is load-time,
+implementation at M6]** ·
 S-27 (L§8.6) Docstring corners. **RESOLVED (user, 2026-07-11):** a lone
 string (a body that is *only* a string literal) is **the body's result
 where the body produces a value, and the docstring otherwise** — in an

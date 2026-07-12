@@ -1534,7 +1534,14 @@ idiomatic way to bring a domain vocabulary into scope (an editor's default
 template typically begins with such imports); selective imports are for occasional
 needs and name-collision resolution.
 
-### 11.3 Loading semantics
+**Resolving a dotted path (S-7).** A dotted target such as `import a.b` is
+ambiguous between a *qualified module* (`a.b` names a module) and a *member*
+(`b` of module `a`). This is resolved at **load** (§11.3), not at parse: the
+loader first tries the whole path as a **module path** (`a/b.doodle`); if no such
+module exists, it falls back to the **member** reading (bind `b` from module
+`a`). A name supplied by the host's native registry takes precedence over a
+same-named source module. The parser records only the dotted path; the choice is
+a loading concern.
 
 Import forms concern **name binding**; **loading** is separate and happens once
 per module:

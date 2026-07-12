@@ -99,6 +99,17 @@ conformance) have landed.
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
       **block arguments** `f() do … end`, and the S-4 no-block-arg *enforcement*
       are **M1.9** — not M1.8; only the block *parameter* `do name` is M1.8.)
+
+- [~] **M1.9 — imports + calls + blocks.** In progress; a landed, b next.
+  - [x] **M1.9a** — `import` (L§11.2, five target forms + comma) with the S-7
+        resolution-order note; a new `.*` (`DotStar`) token. Done log. doodle-rust
+        `dcc0b63`. **Provisional DotStar spec-delta filed (needs a ruling) — see
+        Awaiting-the-user.**
+  - [ ] **M1.9b** — next: call-site **block arguments** `f() do (params) … end`
+        (L§6.4/§8.5) on calls, and the **S-4 no-block-arg enforcement** (a
+        construct header must not consume a trailing `do … end`; the spec was
+        pinned at M1.7, the flag gets its consumer now); enrich the `stray_do`
+        diagnostic with the parenthesize-the-call hint once block-args parse.
   - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
   - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
         (L§9/§10) + `capture_docstring`. Done log. (Its provisional protocol-`end`
@@ -228,6 +239,22 @@ Discovered at M1.7 (statement parser; non-blocking recovery-quality):
   "expected an expression" and stretching the exit node's span over the stray
   token. Malformed-input only.
 
+Discovered at M1.9a (import `.*` × S-2 continuation; provisional fix shipped,
+needs a user ruling):
+- **`.*` (import wildcard) vs. S-2 continuation.** The `*` of `.*` (L§11.2), if
+  lexed as a bare `Star`, is a continuation trigger (L§3.2), so `import shapes.*`
+  followed by a newline silently *merges* with the next line — `import shapes.*
+  \n import colors` lexed as one statement. **Provisional fix shipped** (doodle-
+  rust `dcc0b63`): a new `.*` **`DotStar` token** — `.` immediately followed by
+  `*` is one token (the grammar already writes `'.*'` as a unit), and it is
+  **not** a continuation trigger, so `import m.*` ends its line. `.` is never
+  validly followed by `*` outside `.*`, so no valid program changes. **Ruling
+  needed:** confirm the DotStar token + non-continuation behavior, and pin it in
+  the spec (a `.*` entry in L§3.7 operators/punctuation, and a line in L§3.2 that
+  `.*` is not a continuation trigger). Reversible; the provisional lets `import
+  m.*` work today. A `dot_star_is_one_token_not_a_continuation_trigger` lex test
+  pins it.
+
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to
   `XID_Start`/`XID_Continue`.** The NFC-closed variants (matching the code /
@@ -244,6 +271,15 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-12 — **M1.9a: `import` declarations (L§11.2) + a `.*` (DotStar) token.**
+  `Node::Import(Vec<ImportTarget>)` (path/wildcard/alias); `parse/moddecl.rs`
+  `import_stmt`/`import_target` (five target forms + comma; `.*` not renamable;
+  module-level-only). The parser records the dotted path only — module-vs-member
+  is load-time (S-7, note landed in L§11.2). Also a new `DotStar` token fixing a
+  real S-2 interaction (`import m.*` would merge with the next line because a
+  bare `*` continues) — provisional, filed for a ruling (see Awaiting-the-user /
+  the M1.9a discovered-delta). Read-only review: no defects. parse+lex 35,
+  conformance 33/0/2 (+ L11.2 forms + wildcard-rename). doodle-rust `dcc0b63`.
 - 2026-07-11 — **S-53: single-line triple-quoted strings + split `lex/triple.rs`.**
   `"""x"""` (closes on its opening line) is the single-line form (inline value,
   no margin, unescaped `"` ok, escapes+interp); multi-line unchanged; the hybrid
