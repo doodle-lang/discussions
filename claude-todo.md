@@ -16,30 +16,32 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
-- **Protocol member `end` ambiguity (L§10.1) — provisional choice shipped
-  M1.8b, needs a user ruling.** The grammar `proto-member = ('to'|'fn') IDENT
-  '(' params ')' (body)? 'end'?` leaves *both* the body and the `end` optional,
-  so a bodyless signature followed by `end` is ambiguous: is the `end` the
-  member's (an empty-body **default**) or the enclosing **protocol's** (the
-  member is **required**)? The spec's only example (§10.1 `Iterable`) has a
-  required `to each(self, do body)` whose trailing `end` closes the protocol.
-  **Provisional resolution shipped:** required = bare signature; default = a
-  NON-empty body + `end`; a bodyless signature's following `end` is the
-  protocol's (matches `Iterable`). **Consequences:** an empty-body default
-  (`to noop(self) end`) is not expressible, and — the review's MAJOR concern —
-  a protocol whose members are each written with an explicit trailing `end`
-  (`protocol P to a(self) end to b(self) end end`) **misparses**: `a`'s `end`
-  closes the protocol early and `b` leaks out as a top-level declaration with
-  spurious errors. Plausible for a kid who thinks every member needs an `end`.
-  Pinned by `protocol_member_trailing_end_is_a_provisional_ambiguity` (parse.rs)
-  and documented in `parse/typedecl.rs` `proto_member`. **User decision needed:**
-  either (a) keep this (defaults must have non-empty bodies; a required member
-  takes no `end`) and add a targeted diagnostic for the misplaced-`end` form,
-  or (b) require every member to carry an explicit `end` (breaks the `Iterable`
-  example — would need §10.1 revised), or (c) another rule. Resolve in L§10.1;
-  needs an S-number when the user next curates Appendix C. Also (review MINOR):
-  §10.1 line ~1356 (`'(' params ')'`) and Appendix A line ~1734 (`'(' params?
-  ')'`) are divergent grammar copies to reconcile — code follows `params?`.
+(none — the protocol-member `end` ambiguity is **RESOLVED as S-52**, see
+below; code follow-up outstanding)
+
+**S-52 RESOLVED (user, 2026-07-11): every protocol member is terminated by
+its own `end`.** Empty body (docstring permitted) = required; non-empty
+body = default (no-op defaults via an explicit `nil`). Kills the silent
+misparse structurally, makes "every `to`/`fn` ends with `end`"
+exception-free, and turns bare signatures into a loud targeted error.
+The §10.1-vs-App A `params?` divergence is reconciled (optional, per the
+code). Spec landed (L§10.1 grammar + prose + Iterable example, App A,
+App D.1, App C S-52). **Code follow-up (next parser session):** flip the
+M1.8b provisional in `parse/typedecl.rs` (`proto_member` now requires the
+member `end`), replace
+`protocol_member_trailing_end_is_a_provisional_ambiguity` with tests
+asserting the new parse + the bare-signature diagnostic ("each protocol
+member needs its own `end`"), and update any protocol fixtures.
+
+**S-53 RESOLVED (user, 2026-07-11): single-line `"""x"""` is allowed** —
+a triple-quoted literal closing on its opening line is a single-line form
+(inline value, no margin rules, unescaped `"` OK); multi-line rules
+unchanged; opener content without a same-line close is a static error
+offering both fixes. The §8.6/§10.1 docstring examples are now correct as
+written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
+(next lexer session):** the single-line arm in M1.5's
+`scan_triple_string` (+ `malformed-triple-quote` message update) + tests
+(incl. `""""""` = empty, quote-runs at the closer).
 
 ## Awaiting the user (blocking)
 
@@ -55,25 +57,6 @@ where the body produces a value (`fn`, named or anonymous) and the
 grammar). Rawness follows classification (docstrings raw; `fn` lone-string
 result evaluated). Full rationale + rejected alternatives (incl. explicit
 docstring syntax) in Appendix C S-27; M1.8 lands the L§8.6 edit.
-
-**Single-line triple-quoted strings — spec examples contradict L§3.6.4
-(discovered M1.8b, 2026-07-11; needs a user ruling).** L§3.6.4 requires a
-triple-quoted string's opening `"""` to be the **last token on its line**
-(contents begin on the next line), so a single-line `"""x"""` is a lex error
-(`malformed-triple-quote`). But the docstring examples in **§8.6**
-(`"""Euclidean distance between two points."""`) and **§10.1**
-(`"""Types whose elements can be visited in order."""`) — the "idiomatic
-docstring form" per L§3.6.4 line 379 — are single-line triple-quoted and
-fail to lex. The lexer is correct (it implements L§3.6.4); the *examples* are
-inconsistent with the normative rule. Options: **(a)** fix the §8.6/§10.1
-examples to multi-line triple (or plain `"…"`), keeping the one-mode rule;
-**(b)** revise L§3.6.4 to also allow a single-line `"""x"""` (value = the
-inline content, no margin stripping), matching the examples and Python
-(recommended — single-line docstrings are common and the examples assume
-them; cost is a two-mode triple-quote rule + a lexer change in the M1.5
-`scan_triple_string`). M1.8c lands the L§8.6 docstring edit and should carry
-whichever example fix this implies. **Not blocking** M1.8 parsing —
-conformance fixtures use valid forms (multi-line triple / plain).
 
 **Non-blocking, for confirmation:** the M1.3 lexer spec edits — S-2
 continuation triggers (L§3.2), numeric-literal lexing (L§3.6.1/§3.6.2), and

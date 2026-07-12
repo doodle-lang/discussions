@@ -317,10 +317,14 @@ Examples:
 "a literal brace: {{ and }}"
 ```
 
-#### 3.6.4 Triple-quoted (multi-line) string literals
+#### 3.6.4 Triple-quoted string literals
 
-A triple-quoted string spans multiple lines and applies indentation stripping.
-It supports the same escapes and interpolation as ordinary strings.
+A triple-quoted string has two forms. The **single-line form** opens and
+closes on the same line: `"""He said "hi"."""`. Its value is the inline
+content; the margin rules below do not apply (there are no content lines),
+escapes and interpolation behave as in any string, and the content may
+contain `"` unescaped (but not `"""`). The **multi-line form** spans lines
+and applies indentation stripping:
 
 ```
 """
@@ -329,7 +333,12 @@ content line
 """
 ```
 
-Rules:
+A literal that does not close on its opening line is the multi-line form;
+non-whitespace content after the opener that does not close on the same
+line is a static error whose diagnostic offers both fixes ("close it on
+this line, or start the contents on the next").
+
+Rules for the multi-line form:
 
 - The opening `"""` must be the **last token on its line** — not even a comment
   may follow it; the contents begin on the next line. The closing `"""` must be
@@ -1356,14 +1365,18 @@ operator overloading.
 ```
 protocol-decl = 'protocol' IDENT ( 'extends' IDENT )? proto-body 'end'
 proto-body    = ( docstring )? proto-member*
-proto-member  = ( 'to' | 'fn' ) IDENT '(' params ')' ( body )? 'end'?
+proto-member  = ( 'to' | 'fn' ) IDENT '(' params? ')' body 'end'
 ```
 
-A protocol lists members as `to`/`fn` signatures. A member **without** a body is
-**required**: an implementing type must provide it. A member **with** a body is a
-**default**: implementations inherit it but may override it. The `to`/`fn` choice
-declares whether the member is effectful (no result) or value-producing, exactly
-as for ordinary callables.
+A protocol lists members as `to`/`fn` signatures. **Every member is
+terminated by its own `end`** (as every `to`/`fn` is, everywhere in the
+language). A member whose body is **empty** — aside from an optional
+docstring — is **required**: an implementing type must provide it. A member
+with a non-empty body is a **default**: implementations inherit it but may
+override it. (A deliberately no-op default is written with an explicit
+`nil` statement, so it is not mistaken for a required signature.) The
+`to`/`fn` choice declares whether the member is effectful (no result) or
+value-producing, exactly as for ordinary callables.
 
 By convention the first parameter is named `self` and is the value the call
 dispatches on; `self` is not a keyword and any name may be used.
@@ -1376,7 +1389,9 @@ default-member mechanism.
 ```
 protocol Iterable
     """Types whose elements can be visited in order."""
-    to each(self, do body)          # required
+    to each(self, do body)
+        "Visits each element in order."
+    end                             # empty body: each is required
 end
 ```
 
@@ -1735,7 +1750,7 @@ param       = IDENT ( '=' expression )? | 'do' IDENT
 record-decl = 'ref'? 'record' IDENT 'with' IDENT ( ',' IDENT )* body? 'end'
 protocol-decl = 'protocol' IDENT ( 'extends' IDENT )? proto-body 'end'
 proto-body  = docstring? proto-member*
-proto-member= ( 'to' | 'fn' ) IDENT '(' params? ')' body? 'end'?
+proto-member= ( 'to' | 'fn' ) IDENT '(' params? ')' body 'end'
 implement-decl = 'implement' IDENT 'for' IDENT ( to-decl | fn-decl )* 'end'
 module-decl = 'module' IDENT body 'end'
 parameter-decl = 'parameter' IDENT '=' expression
@@ -1948,6 +1963,27 @@ likely to change.
   (Java/C#/Lua reject `(a) = c`) was considered and rejected, since it buys no
   safety and would require the parser to track parentheses it deliberately
   erases. Redundant parentheses are IDE-lint territory, not an error.
+- **Protocol members always take `end` (§10.1, App A; resolves
+  implementation-plan Appendix C S-52).** The draft made both a member's body
+  and its `end` optional, so a bare signature followed by `end` was ambiguous
+  (member's empty-body `end` vs. the protocol's) — and the natural mistake of
+  writing `end` after every member *silently misparsed* into a legal program
+  (the protocol closed early; later members leaked out as top-level
+  declarations). Resolved: every member is terminated by `end`; an empty body
+  (docstring permitted) means required, a non-empty body means default. This
+  removes the ambiguity structurally, makes "every `to`/`fn` ends with `end`"
+  exception-free, lets required members carry docstrings, and turns the
+  bare-signature style into a loud, easily-diagnosed error instead of a silent
+  one. (`params` also made optional in §10.1's grammar, reconciling it with
+  Appendix A and the implementation.)
+- **Single-line triple-quoted strings (§3.6.4; resolves implementation-plan
+  Appendix C S-53).** The draft's §8.6/§10.1 examples used single-line
+  `"""x"""` docstrings while §3.6.4 required the opener to end its line — a
+  self-contradiction. Resolved in the examples' favor: a triple-quoted literal
+  that closes on its opening line is a single-line form (no margin rules;
+  unescaped `"` permitted), matching Python habits; the multi-line rules apply
+  unchanged whenever the literal spans lines, and content after the opener
+  without a same-line close is a static error offering both fixes.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

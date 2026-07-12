@@ -1041,7 +1041,35 @@ Rust, Python) accepts; the strict-grammar family (Java, C#, Lua) rejects;
 rejection was declined since it buys no safety and needs paren-tracking
 the AST deliberately erases (redundant parens are IDE-lint territory).
 **[resolved — L§5.3 + App A + App D.1 landed with this entry; a pinning
-`(a) = 5` accept-side test rides with the next parser work item]**
+`(a) = 5` accept-side test rides with the next parser work item]** ·
+S-52 (L§10.1/App A) Protocol-member `end` ambiguity (MAJOR, found at
+M1.8b): with both the body and `end` optional, a bare signature followed
+by `end` was ambiguous, and the natural everything-needs-`end` style
+**silently misparsed** into a legal program (protocol closed early; later
+members leaked out as top-level declarations). **RESOLVED (user,
+2026-07-11): every member is terminated by `end`** — an empty body
+(docstring permitted) means *required*, a non-empty body means *default*
+(no-op defaults written with an explicit `nil`). Structural fix: no
+ambiguity, "every `to`/`fn` ends with `end`" is exception-free, required
+members can carry docstrings, and the bare-signature style becomes a
+loud, targeted error ("each protocol member needs its own `end`").
+Rejected: keeping the provisional lazy rule + diagnostic (no diagnostic
+can fire — every fragment of the misparse is locally legal) and greedy
+`end` attachment (makes trailing required members unwritable). Also
+reconciles the §10.1-vs-App A `params?` divergence (optional, per the
+implementation). **[spec resolved — L§10.1 + App A + App D.1 landed with
+this entry; code follow-up: flip the M1.8b provisional parser + the
+`protocol_member_trailing_end_is_a_provisional_ambiguity` test]** ·
+S-53 (L§3.6.4/§8.6/§10.1) Single-line triple-quoted strings: the spec's
+own docstring examples used `"""x"""` on one line while §3.6.4 forbade
+it. **RESOLVED (user, 2026-07-11): allowed** — a triple-quoted literal
+that closes on its opening line is a *single-line form* (inline value, no
+margin rules, unescaped `"` permitted, same escapes/interpolation);
+multi-line rules unchanged when the literal spans lines; content after
+the opener without a same-line close is a static error offering both
+fixes. Matches Python habits and makes the §8.6/§10.1 examples correct
+as written. **[spec resolved — L§3.6.4 + App D.1 landed with this entry;
+code follow-up: the M1.5 scan_triple_string single-line arm + tests]**
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
