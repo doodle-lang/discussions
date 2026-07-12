@@ -95,23 +95,20 @@ conformance tests landing at `stage: lex/parse` per item and upgraded to
 M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
 conformance) have landed.
 
-- [~] **M1.8** — **declarations + docstrings (S-27).** a/b/c1 + the S-52 flip
-      landed; **c2 + the S-53 lexer arm remain.** (Boundary: `import`, call-site
-      **block arguments** `f() do … end`, and the S-4 no-block-arg *enforcement*
-      are **M1.9** — not M1.8; only the block *parameter* `do name` is M1.8.)
+- [~] **M1.8** — **declarations + docstrings (S-27).** All parser work landed
+      (a/b/c1/c2 + the S-52 flip); **only the S-53 lexer arm remains** (a
+      separate M1.5 follow-up). (Boundary: `import`, call-site **block arguments**
+      `f() do … end`, and the S-4 no-block-arg *enforcement* are **M1.9** — not
+      M1.8; only the block *parameter* `do name` is M1.8.)
   - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
   - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
         (L§9/§10) + `capture_docstring`. Done log. (Its provisional protocol-`end`
-        choice is superseded by the S-52 flip — see MAJOR section, now done.)
+        choice is superseded by the S-52 flip — MAJOR section, done.)
   - [x] **M1.8c1** — to/fn/module docstring capture per S-27 (raw, with the
         fn-lone-result rewind) + the L§8.6 edit. Done log. doodle-rust `387c9ed`.
-  - [ ] **M1.8c2** — next: `module`/`parameter`/`exports`; **module-level-only
-        placement rules** (L§7.1: record/protocol/implement/module/parameter/
-        exports nested in a body → static error, with positions).
-      **Sequencing gotcha (M1.7 review):** don't add `stage: parse` fixtures
-      exercising the *remaining* declaration keywords (`module`/`import`/…)
-      before their parser lands — they fall through `statement_dispatch` to the
-      expression parser and emit spurious "expected an expression".
+  - [x] **M1.8c2** — `module`/`parameter`/`exports` + module-level-only placement
+        rules (L§7.1, via a `nested` flag). Done log. doodle-rust `77ad3a5`.
+        Read-only review: no defects.
   - [ ] **S-53 lexer arm** (separate M1.5 lexer follow-up): single-line
         `"""x"""` in `scan_triple_string` (inline value, no margin, unescaped
         `"` ok, escapes+interp) + the hybrid `malformed-triple-quote` message +
@@ -250,6 +247,15 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.8c2: module/parameter/exports + module-level placement**
+  (L§7.1/§11.1/§5.5). `ModuleDecl`/`Parameter`/`Exports` nodes; `parse/moddecl.rs`.
+  Placement via a `nested` Parser flag (set by `block`/`body_with_doc`, false at
+  module level and in `module_body`); `require_module_level` reports a
+  record/protocol/implement/module/parameter/exports parsed while nested
+  (`let`/`const`/`to`/`fn` may nest; a module's contents are module-level).
+  Read-only review: no critical/major/minor (nested save/restore sound,
+  placement complete, termination/panic safe). parse 34/0, conformance 31/0/2
+  (+ L11.1, L5.5, L7.1 placement). doodle-rust `77ad3a5`.
 - 2026-07-11 — **S-52 flip: protocol members require their own `end`.** Replaced
   the M1.8b provisional (`proto_member` now parses a mandatory body + `end` via
   `body_with_doc(…, false)` — a member's lone string is its docstring; empty →
