@@ -47,11 +47,21 @@ body rule (discussions `d96cc33`).
 - [~] **M1.6** — Parser (Pratt expressions). **M1.6a–d landed** (Done log):
   (a) operator-precedence tower + numeric lowering; (b) string/bytes literals;
   (c) postfix `.`/`[]`/`()` with keyword args; (d) list/dict literals. No stage
-  bump yet. Remaining:
-  - **M1.6e** — `if`/`try` expression forms (L§6.8/§6.9); anonymous `fn`
-    (L§6.10). These parse block bodies (`do … end`), so they overlap with M1.7.
-  - **M1.6f** — stage bump to `Parse` + conformance-runner parse-path
-    (run_parse) + `L6.5-*` `stage: parse` fixtures (atomic, like M1.3b).
+  bump yet. **Sequencing finding (2026-07-11):** the pure-expression parser
+  (a–d) is complete, but both remaining pieces sit on M1.7's statement/`body`
+  machinery, so they should land *with* M1.7, not before it:
+  - **M1.6e** — `if`/`try` forms (L§6.8/§6.9) and anonymous `fn` (L§6.10) all
+    use `body = statement ((NEWLINE|';') statement)*` (grammar L§8.4/§7) —
+    statement sequences, not single expressions. So they need the statement
+    parser first (M1.7); the if/try *expression* vs *statement* split is
+    semantic (does the last statement yield a value — S-5/S-6, M1.10), not
+    syntactic.
+  - **M1.6f** — stage bump to `Parse` + conformance parse-path (run_parse) +
+    `L6.5` `stage: parse` fixtures. The runner parses a whole `.doodle` file =
+    a program of statements, so this also needs the program/statement parser
+    (M1.7). Do it once M1.7's `parse_program` exists (atomic, like M1.3b).
+  - Net: **next is M1.7** (statements + `body` + `parse_program`), which lights
+    up if/try/fn, program parsing, the stage bump, and conformance together.
   - Minor recovery follow-up (M1.6c/d reviews, non-blocking): a missing
     separator (`f(1 2)`, `[1 2]`, `{a:1 b:2}`) drops the tail and double-reports;
     multiple positionals after a keyword each report. Recovery-noise on
