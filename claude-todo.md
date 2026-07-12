@@ -16,7 +16,30 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
-(none)
+- **Protocol member `end` ambiguity (L§10.1) — provisional choice shipped
+  M1.8b, needs a user ruling.** The grammar `proto-member = ('to'|'fn') IDENT
+  '(' params ')' (body)? 'end'?` leaves *both* the body and the `end` optional,
+  so a bodyless signature followed by `end` is ambiguous: is the `end` the
+  member's (an empty-body **default**) or the enclosing **protocol's** (the
+  member is **required**)? The spec's only example (§10.1 `Iterable`) has a
+  required `to each(self, do body)` whose trailing `end` closes the protocol.
+  **Provisional resolution shipped:** required = bare signature; default = a
+  NON-empty body + `end`; a bodyless signature's following `end` is the
+  protocol's (matches `Iterable`). **Consequences:** an empty-body default
+  (`to noop(self) end`) is not expressible, and — the review's MAJOR concern —
+  a protocol whose members are each written with an explicit trailing `end`
+  (`protocol P to a(self) end to b(self) end end`) **misparses**: `a`'s `end`
+  closes the protocol early and `b` leaks out as a top-level declaration with
+  spurious errors. Plausible for a kid who thinks every member needs an `end`.
+  Pinned by `protocol_member_trailing_end_is_a_provisional_ambiguity` (parse.rs)
+  and documented in `parse/typedecl.rs` `proto_member`. **User decision needed:**
+  either (a) keep this (defaults must have non-empty bodies; a required member
+  takes no `end`) and add a targeted diagnostic for the misplaced-`end` form,
+  or (b) require every member to carry an explicit `end` (breaks the `Iterable`
+  example — would need §10.1 revised), or (c) another rule. Resolve in L§10.1;
+  needs an S-number when the user next curates Appendix C. Also (review MINOR):
+  §10.1 line ~1356 (`'(' params ')'`) and Appendix A line ~1734 (`'(' params?
+  ')'`) are divergent grammar copies to reconcile — code follows `params?`.
 
 ## Awaiting the user (blocking)
 
@@ -32,6 +55,25 @@ where the body produces a value (`fn`, named or anonymous) and the
 grammar). Rawness follows classification (docstrings raw; `fn` lone-string
 result evaluated). Full rationale + rejected alternatives (incl. explicit
 docstring syntax) in Appendix C S-27; M1.8 lands the L§8.6 edit.
+
+**Single-line triple-quoted strings — spec examples contradict L§3.6.4
+(discovered M1.8b, 2026-07-11; needs a user ruling).** L§3.6.4 requires a
+triple-quoted string's opening `"""` to be the **last token on its line**
+(contents begin on the next line), so a single-line `"""x"""` is a lex error
+(`malformed-triple-quote`). But the docstring examples in **§8.6**
+(`"""Euclidean distance between two points."""`) and **§10.1**
+(`"""Types whose elements can be visited in order."""`) — the "idiomatic
+docstring form" per L§3.6.4 line 379 — are single-line triple-quoted and
+fail to lex. The lexer is correct (it implements L§3.6.4); the *examples* are
+inconsistent with the normative rule. Options: **(a)** fix the §8.6/§10.1
+examples to multi-line triple (or plain `"…"`), keeping the one-mode rule;
+**(b)** revise L§3.6.4 to also allow a single-line `"""x"""` (value = the
+inline content, no margin stripping), matching the examples and Python
+(recommended — single-line docstrings are common and the examples assume
+them; cost is a two-mode triple-quote rule + a lexer change in the M1.5
+`scan_triple_string`). M1.8c lands the L§8.6 docstring edit and should carry
+whichever example fix this implies. **Not blocking** M1.8 parsing —
+conformance fixtures use valid forms (multi-line triple / plain).
 
 **Non-blocking, for confirmation:** the M1.3 lexer spec edits — S-2
 continuation triggers (L§3.2), numeric-literal lexing (L§3.6.1/§3.6.2), and
@@ -75,22 +117,27 @@ conformance tests landing at `stage: lex/parse` per item and upgraded to
 M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
 conformance) have landed.
 
-- [ ] **M1.8** — next: **declarations + docstrings (S-27).** Named `to`/`fn`
-      declarations, `record`/`protocol`/`implement`, `module`/`parameter`/
-      `import`/`exports`, anonymous `fn` (L§6.10), and **block arguments**
-      (`f() do … end`, L§6.4/§8.5) — these share the `params`/`block-params`
-      grammar, which is why M1.7 deferred them here (Option-1 scope, user away;
-      revisit if the user wanted block-args/anon-fn pulled into M1.7). **S-4
-      residual for M1.8:** once block arguments parse, the header must keep *not*
-      consuming a trailing `do … end` (the no-block-arg mode — spec pinned in
-      L§6.4 at M1.7); wire the enforcement flag then, and enrich the `stray_do`
-      diagnostic (currently withholds the `(f() do … end)` escape-hatch hint
-      because block-args don't parse yet). **S-27 is resolved** (see above /
-      App C) — land the L§8.6 edit with this item. **Sequencing gotcha (M1.7
-      review):** don't add `stage: parse`
-      fixtures exercising declaration keywords (`to`/`fn`/`record`/`import`/…)
-      before M1.8 — they currently fall through `statement_dispatch` to the
-      expression parser and would emit spurious "expected an expression".
+- [~] **M1.8** — **declarations + docstrings (S-27).** In progress; a/b landed,
+      c next. (Boundary correction: `import`, call-site **block arguments**
+      `f() do … end`, and the S-4 no-block-arg *enforcement* are **M1.9**
+      — "imports + calls + blocks" — not M1.8. An earlier note here misfiled
+      them; only the block *parameter* `do name` in a callable's params is M1.8.)
+  - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
+  - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
+        (L§9/§10) + the `capture_docstring` helper. Done log. **Shipped a
+        provisional choice on the L§10.1 protocol-member `end` ambiguity — see
+        the MAJOR section; needs a user ruling.**
+  - [ ] **M1.8c** — next: `module`/`parameter`/`exports`; **module-level-only
+        placement rules** (L§7.1: record/protocol/implement/module/parameter/
+        exports nested in a body → static error, with positions); **to/fn/module
+        docstring capture** per the resolved **S-27** (lone string = result in a
+        value-producing `fn`, else docstring; records/protocols already capture);
+        land the **L§8.6** spec edit. Also carry the §8.6/§10.1 single-line
+        triple-quoted example fix once the triple-quote question (above) is ruled.
+      **Sequencing gotcha (M1.7 review):** don't add `stage: parse` fixtures
+      exercising the *remaining* declaration keywords (`module`/`import`/…)
+      before their parser lands — they fall through `statement_dispatch` to the
+      expression parser and emit spurious "expected an expression".
 
 **Stage gate — now at Parse (M1.7):** `implemented_through()` returns
 `Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
@@ -224,6 +271,27 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-11 — **M1.8b: record/protocol/implement + docstring capture**
+  (L§9.1/§10.1/§10.2). `Record`/`Protocol`/`Implement` nodes + `ProtoMember`;
+  `parse/typedecl.rs`; `capture_docstring` (consumes a string's token stream
+  without parsing its interpolations → raw span; `Callable.doc` is now
+  `Option<Span>`). Records: fields + docstring-only body (extra content → error).
+  Protocols: `extends`, required vs default members. Implement: reuses
+  `callable_decl`. **Read-only review found a MAJOR: the L§10.1 protocol-member
+  `end` ambiguity** — provisional choice shipped + pinned + surfaced (see MAJOR
+  section). `capture_docstring`, `field_list`, record parsing all verified sound
+  (400k-style probes; termination/panic/depth clean). Discovered the single-line
+  triple-quoted docstring spec inconsistency (see Awaiting-the-user). parse 28/0,
+  conformance 27/0/2 (+ L9.1×2, L10.1, L10.2). doodle-rust `a78b86d`.
+- 2026-07-11 — **M1.8a: to/fn declarations, anonymous fn, shared params**
+  (L§8.1/§8.2/§6.10). `Node::Callable { kind, name, params, body, doc }`, `Param`
+  (Ordinary+default / Block `do name`), `CallableKind`. `parse/decl.rs`
+  (`callable_decl`/`anon_fn`/one `param_list`; block param last, at most one;
+  defaults). `fn name(…)` = decl, `fn(…)` = anon (one-token lookahead). Read-only
+  review (fn/anon disambiguation, block-param-last, default-expr boundaries,
+  param_list termination, depth): no critical/major; folded one cosmetic MINOR
+  (dead index → bool). parse 23/0, conformance 23/0/2 (+ L8.1, L8.2). doodle-rust
+  `90d002c`.
 - 2026-07-11 — **M1.7: statement parser + stage → Parse** (L§7). Recursive-
   descent statements on the Pratt expression parser: `ast` statement nodes
   (Let/Const/Assign, Block, If, While, Loop, With, Try, Return/Break/Continue/
