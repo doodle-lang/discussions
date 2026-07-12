@@ -26,12 +26,11 @@ misparse structurally, makes "every `to`/`fn` ends with `end`"
 exception-free, and turns bare signatures into a loud targeted error.
 The §10.1-vs-App A `params?` divergence is reconciled (optional, per the
 code). Spec landed (L§10.1 grammar + prose + Iterable example, App A,
-App D.1, App C S-52). **Code follow-up (next parser session):** flip the
-M1.8b provisional in `parse/typedecl.rs` (`proto_member` now requires the
-member `end`), replace
-`protocol_member_trailing_end_is_a_provisional_ambiguity` with tests
-asserting the new parse + the bare-signature diagnostic ("each protocol
-member needs its own `end`"), and update any protocol fixtures.
+App D.1, App C S-52). **Code follow-up: DONE (doodle-rust `bff4bcd`)** —
+`proto_member` now requires the member `end` (empty body → required,
+non-empty → default); `close_protocol` emits the targeted bare-signature
+diagnostic; the ambiguity-pinning test is replaced with S-52 tests and the
+L10.1 fixture updated. Read-only review: no defects.
 
 **S-53 RESOLVED (user, 2026-07-11): single-line `"""x"""` is allowed** —
 a triple-quoted literal closing on its opening line is a single-line form
@@ -56,7 +55,12 @@ where the body produces a value (`fn`, named or anonymous) and the
 *docstring* otherwise (`to`/module; record/protocol are docstring-only by
 grammar). Rawness follows classification (docstrings raw; `fn` lone-string
 result evaluated). Full rationale + rejected alternatives (incl. explicit
-docstring syntax) in Appendix C S-27; M1.8 lands the L§8.6 edit.
+docstring syntax) in Appendix C S-27. **Code + L§8.6 edit: DONE** — parser
+captures to/fn/module docstrings raw (fn lone string = result, via a
+capture-then-rewind so a docstring's `{…}` is never parsed); L§8.6 states
+the classification (discussions `2b0c4a0`); doodle-rust `387c9ed` (an
+adversarial review workflow caught a CRITICAL — a first draft parsed the
+docstring interpolation as code — fixed + regression-tested).
 
 **Non-blocking, for confirmation:** the M1.3 lexer spec edits — S-2
 continuation triggers (L§3.2), numeric-literal lexing (L§3.6.1/§3.6.2), and
@@ -91,27 +95,28 @@ conformance tests landing at `stage: lex/parse` per item and upgraded to
 M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
 conformance) have landed.
 
-- [~] **M1.8** — **declarations + docstrings (S-27).** In progress; a/b landed,
-      c next. (Boundary correction: `import`, call-site **block arguments**
-      `f() do … end`, and the S-4 no-block-arg *enforcement* are **M1.9**
-      — "imports + calls + blocks" — not M1.8. An earlier note here misfiled
-      them; only the block *parameter* `do name` in a callable's params is M1.8.)
+- [~] **M1.8** — **declarations + docstrings (S-27).** a/b/c1 + the S-52 flip
+      landed; **c2 + the S-53 lexer arm remain.** (Boundary: `import`, call-site
+      **block arguments** `f() do … end`, and the S-4 no-block-arg *enforcement*
+      are **M1.9** — not M1.8; only the block *parameter* `do name` is M1.8.)
   - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
   - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
-        (L§9/§10) + the `capture_docstring` helper. Done log. **Shipped a
-        provisional choice on the L§10.1 protocol-member `end` ambiguity — see
-        the MAJOR section; needs a user ruling.**
-  - [ ] **M1.8c** — next: `module`/`parameter`/`exports`; **module-level-only
+        (L§9/§10) + `capture_docstring`. Done log. (Its provisional protocol-`end`
+        choice is superseded by the S-52 flip — see MAJOR section, now done.)
+  - [x] **M1.8c1** — to/fn/module docstring capture per S-27 (raw, with the
+        fn-lone-result rewind) + the L§8.6 edit. Done log. doodle-rust `387c9ed`.
+  - [ ] **M1.8c2** — next: `module`/`parameter`/`exports`; **module-level-only
         placement rules** (L§7.1: record/protocol/implement/module/parameter/
-        exports nested in a body → static error, with positions); **to/fn/module
-        docstring capture** per the resolved **S-27** (lone string = result in a
-        value-producing `fn`, else docstring; records/protocols already capture);
-        land the **L§8.6** spec edit. Also carry the §8.6/§10.1 single-line
-        triple-quoted example fix once the triple-quote question (above) is ruled.
+        exports nested in a body → static error, with positions).
       **Sequencing gotcha (M1.7 review):** don't add `stage: parse` fixtures
       exercising the *remaining* declaration keywords (`module`/`import`/…)
       before their parser lands — they fall through `statement_dispatch` to the
       expression parser and emit spurious "expected an expression".
+  - [ ] **S-53 lexer arm** (separate M1.5 lexer follow-up): single-line
+        `"""x"""` in `scan_triple_string` (inline value, no margin, unescaped
+        `"` ok, escapes+interp) + the hybrid `malformed-triple-quote` message +
+        tests (incl. `""""""` = empty, quote-runs at the closer). Once it lands,
+        the §8.6/§10.1 single-line-triple examples lex as written.
 
 **Stage gate — now at Parse (M1.7):** `implemented_through()` returns
 `Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
@@ -244,6 +249,25 @@ npm scope), D-5 (Unicode pin verification), D-6 (demo posture), D-7
 resolved (but see the visibility discrepancy above).
 
 ## Done
+
+- 2026-07-11 — **S-52 flip: protocol members require their own `end`.** Replaced
+  the M1.8b provisional (`proto_member` now parses a mandatory body + `end` via
+  `body_with_doc(…, false)` — a member's lone string is its docstring; empty →
+  required, non-empty → default); `close_protocol` emits the targeted
+  bare-signature diagnostic; `ProtoMember` gains a `doc` span; S-52 tests replace
+  the ambiguity pin; L10.1 fixture updated. Read-only review: no defects.
+  doodle-rust `bff4bcd`.
+- 2026-07-11 — **M1.8c1: S-27 docstring capture (to/fn/module).** A body's
+  leading string is captured raw (`{…}` inert) and classified per S-27: a lone
+  string is the result in a value-producing `fn` (capture-then-rewind so it is
+  re-parsed as an evaluated literal), the docstring in a `to`/module. `Node::Module`
+  now carries a `doc`. **An adversarial review workflow (4 lenses + verify)
+  caught a CRITICAL** — the first draft ran a post-parse extractor, so a
+  docstring whose `{…}` isn't a single valid expression emitted cascading errors
+  and desynced (while the same text in a record was inert); fixed by capturing
+  raw first (matching the record/protocol path) + a regression test over every
+  body kind. §8.6 protocol-body omission (MINOR) also fixed. L§8.6 edit:
+  discussions `2b0c4a0`. doodle-rust `387c9ed`.
 
 - 2026-07-11 — **M1.8b: record/protocol/implement + docstring capture**
   (L§9.1/§10.1/§10.2). `Record`/`Protocol`/`Implement` nodes + `ProtoMember`;
