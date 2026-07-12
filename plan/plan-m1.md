@@ -163,20 +163,20 @@ diagnostic; statement-form conformance tests green at `stage: parse`.
 `to`/`fn` declarations (params, defaults, `do body` block param —
 at most one, last); `record`/`ref record`; `protocol`/`extends` with
 required-vs-default members; `implement … for …`; `module`; `parameter`;
-`exports`; docstring capture as metadata. Resolve **S-27** with the
-L§8.6 edit: interpolation-in-docstrings = raw text (already pinned in
-Appendix C); the **body-is-only-a-string corner is a genuine semantic
-fork — decide with the user at item start.** Recommended resolution, for
-that discussion: a string literal is the docstring only when **followed
-by at least one more statement**; a lone string is an ordinary
-expression (an `fn`'s result — so `fn greeting() "hello" end` works —
-and a discarded value in a `to`). Cost: a body-less `to` cannot carry a
-docstring. Alternatives: lone-string-is-docstring (Python-like, but
-makes the constant-returning `fn` a falls-off-end error), or
-per-kind asymmetry. The user picks; the L§8.6 edit states it.
+`exports`; docstring capture as metadata. **S-27 is resolved (user,
+2026-07-11 — full text in App C):** a lone string is the body's *result*
+where the body produces a value (an `fn`'s return value — named or
+anonymous), and the *docstring* otherwise (`to` and module bodies;
+record/protocol bodies are docstring-only by grammar). First-string-
+followed-by-more-statements is the docstring in every body kind.
+Rawness follows classification: docstrings are raw (interpolation
+inert); an `fn`'s lone-string result is evaluated normally. Land the
+L§8.6 edit with this item.
 *Accept:* golden ASTs for every declaration form in L's examples;
-`L8.6-*` docstring tests (`stage: parse`); placement-rule negatives
-(module-level-only declarations, L§7.1) with positions.
+`L8.6-*` docstring tests (`stage: parse`) incl. the lone-string cases —
+`fn` lone string parses as result (interpolation active), `to`/module
+lone string as docstring (raw), doc+result `fn` gets both; placement-rule
+negatives (module-level-only declarations, L§7.1) with positions.
 
 ### M1.9 — Parser: imports + calls + blocks — **TODO**
 

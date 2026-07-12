@@ -24,9 +24,14 @@ go at the top, per CLAUDE.md.
 it stays open to revision and is exercised in earnest at the M1.13 review.
 
 Context: plans ratified, machine-design v0.2 accepted, repos deliberately
-public, issues enabled on discussions + doodle-rust: all 2026-07-10. The
-S-27 semantic fork is decided with the user at M1.8 start — options +
-recommendation in plan-m1 M1.8.)
+public, issues enabled on discussions + doodle-rust: all 2026-07-10.)
+
+**S-27 RESOLVED (user, 2026-07-11):** a lone-string body is the *result*
+where the body produces a value (`fn`, named or anonymous) and the
+*docstring* otherwise (`to`/module; record/protocol are docstring-only by
+grammar). Rawness follows classification (docstrings raw; `fn` lone-string
+result evaluated). Full rationale + rejected alternatives (incl. explicit
+docstring syntax) in Appendix C S-27; M1.8 lands the L§8.6 edit.
 
 **Non-blocking, for confirmation:** the M1.3 lexer spec edits — S-2
 continuation triggers (L§3.2), numeric-literal lexing (L§3.6.1/§3.6.2), and
@@ -80,8 +85,9 @@ conformance) have landed.
       consuming a trailing `do … end` (the no-block-arg mode — spec pinned in
       L§6.4 at M1.7); wire the enforcement flag then, and enrich the `stray_do`
       diagnostic (currently withholds the `(f() do … end)` escape-hatch hint
-      because block-args don't parse yet). Resolve **S-27** first (docstring
-      corners). **Sequencing gotcha (M1.7 review):** don't add `stage: parse`
+      because block-args don't parse yet). **S-27 is resolved** (see above /
+      App C) — land the L§8.6 edit with this item. **Sequencing gotcha (M1.7
+      review):** don't add `stage: parse`
       fixtures exercising declaration keywords (`to`/`fn`/`record`/`import`/…)
       before M1.8 — they currently fall through `statement_dispatch` to the
       expression parser and would emit spurious "expected an expression".

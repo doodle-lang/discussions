@@ -972,8 +972,27 @@ value-less — error at the consuming site, uniformly (amends §8.4's
 "raises at runtime" and §8.5's block-value sentence accordingly). ·
 S-7 (L§11.2) `import a.b` module-vs-member resolution order (try module
 path first, member fallback; native registry precedence). ·
-S-27 (L§8.6) Docstring corners: body that is only a string; interpolation
-in docstrings (treat as raw text — not executed). ·
+S-27 (L§8.6) Docstring corners. **RESOLVED (user, 2026-07-11):** a lone
+string (a body that is *only* a string literal) is **the body's result
+where the body produces a value, and the docstring otherwise** — in an
+`fn` (named or anonymous) it is the return value, so
+`fn greeting() "hello" end` works; in a `to` or module body it is the
+docstring, so `to stub() "TODO" end` and doc-only modules keep their
+documentation. Record/protocol bodies are docstring-only by grammar, so a
+lone string there is always the docstring. A first string *followed by at
+least one more statement* is the docstring in every body kind. The
+classification decides rawness: docstrings are raw text (interpolation
+inert — the previously pinned half); an `fn`'s lone-string result is an
+ordinary evaluated literal (interpolation runs). Noted footgun (accepted):
+deleting an `fn`'s implementation while keeping its doc line turns the doc
+into the return value — rarer than constant-returning functions, loud in
+practice, lintable. Rejected: lone-string-is-docstring everywhere
+(Python's rule; confiscates a visible return value and makes
+`fn greeting() "hello" end` a falls-off-end error), docstring-requires-a-
+following-statement (silently drops stub/module docs), and a dedicated
+docstring *syntax* (the only other principled option, but new syntax for
+what the position convention already handles; revisitable later without
+breaking programs). Land the L§8.6 edit with M1.8. ·
 S-47 (L§3.6.3/§3.6.4/§6.7) Interpolations never contain line terminators,
 in **any** string form: a single-line string's `{expr}` cannot introduce a
 newline the literal itself forbids (and preserves end-of-line error
