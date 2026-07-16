@@ -100,16 +100,17 @@ conformance) have landed.
       **block arguments** `f() do … end`, and the S-4 no-block-arg *enforcement*
       are **M1.9** — not M1.8; only the block *parameter* `do name` is M1.8.)
 
-- [~] **M1.9 — imports + calls + blocks.** In progress; a landed, b next.
+- [~] **M1.9 — imports + calls + blocks.** In progress; a and b landed
+      (calls/block-arguments done); the milestone is essentially complete.
   - [x] **M1.9a** — `import` (L§11.2, five target forms + comma) with the S-7
         resolution-order note; a new `.*` (`DotStar`) token. Done log. doodle-rust
-        `dcc0b63`. **Provisional DotStar spec-delta filed (needs a ruling) — see
-        Awaiting-the-user.**
-  - [ ] **M1.9b** — next: call-site **block arguments** `f() do (params) … end`
-        (L§6.4/§8.5) on calls, and the **S-4 no-block-arg enforcement** (a
-        construct header must not consume a trailing `do … end`; the spec was
-        pinned at M1.7, the flag gets its consumer now); enrich the `stray_do`
-        diagnostic with the parenthesize-the-call hint once block-args parse.
+        `dcc0b63`. (DotStar ratified as **S-54**.)
+  - [x] **M1.9b** — call-site **block arguments** `f() do (params) … end`
+        (L§6.4/§8.5) on calls + the **S-4 no-block-arg enforcement** (`no_block_arg`
+        flag set across a `while`/`with` header, cleared in every delimited
+        sub-expression and nested body) + the enriched `stray_do` hint. Done log.
+        doodle-rust `344cf32`. **Provisional block-params permissiveness spec-delta
+        filed (needs a ruling) — see Awaiting-the-user.**
   - [x] **M1.8a** — `params`/`to`/`fn`/anonymous-`fn` (L§8.1/§8.2/§6.10). Done log.
   - [x] **M1.8b** — `record`/`ref record`/`protocol`/`extends`/`implement`
         (L§9/§10) + `capture_docstring`. Done log. (Its provisional protocol-`end`
@@ -239,6 +240,21 @@ Discovered at M1.7 (statement parser; non-blocking recovery-quality):
   "expected an expression" and stretching the exit node's span over the stray
   token. Malformed-input only.
 
+Discovered at M1.9b (block arguments; awaiting a ruling):
+- **Block-params permissiveness vs. the App A grammar (provisional).** The M1.9b
+  parser accepts an empty `do () … end` (treated as zero parameters, same as
+  omitting the `()`) and a trailing comma `do (a,) … end`. The Appendix A grammar
+  `block-params = IDENT sep-by ','` (and the `( '(' IDENT ( ',' IDENT )* ')' )?`
+  form) allows neither, but §6.4 prose says a zero-parameter block "may omit the
+  `()`" (permissive-sounding) and the existing call-arg/function-param parsers
+  already accept trailing commas — so the provisional choice keeps block-params
+  *consistent with its siblings* rather than stricter. **Needs a ruling:** either
+  align App A's grammar (permit empty `()` and/or a trailing comma, ideally
+  uniformly with calls/params), or tighten the parser to reject them (accepting
+  that block-params would then be stricter than function params). Pinned by the
+  `block_arguments_l64_l85` test (`go() do () step() end` parses clean). No valid
+  program's meaning changes either way; this is parse-surface only.
+
 **S-54 RESOLVED (user, 2026-07-15): the M1.9a `DotStar` provisional is
 ratified.** `.` immediately followed by `*` (no whitespace) is a single
 `.*` token, not a continuation trigger — `import m.*` ends its line; bare
@@ -265,6 +281,26 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-15 — **M1.9b: call-site block arguments (L§6.4/§8.5) + S-4 header
+  enforcement; extract `parse/literal.rs`.** `Node::Call` gained `block:
+  Option<BlockArg>` (params + body); `postfix.rs` `call()` parses a trailing
+  `do (block-params)? body end` after the argument list. S-4 no-trailing-block
+  mode: a `no_block_arg` flag set true only across a `while`/`with` header
+  (`header_expr`), cleared in every delimited sub-expression (a `delimited()`
+  wrapper: grouping, list, dict, index, call-args, string interp, **`if`
+  condition**, **parameter default**) and every nested body (`enter_body`:
+  `block()`/`body_with_doc`) — so `while f() do … end` is a while-body, and
+  `while (f() do … end) do … end` runs the inner block on `f()`. `stray_do` now
+  suggests parenthesizing. The string/bytes literal assembly moved out of the
+  length-pressured `parse.rs` into `parse/literal.rs` (parallel to
+  `collection.rs`). **Adversarial review (5-lens find→verify workflow, 18
+  agents) caught two real false-rejections in the first draft** — the
+  `no_block_arg` flag leaked into (a) an `if`-condition and (b) an anon-`fn`
+  parameter default used within a header (both parsed via bare `expr(0)`); fixed
+  by wrapping each in `delimited()`, with regression tests. Block-params left
+  provisionally permissive (empty `do ()`, trailing comma) — spec-delta filed
+  (see Awaiting-the-user). parse tests 38, full workspace green, conformance
+  36/0/2 (+ L6.4 ×2, L8.5). doodle-rust `344cf32`.
 - 2026-07-12 — **M1.9a: `import` declarations (L§11.2) + a `.*` (DotStar) token.**
   `Node::Import(Vec<ImportTarget>)` (path/wildcard/alias); `parse/moddecl.rs`
   `import_stmt`/`import_target` (five target forms + comma; `.*` not renamable;
