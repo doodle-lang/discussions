@@ -966,7 +966,35 @@ S-4 (L§6.4/§7) `do`-attachment in construct headers (`while f() do`):
 header expressions parse in no-trailing-block mode. **[resolved M1.7 —
 L§6.4/§7.6 + App D.1]** ·
 S-5 (L§5.3/§6.11/§8.4) Define the "static where determinable" analysis
-boundary so conforming implementations reject the same programs. ·
+boundary so conforming implementations reject the same programs.
+**RESOLVED (user, 2026-07-16): the tail-statement classifier** (the
+resolver-m1.10-design §4 proposal, with refinements). Every battery
+member with no boundary question (duplicate decl, const reassignment,
+undeclared assignment, exit placement, chained comparison, placement
+rules) is always static. For fn-falls-off-end, classify the body's tail
+statement into a four-way lattice, recursively over branches:
+**produces** (value expr / `return expr`) · **diverges** (`raise`; a
+`loop` with **no `break` lexically bound to it** — a lexical lookup via
+M1.11's exit-target annotations, NOT a reachability pass) · **value-less
+→ static error** (`let`/`const`/assignment/`while`/bare `return`/`with`/
+a `loop` with a bound `break`/`if` with no `else`) · **indeterminate →
+runtime** (a call whose proc/fn nature isn't lexically known; S-6's
+consuming-site check owns it). Branch combination for `if`/`try`: any
+branch value-less → static error; else any indeterminate → runtime; else
+OK (so produces-or-diverges mixes are fine: `try f() rescue e raise end`).
+The classifier is **condition-blind** — it judges syntactic form, never
+path feasibility — so dead-tail code (`return 1` then a trailing `let`)
+is rejected by design (Java-precedented; the fix is deleting dead code).
+Scope: `fn` bodies, named and anonymous, only — block bodies stay
+runtime-checked at the consuming site (their consumer may be native and
+may not use the value). Diagnostics: the tail-`while` error suggests
+"if you meant to loop forever, use `loop`". S-6's static half references
+this same lattice rather than redefining "produces". Rejected: weaker
+(empty-body-only — wastes the highest-value check: the
+computed-but-not-produced tail is THE beginner mistake) and stronger
+(whole-body path analysis — the unknown-call cap makes its gains
+marginal while its normative spec surface balloons, JLS-ch.16-style).
+Land the L§8.4/§5.3/§6.11 edits with M1.10. ·
 S-6 (L§6.11, §8.4, §8.5) Void semantics: block/fn whose last statement is
 value-less — error at the consuming site, uniformly (amends §8.4's
 "raises at runtime" and §8.5's block-value sentence accordingly). ·

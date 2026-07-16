@@ -206,11 +206,15 @@ determinable cases), `return`/`break`/`continue` placement +
 fn-falls-off-end, chained comparison (from M1.6), surrogate escapes
 (from M1.4), placement rules. (The S-39 imported-alias-assignment error
 is deliberately *not* here — it needs import resolution and lands at M5,
-per Appendix C.) Resolve **S-5** (define the "static where determinable"
-boundary — the resolver's rules become the normative list) and **S-6 in
+per Appendix C.) **S-5 is resolved (user, 2026-07-16 — full text in App
+C):** the tail-statement classifier with the four-way
+produces/diverges/value-less/indeterminate lattice; loop divergence =
+no *lexically bound* `break` (an exit-target-annotation lookup, not
+reachability); condition-blind (dead-tail code rejected by design);
+`fn` bodies only; tail-`while` error suggests `loop`. Resolve **S-6 in
 full** (the L§6.11/§8.4/§8.5 spec text: Void rejected at the consuming
-site; static where detectable at resolve time, runtime otherwise —
-runtime conformance tests land at M2a) with L edits.
+site, static where the S-5 lattice determines it at resolve time,
+runtime otherwise — runtime conformance tests land at M2a) with L edits.
 *Accept:* every static-error class has ≥1 position-asserting conformance
 test (`mode: static`, now `stage: full`; all earlier-stage tests
 re-verified green at their final stages — this is the staging

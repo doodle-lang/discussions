@@ -131,11 +131,18 @@ conformance) have landed.
       errors in the first draft (undeclared-assignment dropped from S-5; a
       `raise`-tail falls-off-end unsoundness; blocks-share-callable-slots vs. MD
       §8; construct-body scopes omitted; S-6 missing the field/index base operand;
-      GlobalKind↔CellKind; a capture-chunk contradiction) — all fixed. **Needs
-      your ruling on:** S-5 (fn-falls-off-end determinability), S-6 (Void
-      consuming-site), and the concrete-type gap-fills (decisions [1]–[9] in the
-      doc). S-11 (fn-closure capture mutation — MD assumes yes) and S-45 (tail
-      excludes block-arg calls, M1.11) also want locking. Proposed chunks:
+      GlobalKind↔CellKind; a capture-chunk contradiction) — all fixed.
+      **S-5 is RULED (user, 2026-07-16; full text in App C):** the doc's §4
+      tail classifier + four-way lattice is ratified, with deltas — loop
+      divergence is **lexical bound-`break` presence** (an M1.11
+      exit-target lookup), *not* a reachability pass; condition-blind
+      dead-tail rejection stated as a design property; `fn` bodies only;
+      tail-`while` diagnostic suggests `loop`; S-6 shares the lattice.
+      **Still needs your ruling on:** S-6 (Void consuming-site details) and
+      the concrete-type gap-fills (decisions [1]–[9] in the doc). S-11
+      (fn-closure capture mutation — MD assumes yes; already stated in
+      plan-m1 M1.10) also wants locking; S-45 is already user-resolved
+      (App C). Proposed chunks:
       M1.10a (environment/name-resolution pass), M1.10b (error battery + exits),
       M1.10c (Void + falls-off-end + stage-gate bump to Full).
 
