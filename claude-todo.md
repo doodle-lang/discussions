@@ -124,6 +124,21 @@ conformance) have landed.
         (speculative scan + rollback; a review-caught MAJOR fixed). Done log.
         The §8.6/§10.1 single-line-triple examples now lex as written.
 
+- [~] **M1.10 — Resolver: scopes, slots, static-error battery.** Design phase.
+      **A design proposal is filed: `plan/resolver-m1.10-design.md` — awaiting
+      ratification** (concretizes machine-design §2/§6/§7/§12's prose types +
+      proposes S-5/S-6 resolutions). A read-only review caught 7 real design
+      errors in the first draft (undeclared-assignment dropped from S-5; a
+      `raise`-tail falls-off-end unsoundness; blocks-share-callable-slots vs. MD
+      §8; construct-body scopes omitted; S-6 missing the field/index base operand;
+      GlobalKind↔CellKind; a capture-chunk contradiction) — all fixed. **Needs
+      your ruling on:** S-5 (fn-falls-off-end determinability), S-6 (Void
+      consuming-site), and the concrete-type gap-fills (decisions [1]–[9] in the
+      doc). S-11 (fn-closure capture mutation — MD assumes yes) and S-45 (tail
+      excludes block-arg calls, M1.11) also want locking. Proposed chunks:
+      M1.10a (environment/name-resolution pass), M1.10b (error battery + exits),
+      M1.10c (Void + falls-off-end + stage-gate bump to Full).
+
 **Stage gate — now at Parse (M1.7):** `implemented_through()` returns
 `Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
 `stage: parse` (matcher `run_static`, parametrized by stage — lexer vs.
