@@ -239,21 +239,15 @@ Discovered at M1.7 (statement parser; non-blocking recovery-quality):
   "expected an expression" and stretching the exit node's span over the stray
   token. Malformed-input only.
 
-Discovered at M1.9a (import `.*` × S-2 continuation; provisional fix shipped,
-needs a user ruling):
-- **`.*` (import wildcard) vs. S-2 continuation.** The `*` of `.*` (L§11.2), if
-  lexed as a bare `Star`, is a continuation trigger (L§3.2), so `import shapes.*`
-  followed by a newline silently *merges* with the next line — `import shapes.*
-  \n import colors` lexed as one statement. **Provisional fix shipped** (doodle-
-  rust `dcc0b63`): a new `.*` **`DotStar` token** — `.` immediately followed by
-  `*` is one token (the grammar already writes `'.*'` as a unit), and it is
-  **not** a continuation trigger, so `import m.*` ends its line. `.` is never
-  validly followed by `*` outside `.*`, so no valid program changes. **Ruling
-  needed:** confirm the DotStar token + non-continuation behavior, and pin it in
-  the spec (a `.*` entry in L§3.7 operators/punctuation, and a line in L§3.2 that
-  `.*` is not a continuation trigger). Reversible; the provisional lets `import
-  m.*` work today. A `dot_star_is_one_token_not_a_continuation_trigger` lex test
-  pins it.
+**S-54 RESOLVED (user, 2026-07-15): the M1.9a `DotStar` provisional is
+ratified.** `.` immediately followed by `*` (no whitespace) is a single
+`.*` token, not a continuation trigger — `import m.*` ends its line; bare
+`*` (multiplication) still continues; `import m. *` is a parse error. No
+valid program changes meaning. Spec landed (L§3.2 + §3.7 + App D.1 + App
+C S-54); the `dot_star_is_one_token_not_a_continuation_trigger` test now
+pins ratified behavior. **Small code follow-up (next lexer/parser
+session):** the expression-position `.*` targeted diagnostic ("a field
+access needs a name after the `.`").
 
 Resolved at M1.2 (user decisions, 2026-07-10 — language-semantics changes):
 - **Identifiers: `XID` not `ID` (L§3.4)** — **RESOLVED (user): change L§3.4 to

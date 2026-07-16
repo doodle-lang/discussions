@@ -160,8 +160,9 @@ A trailing `-` or `+` continues the line even though the same token also begins 
 unary expression: whether it is unary or binary is a parsing question, so
 continuation keys on the token, not on its role. The assignment `=` is **not** a
 continuation trigger (a line ending in `=` terminates, so an incomplete `let x =`
-is reported at the `=`), and neither is the unary `not`, the access `.`, nor the
-punctuation `:`. When finding a line's last token, trailing whitespace and a
+is reported at the `=`), and neither is the unary `not`, the access `.`, the
+import wildcard `.*` (a single token, §3.7 — so `import shapes.*` ends its
+line rather than merging with the next), nor the punctuation `:`. When finding a line's last token, trailing whitespace and a
 trailing comment (§3.3) are ignored — a comment between an operator and the
 newline does not break continuation. Only a *trailing* trigger continues; a
 leading operator never joins to the previous line.
@@ -423,8 +424,15 @@ The following tokens are operators or punctuation:
 ```
 +   -   *   /   //   %   **
 ==  !=  <   >   <=   >=
-=   .   ,   :   (   )   [   ]   {   }
+=   .   .*  ,   :   (   )   [   ]   {   }
 ```
+
+`.*` — a `.` **immediately** followed by `*`, with no intervening whitespace —
+is a single token: the import wildcard of §11.2 (`import shapes. *` is not a
+wildcard). A `.` is never validly followed by `*` in any other context, so the
+combined token changes no other program; in expression position `.*` is a
+static error with a targeted diagnostic (a field access needs a name after the
+`.`). It is not a continuation trigger (§3.2).
 
 `and`, `or`, `not`, and `is` are spelled as words (§3.5) and act as operators
 (§6.5). Their semantics and precedence are given in §6. There are no bitwise
@@ -2011,6 +2019,15 @@ likely to change.
   unescaped `"` permitted), matching Python habits; the multi-line rules apply
   unchanged whenever the literal spans lines, and content after the opener
   without a same-line close is a static error offering both fixes.
+- **`.*` is one token and not a continuation trigger (§3.2, §3.7; resolves
+  implementation-plan Appendix C S-54).** The `*` in `import shapes.*`, lexed
+  as a bare star, met §3.2's continuation rule and silently merged the import
+  with the following line — the default template's own first lines. Resolved:
+  `.` immediately followed by `*` (no whitespace) is a single `.*` token —
+  the unit §11.2's grammar always wrote — excluded from the continuation
+  triggers, while bare `*` (multiplication) still continues. `.` is never
+  validly followed by `*` elsewhere, so no valid program changes meaning; in
+  expression position `.*` gets a targeted diagnostic.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

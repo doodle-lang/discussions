@@ -1071,7 +1071,20 @@ multi-line rules unchanged when the literal spans lines; content after
 the opener without a same-line close is a static error offering both
 fixes. Matches Python habits and makes the §8.6/§10.1 examples correct
 as written. **[spec resolved — L§3.6.4 + App D.1 landed with this entry;
-code follow-up: the M1.5 scan_triple_string single-line arm + tests]**
+code follow-up: the M1.5 scan_triple_string single-line arm + tests]** ·
+S-54 (L§3.2/§3.7/§11.2) The `.*` import wildcard vs. S-2 continuation
+(found at M1.9a): lexed as a bare `*`, the wildcard's star is a
+continuation trigger, so `import shapes.*` silently merged with the next
+line — including the default template's own imports. **RESOLVED (user,
+2026-07-15):** `.` immediately followed by `*` (no whitespace) is a
+single `.*` token (`DotStar`) — the unit L§11.2's grammar always wrote —
+and it is **not** a continuation trigger; bare `*` (multiplication)
+still continues. `.` is never validly followed by `*` in any other
+context, so no valid program changes meaning; `import shapes. *` is a
+parse error, not a wildcard. **[spec resolved — L§3.2 + §3.7 + App D.1
+landed with this entry; shipped provisional (doodle-rust dcc0b63) is now
+the pinned behavior; code follow-up: the expression-position `.*`
+targeted diagnostic ("a field access needs a name after the `.`")]**
 
 **Core semantics — resolve by M2a/M2b/M4.**
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
