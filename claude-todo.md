@@ -189,9 +189,22 @@ conformance) have landed.
           unknown bucket gets the dual-intent message (typo-`let` vs
           wildcard read-only). Only wildcard provenance-*naming* waits for
           M5. (AD5's linter delegation still governs unknown-name *reads*.)
-  - [ ] **M1.10c** — Void (S-6) + fn-falls-off-end (S-5) + `if`-expr-else +
-        **closure captures** (resolve the deferred cross-`fn` refs) + stage-gate
-        bump to Full (+ runner executor).
+  - [~] **M1.10c** — value discipline + captures + stage gate. In progress.
+    - [x] **fn-falls-off-end (S-5)** — the four-way tail classifier
+          (produces/diverges/value-less/indeterminate), `loop`-divergence via
+          `loops_with_break`, `to`-call tail = Void, `fn` bodies only, tail-`while`
+          suggests `loop`. Review confirmed sound; caught `return <void>` mislabel
+          (fixed — `return expr` produces; its operand's Void-ness is S-6).
+          doodle-rust `d82e134`.
+    - [ ] **Void / S-6 consuming-site check** — the static subset (a `to` call
+          used where a value is required — incl. `return`/`raise`/`break` operands,
+          which S-5 defers here). Reuses the tail classifier's "produces" notion.
+    - [ ] **`if`-expr-requires-`else`** semantic (part of the value discipline).
+    - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
+          the `cell_boxed`/`CaptureSource` output.
+    - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —
+          the M1 staging checkpoint; do LAST (once the battery is complete so
+          `stage: full` fixtures pass).
       **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
       review — resolver-design §8). Surfaced building M1.10a: a block nested in a
       closure referencing a captured var doesn't fit `Resolution::Capture(index)`.
