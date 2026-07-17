@@ -172,12 +172,20 @@ conformance) have landed.
           a barrier, `raise` not annotated; `exit_targets` side table +
           `misplaced-exit` diag. Review confirmed vs MD §12. doodle-rust `2dccffc`.
     - [ ] **error battery** — duplicate-decl, const-reassign, rule-2a
-          non-assignable declarations. **Scope question for undeclared-assignment
-          (surfaced):** per AD5, unknown-name checking is an *IDE-linter, not
-          engine* concern (wildcard imports make the module namespace unknowable
-          statically), so undeclared-*assignment* to a module name is only
-          lexically determinable when the module has no wildcard imports. Handle
-          the no-wildcard case, or defer undeclared-assign to M5 (with imports)?
+          non-assignable declarations, and — **scope question RULED (user,
+          2026-07-17; full text in App C S-39): neither option — the FULL
+          assignment check is static now, wildcards or not.** Assignment
+          targets differ from reads: since S-39 makes *every* imported name
+          read-only, a name that isn't a lexically visible mutable `let` is
+          an error whether it's undeclared *or* wildcard-supplied — the
+          wildcard's opacity never changes the verdict, so no import
+          resolution is needed and no no-wildcard special case exists.
+          Rule: `name = v` errors unless `name` resolves lexically to a
+          `let` (local/captured/module-level). Diagnostics: specific
+          messages for const/declaration/selective-import targets now; the
+          unknown bucket gets the dual-intent message (typo-`let` vs
+          wildcard read-only). Only wildcard provenance-*naming* waits for
+          M5. (AD5's linter delegation still governs unknown-name *reads*.)
   - [ ] **M1.10c** — Void (S-6) + fn-falls-off-end (S-5) + `if`-expr-else +
         **closure captures** (resolve the deferred cross-`fn` refs) + stage-gate
         bump to Full (+ runner executor).

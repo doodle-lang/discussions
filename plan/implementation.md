@@ -1231,7 +1231,29 @@ S-39 (L§11.2/§4.11/§5.3/§5.5) Imported names are live, **read-only**
 aliases of the exporter's binding cells: reads see the exporter's current
 value; assignment to an imported name is a static error; `with`-binding an
 imported dynamic parameter is legal (and is the only way cross-module
-dynamic parameters can work). ·
+dynamic parameters can work). **Re-examined and confirmed standing
+(user, 2026-07-17)** — the ES-modules model (live read-only views; Go/
+Python-style writable package globals rejected: owner-writes/world-reads
+keeps every mutation of a module's state textually inside that module).
+Clarified: the prohibition is on rebinding the *binding* — the qualified
+form `m.name = v` is equally illegal (module member assignment, L§4.11) —
+while mutating a mutable *value* reached through an import (a `ref`
+record's field, a list) and calling exported mutators remain legal.
+**Consequence (rules the M1.10b scope question):** because *every*
+imported name is read-only, a wildcard's opacity never changes an
+assignment verdict, so the **full undeclared-assignment check is static
+now, without import resolution**: `name = v` is an error unless `name`
+resolves lexically to a mutable `let` (local, captured, or module-level
+of the current module) — everything else (const, declarations per 2a,
+imports selective or wildcard, truly undeclared) errors uniformly. This
+check is an explicit dependency of S-39's read-only guarantee (relaxing
+S-39 would revert it to the deferred/conditional shape). Diagnostics:
+lexically-known targets get specific messages (const / declaration /
+selective-import provenance — available now); the unknown bucket gets a
+dual-intent message ("no `let` named X is visible — write `let X = …` to
+create it; if X comes from an `import ….*`, imported names can't be
+assigned"). **M5 residue narrows to wildcard provenance-naming polish
+only.** ·
 S-44 (E§5.5) Whether native modules may declare `parameter` cells, or
 whether dynamic parameters always live in Doodle wrapper modules over
 native primitives (the plan assumes the latter).

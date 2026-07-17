@@ -201,13 +201,16 @@ reference with sharing; land the L§6.10/§8.5 wording here); **static links**
 **free-name classification** — every unresolved name compiled to a
 module-cell reference site (`name_refs`, machine-design §2/AD5), the
 output M2a's machine consumes; **the static-error battery**: duplicate
-declaration, `const` reassignment, undeclared-assignment (lexically
-determinable cases), `return`/`break`/`continue` placement +
+declaration, `const` reassignment, the **full assignment-target rule**
+(ruled 2026-07-17, see App C S-39: `name = v` is a static error unless
+`name` resolves lexically to a mutable `let` — const, declarations (2a),
+imports selective *or wildcard*, and undeclared names all error
+uniformly, because S-39 makes every imported name read-only; no import
+resolution needed), `return`/`break`/`continue` placement +
 **lexical exit-target annotation** (machine-design §12),
 fn-falls-off-end, chained comparison (from M1.6), surrogate escapes
-(from M1.4), placement rules. (The S-39 imported-alias-assignment error
-is deliberately *not* here — it needs import resolution and lands at M5,
-per Appendix C.) **S-5 is resolved (user, 2026-07-16 — full text in App
+(from M1.4), placement rules. (Only S-39's *wildcard provenance-naming*
+diagnostic polish waits for M5.) **S-5 is resolved (user, 2026-07-16 — full text in App
 C):** the tail-statement classifier with the four-way
 produces/diverges/value-less/indeterminate lattice; loop divergence =
 no *lexically bound* `break` (an exit-target-annotation lookup, not
