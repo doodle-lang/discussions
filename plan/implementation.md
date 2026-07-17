@@ -1022,10 +1022,19 @@ the span covers the Void-producing expression, framed by the consuming
 context ("`let x = …` needs a value, but `p()` is a procedure and
 produces none — did you mean to make `p` an `fn`?"). **Static/runtime
 split:** static when both the consuming site and the producer's
-Void-ness are lexically determinable via the S-5 lattice (e.g. the
-callee resolves to a same-module `to` declaration); unknown calls →
-runtime. M1.10 ships the full spec text + the static subset; runtime
-conformance lands at M2a. **Companion rule (2a), required for
+Void-ness are lexically determinable via the S-5 lattice; unknown calls
+→ runtime. **The static subset is normative (ratified 2026-07-17):
+"determinable" means the callee resolves to a *module-level* `to`
+declaration of the current module** (directly, or with the Void
+propagated through expression-position `if`/`try`/parens) —
+declaration-kind knowledge is module-level, so a *locally*-declared `to`
+is indeterminate → runtime (M2a backstop). This is written into the L
+edit so conforming implementations reject the same programs ("no more,
+no less"); carrying local binding-kinds later would be a spec change
+(Appendix D). Rule 2a still covers local declarations (enforced during
+the scope walk, where kinds are in hand) — a test pins `to helper() …
+end; helper = 5` locally. M1.10 ships the full spec text + the static
+subset; runtime conformance lands at M2a. **Companion rule (2a), required for
 soundness:** declaration bindings (`to`, `fn`, `record`, `protocol`,
 `parameter`) are **non-assignable** — `greet = 42` after `to greet() …
 end` is a static error in the const-reassignment family (L§5.3 as

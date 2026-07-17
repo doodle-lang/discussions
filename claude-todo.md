@@ -205,13 +205,16 @@ conformance) have landed.
           `return`/`raise`/`break`/`continue` operands (the ones S-5 deferred here).
           The S-5 `return p()` test flipped to `procedure-in-expression`. 31 resolver
           tests. Two read-only reviews: no critical/major. doodle-rust `bb98437`.
-          **Two scope decisions surfaced (both sound; user may ratify/override):**
-          (a) a *locally*-declared `to` is NOT statically caught — local binding
-          kinds aren't carried past resolution, so a local proc is indeterminate →
-          runtime (M2a). Consistent with S-5. The intended static subset is
-          module-level `to`. (b) A *value-less-statement* branch tail in value
-          position (`let x = if c then 1 else (let y=2) end`) is deferred — see the
-          next item; it is the same L§6.8 value-discipline family as missing-`else`.
+          **Two scope decisions RATIFIED (user, 2026-07-17):** (a) local `to` →
+          runtime stands, **as a normative rule**: the L§8.4/§6.11 edit must
+          state the static subset as "callee resolves to a *module-level* `to`
+          of the current module" (S-5's no-more-no-less demands it be spec
+          text, not an implementation shortfall; App C S-6 updated); carrying
+          local kinds later = a spec change. Requirement: a test pins that
+          rule 2a still catches assignment to a *local* declaration (enforced
+          during the scope walk). (b) The re-chunk into if-expr value
+          discipline stands — sequencing, not semantics; the no-more-no-less
+          audit runs at M1.10 completion, after c.
     - [ ] **`if`-expr value discipline (L§6.8)** — an `if`/`try` used as a value
           must produce on every branch: reject a **missing `else`**
           (`if-expression-missing-else`) AND a **value-less branch tail** in value
