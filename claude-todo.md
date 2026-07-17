@@ -279,8 +279,9 @@ pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), **S-3
 lines exempt, whitespace-only nonempty lines are content lines; preserve
 trailing whitespace; no line-join; no comment after opener — full text in
 App C; M1.5 lands the L§3.6.4 edit)**, **S-4 (M1.7, done — no-trailing-block
-header parsing; L§6.4/§7.6 + App D.1)**, S-5 + S-6-in-full
-(M1.10), S-7 (M1.9), S-11 (M1.10),
+header parsing; L§6.4/§7.6 + App D.1)**, **S-5 + S-6-in-full
+(M1.10 — code landed doodle-rust `66fde25`; L§5.3/§6.8/§6.9/§6.11/§8.4/§8.5
++ App D.1 edits landed discussions `ef7ce71`)**, S-7 (M1.9), S-11 (M1.10),
 S-27 (M1.8, user decision), S-45 (M1.11), **S-47/S-48/S-49 (M1.4:
 interpolations never contain line terminators in any string form; empty
 `{}` is a lex error; closed escape set + `\xHH` = U+00HH in strings —

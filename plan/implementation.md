@@ -1003,7 +1003,9 @@ this same lattice rather than redefining "produces". Rejected: weaker
 computed-but-not-produced tail is THE beginner mistake) and stronger
 (whole-body path analysis — the unknown-call cap makes its gains
 marginal while its normative spec surface balloons, JLS-ch.16-style).
-Land the L§8.4/§5.3/§6.11 edits with M1.10. ·
+Land the L§8.4/§5.3/§6.11 edits with M1.10. **[L edits landed 2026-07-17:
+discussions `ef7ce71` — §8.4 tail discipline + divergence refinement, §5.3,
+§6.8/§6.9 cross-refs.]** ·
 S-6 (L§6.11, §8.4, §8.5) Void semantics. **RESOLVED (user, 2026-07-16):
 the consuming-site model**, uniformly (amends §8.4's "raises at runtime"
 and §8.5's block-value sentence). Producing Void (a procedure call, a
@@ -1057,7 +1059,9 @@ this breaks the REPL — cross-increment redefinition is
 declaration-*replacement* at the session-module level (S-24), not
 assignment, and the runtime half of the split is what keeps redefinition
 sound when it invalidates earlier static judgments. Land the
-L§6.11/§8.4/§8.5/§5.3 edits with M1.10. ·
+L§6.11/§8.4/§8.5/§5.3 edits with M1.10. **[L edits landed 2026-07-17:
+discussions `ef7ce71` — §6.11 unified Void consuming-site rule + static
+subset, §8.5 block-value amendment, App D.1.]** ·
 S-7 (L§11.2) `import a.b` module-vs-member resolution order (try module
 path first, member fallback; native registry precedence). **[resolved M1.9a
 — L§11.2 note; parser records the dotted path, resolution is load-time,
