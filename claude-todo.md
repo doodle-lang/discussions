@@ -165,13 +165,16 @@ conformance) have landed.
         shadowing, determinism (Vec scopes, no HashMap) all sound; two MAJORs
         fixed (module `const` mis-tagged `Let`; param default saw sibling params
         — now enclosing-scope per L§8.2). 12 unit tests. doodle-rust `593b327`.
-  - [~] **M1.10b** — static-error battery + exits.
+  - [x] **M1.10b** — static-error battery + exits. **DONE** (exits `2dccffc`,
+        battery `d7e4cd4`, selective-import message `755f868`). Deferred: duplicate
+        *params* (`to f(x,x)` / block `do (y,y)`) — no per-param node span; and
+        wildcard-import provenance *naming* in the message (M5). 25 resolver tests.
     - [x] **exits** — exit-target annotation + placement (MD §12): a `Ctrl`
           stack (Callable/Loop/Block), `return`→HomeCallable (misplaced at module
           level), `break`/`continue`→ThisLoop/ThisBlock/ConsumerCall, callable is
           a barrier, `raise` not annotated; `exit_targets` side table +
           `misplaced-exit` diag. Review confirmed vs MD §12. doodle-rust `2dccffc`.
-    - [ ] **error battery** — duplicate-decl, const-reassign, rule-2a
+    - [x] **error battery** — duplicate-decl, const-reassign, rule-2a
           non-assignable declarations, and — **scope question RULED (user,
           2026-07-17; full text in App C S-39): neither option — the FULL
           assignment check is static now, wildcards or not.** Assignment
