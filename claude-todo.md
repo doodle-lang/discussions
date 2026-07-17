@@ -165,9 +165,19 @@ conformance) have landed.
         shadowing, determinism (Vec scopes, no HashMap) all sound; two MAJORs
         fixed (module `const` mis-tagged `Let`; param default saw sibling params
         — now enclosing-scope per L§8.2). 12 unit tests. doodle-rust `593b327`.
-  - [ ] **M1.10b** — static-error battery (duplicate-decl, const-reassign,
-        undeclared-assign, **rule 2a non-assignable declarations**, exit
-        placement) + exit-target annotation (MD §12).
+  - [~] **M1.10b** — static-error battery + exits.
+    - [x] **exits** — exit-target annotation + placement (MD §12): a `Ctrl`
+          stack (Callable/Loop/Block), `return`→HomeCallable (misplaced at module
+          level), `break`/`continue`→ThisLoop/ThisBlock/ConsumerCall, callable is
+          a barrier, `raise` not annotated; `exit_targets` side table +
+          `misplaced-exit` diag. Review confirmed vs MD §12. doodle-rust `2dccffc`.
+    - [ ] **error battery** — duplicate-decl, const-reassign, rule-2a
+          non-assignable declarations. **Scope question for undeclared-assignment
+          (surfaced):** per AD5, unknown-name checking is an *IDE-linter, not
+          engine* concern (wildcard imports make the module namespace unknowable
+          statically), so undeclared-*assignment* to a module name is only
+          lexically determinable when the module has no wildcard imports. Handle
+          the no-wildcard case, or defer undeclared-assign to M5 (with imports)?
   - [ ] **M1.10c** — Void (S-6) + fn-falls-off-end (S-5) + `if`-expr-else +
         **closure captures** (resolve the deferred cross-`fn` refs) + stage-gate
         bump to Full (+ runner executor).
