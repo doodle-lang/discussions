@@ -54,29 +54,38 @@ pub struct ResolvedModule {
     pub callables: Vec<CallableInfo>, // one per to/fn/anon-fn/block body
     pub globals: Vec<GlobalDecl>,     // module-level names -> declared kinds
     pub name_refs: Vec<NameRef>,      // free-name reference sites
-    pub resolutions: Vec<Option<Resolution>>, // parallel to ast nodes; Some(_) for each Ident
+    pub resolutions: Vec<Option<Resolution>>, // parallel to ast nodes; Some(_) at each
+                                     //   Ident ref AND each local decl (Let/Const/Param)
 }
 ```
 
 **[DECISION 1] `resolutions` as a side table.** MD says the resolver "annotates
 names … on top of this tree." Rather than mutate `Node::Ident` to carry a
 resolution, this proposes a `Vec<Option<Resolution>>` indexed by `NodeId`
-(parallel to the arena, index-based per ground rule 2). Only `Ident` nodes get a
-`Some`. Alternative: a dense `Vec<Resolution>` keyed by a separate "ident id", or
-storing the resolution inline in a rewritten node. The side table keeps `Node`
-unchanged and is O(1) to consult from the machine. *(Recommended: side table.)*
+(parallel to the arena, index-based per ground rule 2). Both `Ident` *reference*
+sites **and local *decl* sites** (`Let`/`Const`, each `Param`) get a `Some`: a
+`let x = v`'s binding slot lives on the `Let` node (its name is a `Node` field,
+not an `Ident` child), so the machine's `BindSlot` cont reads the slot from
+`resolutions[let_node]`. Alternative: a dense `Vec<Resolution>` keyed by a
+separate "ident id", or storing the resolution inline in a rewritten node. The
+side table keeps `Node` unchanged and is O(1) to consult from the machine.
+*(Recommended: side table, covering decl + reference sites.)*
 
 ```rust
 /// How a bare-name `Node::Ident` reference site resolves (MD §6/§7).
 pub enum Resolution {
-    /// A local in the *current* callable frame at `slot` (the common case).
+    /// A local in the *current* callable frame at `slot` (the common case). If
+    /// that frame's `cell_boxed[slot]` is set, the machine derefs the CellObj;
+    /// otherwise the slot holds the value directly.
     LocalSlot(u16),
     /// An enclosing local reached from a block body through the defining chain:
     /// chase `defining` `hops` times (hops=0 is the block's own frame), then
-    /// index `locals[slot]` (MD §7 static links). Blocks do not capture.
+    /// index `locals[slot]` (MD §7 static links). Blocks do not capture; the
+    /// target frame's `cell_boxed[slot]` still decides deref-vs-direct.
     BlockOuter { hops: u16, slot: u16 },
-    /// A local captured by a nested `fn` closure: a heap cell in the callable's
-    /// capture list at `capture_index` (MD §7 cell-boxed).
+    /// A local captured by a nested `fn` closure: a heap cell in the closure's
+    /// own capture list at `capture_index` (MD §7). The owning frame's
+    /// `cell_boxed[slot]` was set at the same time.
     Capture(u16),
     /// A free name — resolved to a module binding cell lazily on first execution
     /// via `name_refs[name_ref]` and the per-instance cache (MD §6, AD5).
@@ -86,11 +95,16 @@ pub enum Resolution {
 
 **[DECISION 2] `Resolution` variant set.** These four are exactly MD §6/§7's
 categories (slot-direct / block static link / cell-boxed capture / module cell).
-Dynamic parameters (`parameter` names) read as `ModuleName` (their cell has
-`CellKind::Parameter`, MD §6) — a dynamic-parameter *read* is a module-cell read;
-`with` swaps the cell value at runtime (§13). So no separate `Resolution` variant
-is needed for parameters. *(Flagging in case you want parameter reads
-distinguished at resolve time.)*
+Own-frame access to a *cell-boxed* local is **not** a fifth variant — it stays
+`LocalSlot`/`BlockOuter`, with the owning frame's `cell_boxed[slot]` flag telling
+the machine to deref. Dynamic parameters (`parameter` names) read as `ModuleName`
+(their cell has `CellKind::Parameter`, MD §6) — a dynamic-parameter *read* is a
+module-cell read; `with` swaps the cell value at runtime (§13); rule-2a's "no `=`
+to a parameter" check reads `GlobalDecl.kind`, not the `Resolution`, so nothing is
+lost by the shared variant. **Widths:** `u16` slot/hops, `u32` name-ref index; the
+`usize → u16` slot conversion is **checked** and errors on overflow (a frame with
+>65535 locals — pathological — must fail loudly, never wrap into an aliased slot;
+mirrors `ast.rs`'s `u32::try_from(...).expect(...)`).
 
 ```rust
 /// Per callable/block body (MD §2 `callables`). Grown across M1.10a→c: the
@@ -101,11 +115,20 @@ pub struct CallableInfo {
     pub body: NodeId,            // the Node::Block
     pub params: Vec<ParamInfo>,  // ordinary/block params, in order, each with its slot
     pub slot_count: u16,         // frame `locals` length to allocate
+    pub slot_names: Vec<Box<str>>, // slot -> local name, all slots (params + body
+                                 //   locals); MD §17's named-locals table (E§8.2)
+    pub cell_boxed: Vec<bool>,   // per-slot: is this local cell-boxed? (MD §7). Set
+                                 //   when a nested `fn` captures the slot; own-frame
+                                 //   refs stay LocalSlot/BlockOuter and the machine
+                                 //   derefs the CellObj when this flag is set. This
+                                 //   is what makes the single forward pass sound —
+                                 //   a late promotion flips one bit, leaving
+                                 //   already-emitted references valid.
     pub doc: Option<Span>,       // docstring (L§8.6)
     pub captures: Vec<CaptureSource>,  // cells this closure captures (MD §7).
-                                       //   M1.10a assigns indices + marks
-                                       //   cell-boxed; CaptureSource SHAPE (the
-                                       //   machine wiring) finalizes in M1.10c.
+                                       //   M1.10a assigns indices + sets cell_boxed
+                                       //   on the OWNER frame; CaptureSource SHAPE
+                                       //   (the machine wiring) finalizes in M1.10c.
     // --- M1.10b ---
     // pub exits: Vec<(NodeId, ExitTarget)>,  // return/break/continue annotations (MD §12)
     // --- M1.11 ---
@@ -198,9 +221,13 @@ resolver bug):
 
 Sketch:
 
-1. **Module top level** is a `CallableInfo{kind: ModuleTopLevel}`. Its
-   module-level declarations (`let`/`const`/`to`/`fn`/`record`/`protocol`/
-   `module`/`parameter`) become `globals` (module cells), *not* slots.
+1. **Module top level** is a `CallableInfo{kind: ModuleTopLevel}`. Declarations
+   **directly** in the module body (`let`/`const`/`to`/`fn`/`record`/`protocol`/
+   `module`/`parameter`) become `globals` (module cells), *not* slots — visible
+   module-wide (a `to` may reference a `let` declared later). But a `let` nested
+   in a module-level **construct** body (`if c then let x … end`) is scoped to
+   that body (L§5.4), so it is a `ModuleTopLevel`-frame **slot**, not a global —
+   the same rule as step 4, applied at the top level.
 2. **Entering a callable** (`to`/`fn`/anon-`fn`) opens a new lexical scope **and a
    new frame**; params take slots `0..n`; `let`/`const` in the body (and in
    construct bodies nested in it) take subsequent slots in *this* frame.
@@ -210,28 +237,45 @@ Sketch:
 4. **Entering a construct body** (`if`/`while`/`loop`/`with`/`try` arm) opens a
    new lexical scope **in the same frame**; its `let`/`const` take slots in the
    enclosing frame.
-5. **Resolving an `Ident`** walks lexical scopes outward, counting the frame
-   boundaries crossed:
+5. **Declaring a local** (`let`/`const`/a `Param`) assigns the next slot in the
+   current frame, appends its name to that frame's `slot_names`, pushes `false`
+   to `cell_boxed`, and records a `LocalSlot(slot)` in `resolutions` **at the decl
+   node** (so the machine's `BindSlot` cont has the slot).
+6. **Resolving an `Ident` reference** walks lexical scopes outward, counting the
+   frame boundaries crossed:
    - found without crossing a frame boundary → `LocalSlot(slot)`;
    - found after crossing only **block** frame boundaries (`k` of them), no `fn`
      boundary → `BlockOuter{hops: k, slot}` (static link, MD §7 — legal because a
      block can't outlive its defining chain);
-   - found after crossing a **`fn`** frame boundary → the enclosing local is
-     marked **cell-boxed** and the reference is `Capture(index)`; the closure's
-     capture list records the source cell (multi-level capture and the exact
-     `CaptureSource` wiring: [DECISION 6], M1.10c);
+   - found after crossing a **`fn`** frame boundary → **set `cell_boxed[slot] =
+     true` on the owning frame** (a late promotion — references already emitted as
+     `LocalSlot`/`BlockOuter` stay valid, the flag drives deref at run time) and
+     resolve this reference to `Capture(index)`; the closure's capture list
+     records the source cell (multi-level capture and the exact `CaptureSource`
+     wiring: [DECISION 6], M1.10c);
    - not found in any scope → a **free name** → append to `name_refs`, resolve to
      `ModuleName(idx)`.
-6. **Assignment targets** resolve the same way; a target that resolves to nothing
-   (bound in no local scope and no `global`) is the **undeclared-assignment**
-   static error (§4); a target resolving to a `const` binding is
-   **const-reassignment**.
-7. **`slot_count`** per frame is the high-water mark of slots assigned in it
-   (including construct-body locals, excluding nested callable/block frames).
+7. **Assignment targets** resolve the same way; a bare-name target that resolves
+   to nothing (no local scope, no `global`) is the **undeclared-assignment** error
+   (§4); a target resolving to a `const` **or a declaration binding** (`to`/`fn`/
+   `record`/`protocol`/`parameter`, S-6 rule 2a) is the **const-reassignment**
+   error; only a `let`/`Let` target (local or global) is assignable.
+8. **`slot_count`** per frame is the high-water mark of slots assigned in it
+   (including construct-body locals, excluding nested callable/block frames);
+   `slot_names`/`cell_boxed` have that length.
 
 ---
 
-## 4. S-5 proposal — the "static where determinable" boundary
+## 4. S-5 — the "static where determinable" boundary
+
+> **RESOLVED (user, 2026-07-16). `implementation.md` Appendix C S-5 is now
+> normative** — this section is the superseded proposal, kept for context. Ratified
+> deltas to note when implementing: loop divergence = **no `break` lexically bound
+> to the loop** (an exit-target-annotation lookup, **not** the reachability pass
+> item 5/[DECISION 7] below proposed); the value-less list **includes `with`**;
+> branch rule = any value-less→error, else any indeterminate→runtime, else OK
+> (produces-or-diverges mixes fine); condition-blind; `fn` bodies only; tail-`while`
+> diagnostic suggests `loop`.
 
 **Goal (S-5):** pin the exact set of errors M1 rejects *statically* so every
 conforming implementation rejects the same programs. Proposed normative list —
@@ -277,7 +321,18 @@ confirm the scope (or simplify to "any `loop` tail is indeterminate → runtime"
 
 ---
 
-## 5. S-6 proposal — Void semantics
+## 5. S-6 — Void semantics
+
+> **RESOLVED (user, 2026-07-16). `implementation.md` Appendix C S-6 is now
+> normative** — this section is the superseded proposal. Ratified additions to note
+> when implementing: producer-site **blame** in the diagnostic (span on the
+> Void-producing expr); Void = MD §8's `None` result register, **propagates through
+> expression-position `if`/`try`/parens** to the outer consumer and **never crosses
+> an `fn` boundary**; the site list gains **`return`/`raise`/`break`/`continue`
+> operands, parameter defaults (per-param + module `parameter`), keyword args,
+> constructor calls, dict keys *and* values**; and the load-bearing **companion
+> rule 2a** — declaration bindings (`to`/`fn`/`record`/`protocol`/`parameter`) are
+> **non-assignable** (a new M1.10b battery member, folded into §3 step 7).
 
 **Goal (S-6):** a block/`fn` whose last statement is value-less yields **Void**;
 using Void where a value is required errors at the **consuming site**, uniformly
@@ -339,19 +394,30 @@ misresolving intermediate.
 
 ---
 
-## 7. Decisions for ratification (summary)
+## 7. Decisions (status after review, 2026-07-16)
 
-- **[1]** `resolutions` side table vs. inline annotation. *(rec: side table)*
-- **[2]** `Resolution` variant set; parameters read as `ModuleName`. *(rec: yes)*
-- **[3]** `CallableInfo` grows per chunk vs. all fields upfront. *(rec: grow)*
-- **[4]** `NameRef = { name, site }`. *(rec: as-is)*
+An adversarial review of these recs (2026-07-16) confirmed [1]/[3]/[4] and
+`GlobalKind`/`BodyKind`/parameter-read-as-`ModuleName` SOUND, and fixed [9] +
+two gaps — folded into §2/§3 above:
+
+- **[1]** `resolutions` side table — **SOUND**, extended to cover local *decl*
+  nodes (not only Idents), so `BindSlot` has a slot.
+- **[2]** `Resolution` variant set — SOUND; own-frame cell-boxed access stays
+  `LocalSlot`/`BlockOuter` + the `cell_boxed` flag (no fifth variant); slot-width
+  conversion is overflow-**checked**.
+- **[3]** `CallableInfo` grows per chunk — **SOUND** (absent > empty-default).
+- **[4]** `NameRef = { name, site }` — **SOUND** (module is fixed by the executing
+  `ResolvedModule`; provenance lives in the `Binding`).
 - **[5]** `ExitTarget::HomeCallable` hop count? *(M1.10b)*
 - **[6]** `CaptureSource` shape. *(M1.10c)*
-- **[7]** S-5 fn-falls-off-end determinability rule. **spec — your call.**
-- **[8]** S-6 static vs runtime split at M1. **spec — your call.**
-- **[9]** capture *classification* (which locals are cell-boxed, `Resolution::
-  Capture`) is in **M1.10a** (needed for correct name resolution); the
-  `CaptureSource` *wiring* shape is M1.10c. *(resolved this way above)*
-- **Spec deltas to lock:** S-5, S-6 (this doc), **S-11** (fn closures may mutate
-  captures — MD §7 assumes yes; confirm), **S-45** (tail excludes block-arg
-  calls — M1.11, "resolve by M1"). S-39 (imported-alias assignment) stays M5.
+- **[7]/[8]** S-5 / S-6 — **RESOLVED (user, 2026-07-16); App C normative** (see
+  the §4/§5 banners).
+- **[9]** single-pass capture — was **unsound as written**; **fixed** by per-slot
+  `cell_boxed` metadata on `CallableInfo` (a late promotion flips one bit, leaving
+  emitted `LocalSlot`/`BlockOuter` refs valid). Classification stays M1.10a;
+  `CaptureSource` wiring M1.10c.
+- **New (from review):** `CallableInfo.slot_names` (MD §17 named-locals table) and
+  `cell_boxed` added; decl-node slot resolutions added.
+- **Still to lock:** **S-11** (fn closures may mutate captures — MD §7 assumes
+  yes; confirm) — affects M1.10c/M2, not M1.10a. **S-45** already user-resolved
+  (App C); S-39 (imported-alias assignment) stays M5.
