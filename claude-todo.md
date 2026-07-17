@@ -238,6 +238,24 @@ conformance) have landed.
           L§8.4/§6.11 edit.
     - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
           the `cell_boxed`/`CaptureSource` output.
+          **CaptureSource shape refinement RATIFIED (user, 2026-07-17):**
+          `ParentLocal(slot)`/`ParentCapture(idx)` can't express a closure
+          created inside a *block* capturing an enclosing-fn local (the
+          source is hops>0 up the defining chain). Replace both with
+          **`CaptureFrom { hops, slot }`** — a §7 static link from the
+          *creating* frame; hops=0 subsumes the old variants (under B,
+          capture slots are just trailing frame slots — one slot space).
+          Everything else in B unchanged. **Condition of ratification — the
+          totality invariant:** hops never crosses a `Callable` frame
+          boundary (the chase runs through Block frames only, terminating at
+          the home callable; captures from beyond it must be threaded through
+          that callable's own capture slots). State it in resolver-design §8,
+          `debug_assert` it in the machine's closure-creation walk, and pin
+          with tests: the helper-in-block example, plus a deep
+          closure-in-block-in-closure-in-block case exercising hops>0 and
+          intervening-closure threading in one program. (Frame liveness at
+          creation is safe by construction; escaped closures hold cells, not
+          frames.)
     - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —
           the M1 staging checkpoint; do LAST (once the battery is complete so
           `stage: full` fixtures pass).
