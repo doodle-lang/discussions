@@ -177,8 +177,13 @@ conformance) have landed.
       a 5th `OuterCapture` variant; **(B, my lean)** captures as cell-boxed frame
       slots (drops `Capture`, uniform access); (C) defer — **taken provisionally**:
       M1.10a leaves cross-`fn` refs unresolved in `deferred_captures`, to resolve
-      in M1.10c once you pick A/B. Also **S-11** (fn-closure mutation) wants
-      locking for M1.10c.
+      in M1.10c once you pick A/B. **S-11 is RULED (user, 2026-07-17; full
+      text in App C):** closures may mutate captures — capture by
+      reference to the binding, sharing across captures of the same
+      binding, const-ness travels, loop closures capture per-iteration
+      bindings; M1.10c lands the L§6.10/§8.5 wording. (S-11 is the
+      *semantic* half; the A/B capture-representation fork above remains
+      open — note S-11's sharing requirement is satisfiable by either.)
       **Provisional (note, may want revisiting):** param defaults resolve in the
       *enclosing* scope (L§8.2 literal) — a default can't see a sibling param.
 

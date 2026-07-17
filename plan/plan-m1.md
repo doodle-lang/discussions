@@ -194,8 +194,9 @@ elsewhere).
 
 Scope construction (module/body/block, per-invocation scopes are a
 runtime matter); slot assignment; capture marking (cell-boxed, per
-machine-design §7 — includes the S-11 read: `fn` closures may mutate
-captures, resolve S-11's L§6.10/§8.5 wording here); **static links**
+machine-design §7 — **S-11 is resolved (user, 2026-07-17; full text in
+App C)**: `fn` closures may mutate captures, capture-by-binding-
+reference with sharing; land the L§6.10/§8.5 wording here); **static links**
 (hop, slot) for block-body outer references (machine-design §7);
 **free-name classification** — every unresolved name compiled to a
 module-cell reference site (`name_refs`, machine-design §2/AD5), the

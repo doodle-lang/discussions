@@ -1162,8 +1162,25 @@ loop control from a `with` body is impossible — almost certainly
 unintended; fix the interaction (and specify the `try`-body case). ·
 S-10 (L§7.10) `break`-with-value where the consumer has no value slot
 (plain `while`/`loop`, `to` consumers): specify (discard vs error). ·
-S-11 (L§6.10/§8.5) State explicitly whether `fn` closures may *mutate*
-captured bindings (blocks explicitly may; align or distinguish). ·
+S-11 (L§6.10/§8.5) Whether `fn` closures may *mutate* captured bindings.
+**RESOLVED (user, 2026-07-17): yes — aligned with blocks.** Capture is
+**by reference to the binding**, at closure creation: closures may read
+and mutate captured variables (including after the defining frame is
+gone — `make_counter` works), and any captures of the same binding
+share it (closure↔closure and closure↔block alike; one cell,
+machine-design §7). Corollaries to pin in the L§6.10 edit: `const`
+captures remain non-assignable (const-ness travels with the binding);
+per-iteration fresh scopes (L§5.4) mean loop-created closures capture
+distinct bindings — the classic JS-`var` footgun is structurally absent
+(include the loop example). Rejected: read-only captures (needs an
+effectively-final regime where an *outer* assignment errors because an
+inner fn captured the variable — spooky action, bad diagnostics — or it
+pushes users to one-element-list holder hacks, i.e. shared mutation but
+uglier) and copy-at-creation (worst aliasing story; observable staleness
+vs. the enclosing frame). Ratifies machine-design §7's read-write
+cell-boxed captures; mainstream semantics (Scheme/JS/Ruby/Lua) and the
+"objects are closures" idiom the design discussion valued. Land the
+L§6.10 (+§8.5 alignment sentence) edits with M1.10. ·
 S-12 (L§4.2) `**` open corners: `0 ** negative` (division-by-zero
 analog?) and resource behavior for huge exponents (ties to R8's interior
 poll points). (Int ** negative-Int → Float is already settled by L§4.2.) ·
