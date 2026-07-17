@@ -211,10 +211,15 @@ C):** the tail-statement classifier with the four-way
 produces/diverges/value-less/indeterminate lattice; loop divergence =
 no *lexically bound* `break` (an exit-target-annotation lookup, not
 reachability); condition-blind (dead-tail code rejected by design);
-`fn` bodies only; tail-`while` error suggests `loop`. Resolve **S-6 in
-full** (the L§6.11/§8.4/§8.5 spec text: Void rejected at the consuming
-site, static where the S-5 lattice determines it at resolve time,
-runtime otherwise — runtime conformance tests land at M2a) with L edits.
+`fn` bodies only; tail-`while` error suggests `loop`. **S-6 is resolved
+(user, 2026-07-16 — full text in App C):** consuming-site model with
+producer-site blame; the full site enumeration (incl. `return`/`raise`/
+`break`/`continue` operands and parameter defaults) under the
+"every expression position consumes except the bare expression
+statement" invariant; static where the S-5 lattice determines it,
+runtime otherwise (runtime conformance at M2a); **plus companion rule
+2a: declaration bindings are non-assignable** (a new battery member).
+Land the L§6.11/§8.4/§8.5/§5.3 edits with this item.
 *Accept:* every static-error class has ≥1 position-asserting conformance
 test (`mode: static`, now `stage: full`; all earlier-stage tests
 re-verified green at their final stages — this is the staging

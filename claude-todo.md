@@ -138,8 +138,22 @@ conformance) have landed.
       exit-target lookup), *not* a reachability pass; condition-blind
       dead-tail rejection stated as a design property; `fn` bodies only;
       tail-`while` diagnostic suggests `loop`; S-6 shares the lattice.
-      **Still needs your ruling on:** S-6 (Void consuming-site details) and
-      the concrete-type gap-fills (decisions [1]–[9] in the doc). S-11
+      **S-6 is RULED (user, 2026-07-16; full text in App C):** the
+      consuming-site model confirmed (producer-site blame in diagnostics;
+      Void propagates through expression-position if/try to the outer
+      consumer, never across an fn boundary); the static/runtime split as
+      proposed; the site list gains `return`/`raise`/`break`/`continue`
+      operands + parameter defaults, with dict keys/values and keyword
+      args spelled out, under the invariant "every expression position
+      consumes except the bare expression statement." **Companion rule 2a
+      (new, load-bearing for the static subset):** declaration bindings
+      (`to`/`fn`/`record`/`protocol`/`parameter`) are **non-assignable**
+      — a static error in the const-reassignment family; add it to the
+      M1.10b battery. REPL impact checked and banked into S-24
+      (cross-increment redefinition = cell replacement; batch rules
+      within a chunk; the runtime half of S-6 is the redefinition
+      soundness backstop). **Still needs your ruling on:** the
+      concrete-type gap-fills (decisions [1]–[9] in the doc). S-11
       (fn-closure capture mutation — MD assumes yes; already stated in
       plan-m1 M1.10) also wants locking; S-45 is already user-resolved
       (App C). Proposed chunks:

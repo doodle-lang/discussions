@@ -995,9 +995,51 @@ computed-but-not-produced tail is THE beginner mistake) and stronger
 (whole-body path analysis — the unknown-call cap makes its gains
 marginal while its normative spec surface balloons, JLS-ch.16-style).
 Land the L§8.4/§5.3/§6.11 edits with M1.10. ·
-S-6 (L§6.11, §8.4, §8.5) Void semantics: block/fn whose last statement is
-value-less — error at the consuming site, uniformly (amends §8.4's
-"raises at runtime" and §8.5's block-value sentence accordingly). ·
+S-6 (L§6.11, §8.4, §8.5) Void semantics. **RESOLVED (user, 2026-07-16):
+the consuming-site model**, uniformly (amends §8.4's "raises at runtime"
+and §8.5's block-value sentence). Producing Void (a procedure call, a
+non-value statement) is always fine; the error fires only where
+something *uses* the Void as a value — collapsing §6.11's
+procedure-call-in-expression-position into one rule, and the only model
+that covers blocks (a native consumer may or may not use a block's
+value; the producer cannot know). Void is the engine's no-value sentinel
+(machine-design §8: the `None` result register), never a first-class
+value; it propagates through expression-position `if`/`try` and grouping
+parens to the outer consumer, and never crosses an `fn` boundary (the
+fn's own tail is the consuming site, blaming the fn body, not the
+caller). **Invariant + enumeration:** every expression position consumes
+except exactly one — the bare expression statement (§7.2). The
+consuming sites: `let`/`const` initializer; assignment RHS; call
+arguments (positional and keyword, incl. constructor calls) and
+parameter-default expressions (per-param and module-level `parameter`);
+operator operands; `.field`/`[i]` base and index/key; interpolation
+expressions; `if`/`while` conditions; `with` values; list elements and
+dict keys *and* values; `return`/`raise`/`break`/`continue` operands
+(orthogonal to S-10 — Void is not a value, so `break p()` errors
+regardless of how S-10 lands); and an `fn`'s consumed result (its
+tail). **Diagnostics:** consuming-site semantics, producer-site blame —
+the span covers the Void-producing expression, framed by the consuming
+context ("`let x = …` needs a value, but `p()` is a procedure and
+produces none — did you mean to make `p` an `fn`?"). **Static/runtime
+split:** static when both the consuming site and the producer's
+Void-ness are lexically determinable via the S-5 lattice (e.g. the
+callee resolves to a same-module `to` declaration); unknown calls →
+runtime. M1.10 ships the full spec text + the static subset; runtime
+conformance lands at M2a. **Companion rule (2a), required for
+soundness:** declaration bindings (`to`, `fn`, `record`, `protocol`,
+`parameter`) are **non-assignable** — `greet = 42` after `to greet() …
+end` is a static error in the const-reassignment family (L§5.3 as
+written accidentally permitted it; declarations were never classified).
+Redeclaration was already an error (L§5.2); inner-scope shadowing stays
+legal-with-warning; mutable callable bindings are written explicitly
+(`let g = greet`) and stay runtime-checked; a `parameter` remains
+`with`-rebindable but not `=`-assignable. Matches machine-design §6
+(declaration cells were never `Let`-kind). **Interactive note:** none of
+this breaks the REPL — cross-increment redefinition is
+declaration-*replacement* at the session-module level (S-24), not
+assignment, and the runtime half of the split is what keeps redefinition
+sound when it invalidates earlier static judgments. Land the
+L§6.11/§8.4/§8.5/§5.3 edits with M1.10. ·
 S-7 (L§11.2) `import a.b` module-vs-member resolution order (try module
 path first, member fallback; native registry precedence). **[resolved M1.9a
 — L§11.2 note; parser records the dotted path, resolution is load-time,
@@ -1225,7 +1267,23 @@ raises after `NonLocalExit` faults. Found by the machine-design review
 
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
-session module (the REPL API). ·
+session module (the REPL API). Design notes banked from the S-5/S-6
+rulings (2026-07-16): the session module's increments follow batch rules
+*within* a submitted chunk (duplicate-decl, 2a non-assignable
+declarations, the S-5/S-6 static checks — all fire at submit time
+against current session state), while *across* increments, re-declaring
+an existing session name is **replacement, not an error** (the JShell
+model) — implemented as writing the new value into the *same* module
+binding cell (machine-design §6), so per-instance name-ref caches stay
+valid and earlier-defined callers see the new definition at their next
+call (late binding). 2a holds at the prompt (`greet = 42` still errors;
+you change a declaration by re-declaring it). Redefinition can
+invalidate earlier static judgments (redefine an `fn` name as a `to`
+after a caller was checked); S-6's runtime consuming-site half is the
+soundness backstop — the dual static+runtime design is load-bearing for
+interactive use, not redundancy. The REPL's value echo is host-side
+structural inspection, not a language consuming site: echoing a
+procedure call's Void displays nothing. ·
 S-25 (E§3.2) `LoadError` classifies incomplete input distinctly from
 syntax errors (multi-line REPL entry). ·
 S-26 (E§6-new) Module reload: invalidate + re-drive + rebind semantics
