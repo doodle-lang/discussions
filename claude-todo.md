@@ -124,10 +124,9 @@ conformance) have landed.
         (speculative scan + rollback; a review-caught MAJOR fixed). Done log.
         The §8.6/§10.1 single-line-triple examples now lex as written.
 
-- [~] **M1.10 — Resolver: scopes, slots, static-error battery.** Design phase.
-      **A design proposal is filed: `plan/resolver-m1.10-design.md` — awaiting
-      ratification** (concretizes machine-design §2/§6/§7/§12's prose types +
-      proposes S-5/S-6 resolutions). A read-only review caught 7 real design
+- [~] **M1.10 — Resolver: scopes, slots, static-error battery.** In progress;
+      **a landed**, b/c next. Design: `plan/resolver-m1.10-design.md`
+      (concretizes machine-design §2/§6/§7/§12; S-5/S-6 rulings folded in). A read-only review caught 7 real design
       errors in the first draft (undeclared-assignment dropped from S-5; a
       `raise`-tail falls-off-end unsoundness; blocks-share-callable-slots vs. MD
       §8; construct-body scopes omitted; S-6 missing the field/index base operand;
@@ -152,13 +151,36 @@ conformance) have landed.
       M1.10b battery. REPL impact checked and banked into S-24
       (cross-increment redefinition = cell replacement; batch rules
       within a chunk; the runtime half of S-6 is the redefinition
-      soundness backstop). **Still needs your ruling on:** the
-      concrete-type gap-fills (decisions [1]–[9] in the doc). S-11
-      (fn-closure capture mutation — MD assumes yes; already stated in
-      plan-m1 M1.10) also wants locking; S-45 is already user-resolved
-      (App C). Proposed chunks:
-      M1.10a (environment/name-resolution pass), M1.10b (error battery + exits),
-      M1.10c (Void + falls-off-end + stage-gate bump to Full).
+      soundness backstop). The concrete-type gap-fills ([1]–[9]) had a
+      second adversarial review (folded into the doc, `6aca132`): [1]/[3]/[4]/
+      GlobalKind/BodyKind sound; [9] single-pass capture was **unsound**, fixed
+      with a per-slot `cell_boxed` flag; added `slot_names` + decl-node slot
+      resolutions + overflow-checked widths.
+  - [x] **M1.10a — environment/name-resolution pass.** The `resolve` module
+        (ResolvedModule + scope/frame model): local slots, `globals` (with
+        declaration kind, for rule 2a), and reference classification
+        (LocalSlot / BlockOuter static links / ModuleName free names) +
+        `slot_names` + `stmt_spans`. Dispatch split into `walk/dispatch.rs`.
+        Adversarial review: frame/hops classification, `home_fn`, `module_direct`,
+        shadowing, determinism (Vec scopes, no HashMap) all sound; two MAJORs
+        fixed (module `const` mis-tagged `Let`; param default saw sibling params
+        — now enclosing-scope per L§8.2). 12 unit tests. doodle-rust `593b327`.
+  - [ ] **M1.10b** — static-error battery (duplicate-decl, const-reassign,
+        undeclared-assign, **rule 2a non-assignable declarations**, exit
+        placement) + exit-target annotation (MD §12).
+  - [ ] **M1.10c** — Void (S-6) + fn-falls-off-end (S-5) + `if`-expr-else +
+        **closure captures** (resolve the deferred cross-`fn` refs) + stage-gate
+        bump to Full (+ runner executor).
+      **AWAITING YOUR RULING — capture representation (A/B/C):** surfaced while
+      building M1.10a. A block nested in a closure referencing a captured var
+      doesn't fit `Resolution::Capture(index)`. (A) separate capture array +
+      a 5th `OuterCapture` variant; **(B, my lean)** captures as cell-boxed frame
+      slots (drops `Capture`, uniform access); (C) defer — **taken provisionally**:
+      M1.10a leaves cross-`fn` refs unresolved in `deferred_captures`, to resolve
+      in M1.10c once you pick A/B. Also **S-11** (fn-closure mutation) wants
+      locking for M1.10c.
+      **Provisional (note, may want revisiting):** param defaults resolve in the
+      *enclosing* scope (L§8.2 literal) — a default can't see a sibling param.
 
 **Stage gate — now at Parse (M1.7):** `implemented_through()` returns
 `Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
