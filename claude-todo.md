@@ -196,10 +196,31 @@ conformance) have landed.
           suggests `loop`. Review confirmed sound; caught `return <void>` mislabel
           (fixed — `return expr` produces; its operand's Void-ness is S-6).
           doodle-rust `d82e134`.
-    - [ ] **Void / S-6 consuming-site check** — the static subset (a `to` call
-          used where a value is required — incl. `return`/`raise`/`break` operands,
-          which S-5 defers here). Reuses the tail classifier's "produces" notion.
-    - [ ] **`if`-expr-requires-`else`** semantic (part of the value discipline).
+    - [x] **Void / S-6 consuming-site check** — DONE. A post-pass (`voidcheck.rs`)
+          reports a same-module `to` call used where a value is required —
+          `procedure-in-expression` (L§6.11), producer-site blame naming the proc;
+          static subset = a callee resolving to a module-level `to`, directly or
+          the Void propagated up through an expression-position `if`/`try` (parens
+          are transparent). All the ruling's consuming sites incl. the callee and
+          `return`/`raise`/`break`/`continue` operands (the ones S-5 deferred here).
+          The S-5 `return p()` test flipped to `procedure-in-expression`. 31 resolver
+          tests. Two read-only reviews: no critical/major. doodle-rust `bb98437`.
+          **Two scope decisions surfaced (both sound; user may ratify/override):**
+          (a) a *locally*-declared `to` is NOT statically caught — local binding
+          kinds aren't carried past resolution, so a local proc is indeterminate →
+          runtime (M2a). Consistent with S-5. The intended static subset is
+          module-level `to`. (b) A *value-less-statement* branch tail in value
+          position (`let x = if c then 1 else (let y=2) end`) is deferred — see the
+          next item; it is the same L§6.8 value-discipline family as missing-`else`.
+    - [ ] **`if`-expr value discipline (L§6.8)** — an `if`/`try` used as a value
+          must produce on every branch: reject a **missing `else`**
+          (`if-expression-missing-else`) AND a **value-less branch tail** in value
+          position. Both are the same family; `voidcheck.rs::void_cause` returns
+          `None` for them today (so they're neither flagged nor misreported as a
+          proc). **Note for this chunk:** a strict reading of the S-6 ruling ("static
+          when … lexically determinable *via the S-5 lattice*") makes the value-less
+          branch tail static — and S-5 already catches the identical structure at an
+          `fn` tail (falls-off-end). This chunk removes that S-5/S-6 asymmetry.
     - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
           the `cell_boxed`/`CaptureSource` output.
     - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —
