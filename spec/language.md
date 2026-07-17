@@ -728,12 +728,26 @@ lvalue      = IDENT
             | '(' lvalue ')'
 ```
 
-`name = value` reassigns an existing binding; assigning to a name that is not in
-scope, or to a `const` binding, is an error (static where determinable).
-`target.field = value` mutates a record field; `target[key] = value` mutates a
-list element or dict entry. Parentheses are transparent around an assignment
-target, as they are around any expression: a parenthesized target denotes the
-same place as the target it wraps (`(a) = 5` assigns to `a`).
+`name = value` reassigns an existing binding. The target name must resolve, in
+lexical scope, to a **mutable `let` binding** — a `let`, a parameter, or a
+block/rescue binding (all of `let` kind). Assigning to any other name is a
+**static** error:
+
+- a `const`, or a **declaration binding** (a name introduced by `to`, `fn`,
+  `record`, `protocol`, `parameter`, or `module`), is not reassignable — use a new
+  name, or a `let` if it must change. A dynamic parameter is rebound for a dynamic extent
+  with `with` (§5.5), never with `=`.
+- a name bound nowhere in scope is undeclared. Because every imported name is a
+  read-only alias (§11.2), a target that is not a visible mutable `let` is an
+  error whether it is undeclared or supplied by an import — so the check is fully
+  static, with no need to resolve imports.
+
+`target.field = value` mutates a record field and `target[key] = value` mutates a
+list element or dict entry; these change the object the target denotes and are
+always allowed, independent of how the base name is bound. Parentheses are
+transparent around an assignment target, as they are around any expression: a
+parenthesized target denotes the same place as the target it wraps (`(a) = 5`
+assigns to `a`).
 
 Assignment is a **statement, not an expression**: it produces no value and may
 not appear where an expression is expected. This removes the `if (x = y)` class
@@ -972,13 +986,16 @@ let label = if n > 0 then "positive"
 ```
 
 An `if` used in expression position without an `else`, or with a branch that
-does not produce a value, is an error.
+does not produce a value, is an error (the consuming-site rule of §6.11; static
+where lexically determinable, otherwise at run time). A branch that *diverges*
+rather than producing a value — a `raise` or a non-local exit — is fine (§8.4).
 
 ### 6.9 `try` as an expression
 
 `try … rescue e … end` may likewise be used as an expression, yielding the value
 of the body if it completes normally, or the value of the rescue body if an
-error is caught (§12). In expression position both bodies must produce a value.
+error is caught (§12). In expression position both bodies must produce a value
+(§6.11), unless a body diverges (§8.4).
 
 ### 6.10 Anonymous functions
 
@@ -1000,10 +1017,45 @@ returns `nil` covers the rest.
 
 ### 6.11 Expression statements and the function/procedure distinction
 
-An expression alone may stand as a statement (§7.2); its value is discarded.
-Because a **procedure** call produces no value, a procedure call is a valid
-statement but is an error in expression position (e.g. as the right-hand side of
-`let`, an argument, or an operand). A **function** call is an expression.
+An expression alone may stand as a statement (§7.2); its value is discarded, and
+this is the one position that does not consume a value — with a single exception:
+a function's final expression is not discarded but is the function's result
+(§7.1, §8.4), so it too must produce a value. Everywhere else, an expression
+position **consumes** one, and a value that is absent — **Void** — may not be used
+there.
+
+Void is the non-result of a **procedure** (`to`) call and of any statement that
+yields no value. It is not itself a value: it cannot be bound, passed, stored, or
+operated on. The value-consuming positions are the initializer of a `let`/`const`;
+the right-hand side of an assignment; a call argument (positional or keyword); a
+parameter default (in an `fn`/`to` signature, §8.2) and the default of a
+`parameter` declaration (§5.5); an operator operand; the object of a `.field` or
+`[i]` access and the index of an `[i]`; an interpolation expression; an `if` or
+`while` condition; a `with` value; a list element and a dict key or value; the
+operand of a `return`, `raise`, `break`, or `continue`; and a function's own
+result (§8.4). Using Void in
+any of these is an error, reported **at the consuming site** and naming the
+value-less producer — for example, "`draw` is a procedure and produces no value —
+call it as its own statement, or make it a function." A **function** (`fn`) call,
+which yields a value, is a valid expression.
+
+Void **propagates** outward through the value-producing forms: an `if` or `try`
+used as an expression yields Void exactly when the branch that runs produces none
+(§6.8, §6.9), and grouping parentheses are transparent. A branch that instead
+**diverges** — a `raise`, a non-local `return`/`break`/`continue`, or an endless
+`loop` — transfers control away rather than delivering Void, so it does not make
+the enclosing expression Void. Void does **not** cross a function boundary: a
+function body is judged against the function's *own* result (§8.4), never its
+caller's use.
+
+The error is **static** in exactly one case: the consuming position is lexically
+apparent and the producer is a call whose callee resolves to a **module-level
+`to` of the current module** (directly, or with the Void propagated through an
+expression-position `if`/`try` as above). Every other producer is checked at run
+time — a call requiring dispatch, a locally-declared procedure, or a procedure
+reached through an import (a read-only alias, §11.2, whose declaration lives in
+another module). This fixed boundary lets conforming implementations reject the
+same programs statically.
 
 A tool may warn when a non-final expression statement computes a value that is
 then discarded (a likely mistake, such as writing `foo` where `foo()` was
@@ -1193,10 +1245,26 @@ argument is copied into its parameter; a reference-typed argument is shared.
   Using a procedure call as an expression is an error (§6.11).
 - A **function** (`fn`) yields a value: the value of the last expression
   evaluated in its body, or the operand of an executed `return expr`. Every path
-  through a function body must produce a value; a function whose body can fall
-  off the end without producing a value (e.g. ending in a `let` statement, or an
-  `if` without `else` in tail position) is a static error where determinable and
-  otherwise raises at runtime.
+  through a function body must produce a value. A body whose tail cannot — because
+  it ends in a non-value statement (a `let`/`const`, an assignment, a `while` or
+  `with`, a bare `return`, or a `loop` that can `break`), in an `if`/`try` some
+  branch of which produces no value (a missing `else`, or a value-less or empty
+  branch), or in nothing at all (an empty body) — is a **static error where this
+  is lexically determinable**, and otherwise raises when the function would return
+  without a value. The judgment is by the **syntactic form of the tail**, not by
+  which paths are feasible, so a statement following a `return` is still judged
+  (dead code is rejected, not excused). A tail that **diverges** — a `raise`, or
+  an endless `loop` (one with no `break` bound to it) — never falls off the end
+  and is fine.
+
+A non-local exit is judged value-less only against its **own target**; against
+any other consumer it diverges (control leaves before that consumer runs). A bare
+`return`'s target is the function's result, so it makes only the *function's own*
+tail value-less — the rule above. The same `return`, or a `break`/`continue`, as
+a branch tail consumed by an inner `if`/`try` merely transfers control and leaves
+that inner expression well-formed (§6.11): `let x = if c then 1 else return end`
+is legal, because when the `else` runs, control leaves the function before the
+binding.
 
 By convention, functions should avoid observable effects and procedures carry
 them; the language does not enforce purity.
@@ -1228,7 +1296,9 @@ Blocks are **second-class**:
   enclosing procedure/function.
 - Like a function, a block yields the value of its last expression on each
   invocation; whether that value is used is up to the callee (an iterating callee
-  ignores it; a mapping callee collects it).
+  ignores it; a mapping callee collects it). A block invocation that yields no
+  value is an error only if the callee **uses** the value (the consuming-site
+  rule, §6.11) — a block whose value the callee ignores may be value-less.
 
 First-class "anonymous callable code" is provided instead by anonymous functions
 (§6.10), whose `return` is local to the function and which may be stored and
@@ -1901,6 +1971,22 @@ likely to change.
   `do … end` opens the construct body, and a block argument to a call in the
   header must be parenthesized. This keeps the common `while f() do … end`
   unambiguous at the cost of parentheses in the rare header-block case.
+- **Value discipline: Void and function results (§5.3, §6.8, §6.9, §6.11, §8.4,
+  §8.5; S-5/S-6).** The discussion left "a procedure used where a value is needed"
+  and "a function that falls off the end" as run-time faults. This spec unifies
+  them into one **consuming-site** rule: **Void** (a procedure's non-result, or a
+  non-value statement) may not be used where a value is required, and a function
+  whose tail is value-less by syntactic form is the same error at the function's
+  own result. The check is **static** where the producer is lexically determinable
+  — a **module-level** `to` of the current module, directly or propagated through
+  an expression-position `if`/`try` (parentheses transparent) — and at run time
+  otherwise; the boundary is fixed so conforming implementations reject the same
+  programs (S-5). The tail judgment is **condition-blind** (syntactic form, not
+  path feasibility), and a **divergence** (`raise`, or a non-local `return`/
+  `break`/`continue`) is judged only against its own target, so `let x = if c then
+  1 else return end` is legal. Assignment (§5.3) is likewise fully static: a target must
+  be a visible mutable `let`, and declaration bindings (`to`/`fn`/`record`/
+  `protocol`/`parameter`) join `const` as non-reassignable.
 - **`/` always yields `Float` (§4.2).** The discussion said `/` "produces a float
   when the result isn't a whole number" but pointed at Python 3, where `/` is
   always float. This spec adopts the Python-3 rule (`4 / 2` is `2.0`) as the
