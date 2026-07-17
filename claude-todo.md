@@ -215,15 +215,25 @@ conformance) have landed.
           during the scope walk). (b) The re-chunk into if-expr value
           discipline stands — sequencing, not semantics; the no-more-no-less
           audit runs at M1.10 completion, after c.
-    - [ ] **`if`-expr value discipline (L§6.8)** — an `if`/`try` used as a value
-          must produce on every branch: reject a **missing `else`**
-          (`if-expression-missing-else`) AND a **value-less branch tail** in value
-          position. Both are the same family; `voidcheck.rs::void_cause` returns
-          `None` for them today (so they're neither flagged nor misreported as a
-          proc). **Note for this chunk:** a strict reading of the S-6 ruling ("static
-          when … lexically determinable *via the S-5 lattice*") makes the value-less
-          branch tail static — and S-5 already catches the identical structure at an
-          `fn` tail (falls-off-end). This chunk removes that S-5/S-6 asymmetry.
+    - [x] **`if`-expr value discipline (L§6.8/§6.9)** — DONE. `voidcheck.rs`
+          extended: a value-position `if`/`try` must produce on every branch —
+          a missing `else` → `if-expression-missing-else`; a present branch/body
+          whose tail is value-less (a `let`/`while`/`with`/assignment/`const`
+          tail, a `loop` with a bound `break`, an **empty** branch/body, or a
+          nested value-less `if`/`try`) → the new `non-producing-branch`
+          (reserved in the rubric; `try` bodies have no `else`, so it can't reuse
+          the missing-else slug). `block_void_cause` mirrors the S-5 lattice.
+          A 3-lens read-only find→verify **workflow** (11 agents) caught a MAJOR
+          (empty branch/body escaped the check — `block_void_cause` `?`-returned
+          on an empty block, unlike `tailcheck`'s `tail_of_block`) + a slug-
+          reservation MINOR, both fixed; NITs folded. 32 resolver tests.
+          **Spec clarification to fold into the L§8.4/§6.11 (S-5/S-6) edit:** a
+          **non-local exit** (`raise`, a bare `return`/`break`/`continue`) as a
+          branch tail **diverges past the consumer** → not Void. This refines
+          "S-6 references the same S-5 lattice": `tailcheck` classifies a bare
+          `return` at an *fn tail* as value-less (the fn yields no value), but at
+          a consuming site the same `return` leaves before the consumer runs.
+          voidcheck implements this; pin the one-line note in the L edit.
     - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
           the `cell_boxed`/`CaptureSource` output.
     - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —

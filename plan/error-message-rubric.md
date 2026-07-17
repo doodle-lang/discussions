@@ -85,7 +85,8 @@ enum only when their producer lands (M1.3–M1.11); each names an L rule.
 `assign-to-undeclared` (L§5.3) · `duplicate-declaration` (L§5.2) ·
 `return-outside-callable` · `break-outside-loop` · `continue-outside-block`
 (L§7) · `function-missing-value` · `procedure-in-expression` (L§6.11) ·
-`if-expression-missing-else` (L§6.8) · `misplaced-declaration` ·
+`if-expression-missing-else` (L§6.8) · `non-producing-branch` (L§6.8/§6.9) ·
+`misplaced-declaration` ·
 `bare-raise` · `undeclared-parameter` · `malformed-number` · `bad-escape` ·
 `surrogate-escape` · `unicode-escape-in-bytes` · `non-ascii-bytes` ·
 `unterminated-string` · `under-indented-line` (L§3) ·
