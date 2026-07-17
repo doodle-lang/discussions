@@ -171,19 +171,21 @@ conformance) have landed.
   - [ ] **M1.10c** — Void (S-6) + fn-falls-off-end (S-5) + `if`-expr-else +
         **closure captures** (resolve the deferred cross-`fn` refs) + stage-gate
         bump to Full (+ runner executor).
-      **AWAITING YOUR RULING — capture representation (A/B/C):** surfaced while
-      building M1.10a. A block nested in a closure referencing a captured var
-      doesn't fit `Resolution::Capture(index)`. (A) separate capture array +
-      a 5th `OuterCapture` variant; **(B, my lean)** captures as cell-boxed frame
-      slots (drops `Capture`, uniform access); (C) defer — **taken provisionally**:
-      M1.10a leaves cross-`fn` refs unresolved in `deferred_captures`, to resolve
-      in M1.10c once you pick A/B. **S-11 is RULED (user, 2026-07-17; full
-      text in App C):** closures may mutate captures — capture by
-      reference to the binding, sharing across captures of the same
-      binding, const-ness travels, loop closures capture per-iteration
-      bindings; M1.10c lands the L§6.10/§8.5 wording. (S-11 is the
-      *semantic* half; the A/B capture-representation fork above remains
-      open — note S-11's sharing requirement is satisfiable by either.)
+      **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
+      review — resolver-design §8). Surfaced building M1.10a: a block nested in a
+      closure referencing a captured var doesn't fit `Resolution::Capture(index)`.
+      **B**: captures are cell-boxed frame *slots*; every ref is `LocalSlot`/
+      `BlockOuter` + `cell_boxed`, `Resolution::Capture` dropped; a `CaptureSource`
+      list drives closure creation. B is what machine-design §7/§8/§10 already pins
+      (A — a separate capture array — would contradict §10). M1.10a deferred it
+      (cross-`fn` refs sit in `deferred_captures`); M1.10c resolves them as B.
+      **Flag for M2a (not resolver):** `Value` has no `Cell` variant but a
+      cell-boxed slot must hold a cell ref — resolve at M2a (`Value::Cell` or a
+      parallel `cells` vec).
+      **S-11 is RULED (user, 2026-07-17; App C):** closures may mutate captures —
+      by reference, sharing across captures of the same binding, const-ness
+      travels, loop closures capture per-iteration bindings; M1.10c lands the
+      L§6.10/§8.5 wording. (B satisfies S-11's sharing: one cell.)
       **Provisional (note, may want revisiting):** param defaults resolve in the
       *enclosing* scope (L§8.2 literal) — a default can't see a sibling param.
 

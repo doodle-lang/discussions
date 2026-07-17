@@ -418,6 +418,42 @@ two gaps — folded into §2/§3 above:
   `CaptureSource` wiring M1.10c.
 - **New (from review):** `CallableInfo.slot_names` (MD §17 named-locals table) and
   `cell_boxed` added; decl-node slot resolutions added.
-- **Still to lock:** **S-11** (fn closures may mutate captures — MD §7 assumes
-  yes; confirm) — affects M1.10c/M2, not M1.10a. **S-45** already user-resolved
-  (App C); S-39 (imported-alias assignment) stays M5.
+- **S-11 RESOLVED** (user, 2026-07-17): `fn` closures **may** mutate captures,
+  by-reference, shared cell (App C). Unblocks the M1.10c capture semantics.
+- **S-45** already user-resolved (App C); S-39 (imported-alias assignment) stays M5.
+
+## 8. Capture representation — RESOLVED: **B** (cell-boxed frame slots)
+
+The M1.10a build surfaced a fork the earlier drafts glossed: a **block nested in
+a closure** referencing a captured variable doesn't fit `Resolution::Capture(index)`
+(a block reaches by static link, not by the closure's capture array). Reviewed
+2026-07-17; **B ratified** — and it is what machine-design **already pins**: §7
+"the frame slot holds the cell reference," §8 `CalObj = … + captured cells:
+Vec<CellIdx>`, §10 "entering the closure **splices those cells into the new
+frame**." (Option A — a separate capture array read without entering the frame —
+would *contradict* §10, so A was the deviation, not B.)
+
+**B:** a closure's captured cells occupy **cell-boxed frame slots**. Every
+reference — direct or via a block static link — is `LocalSlot`/`BlockOuter` +
+the `cell_boxed` flag (the machine derefs). **`Resolution::Capture` is dropped**
+(the §2 sketch of it is superseded). A per-closure **capture list**
+(`CaptureSource`) survives only to drive closure creation: fill each capture slot
+from the enclosing env (`ParentLocal(slot)` / `ParentCapture(idx)`).
+
+Adversarial review (all 7 axes B-SOUND; tail-reuse, multi-level threading,
+mutation, GC roots, no info loss). **Pin in M1.10c:**
+- Capture slots are **trailing, discovery-order** slots (forward-pass-safe — a
+  late capture never renumbers already-emitted param/body slots).
+- `CaptureSource` **carries its target slot** (the splice fills it).
+- Multi-level: an intermediate closure that never names the var still gets a
+  pass-through capture slot; the resolver threads it because all intervening `fn`
+  frames are open on the frame stack when the deepest reference resolves.
+- **MD §11 caveat** (tail-call frame reuse): the capture-**splice** for a closure
+  tail-target must run under the §11 overwrite set — worth an explicit sentence in
+  MD §11 so it isn't the next under-specified overwrite.
+
+**Flag for M2a (not resolver work):** `Value` has **no `Cell` variant**
+(`machine.rs`), yet `locals: Vec<Option<Value>>` must hold a cell reference for a
+cell-boxed slot. A/B-shared for owning frames; B leans on it harder. Resolve at
+M2a (`Value::Cell(CellIdx)`, a `Value|Cell` locals element, or a parallel
+`cells` vec indexed by the `cell_boxed` slots) before the machine core lands.
