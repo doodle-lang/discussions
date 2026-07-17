@@ -227,13 +227,15 @@ conformance) have landed.
           (empty branch/body escaped the check — `block_void_cause` `?`-returned
           on an empty block, unlike `tailcheck`'s `tail_of_block`) + a slug-
           reservation MINOR, both fixed; NITs folded. 32 resolver tests.
-          **Spec clarification to fold into the L§8.4/§6.11 (S-5/S-6) edit:** a
-          **non-local exit** (`raise`, a bare `return`/`break`/`continue`) as a
-          branch tail **diverges past the consumer** → not Void. This refines
-          "S-6 references the same S-5 lattice": `tailcheck` classifies a bare
-          `return` at an *fn tail* as value-less (the fn yields no value), but at
-          a consuming site the same `return` leaves before the consumer runs.
-          voidcheck implements this; pin the one-line note in the L edit.
+          **Spec clarification CONFIRMED (user, 2026-07-17; recorded in App C
+          S-5):** a non-local exit **diverges with respect to any consumer
+          other than its own target** — `raise`/`return` (bare or valued)/
+          `break`/`continue` as a value-position branch tail are fine (the
+          Kotlin/Rust guard idiom; runtime-sound: the unwinder discards the
+          pending bind). Bare `return` is value-less at exactly one place —
+          the fn's own tail, where the judged consumer IS the return's
+          target. voidcheck implements this; pin the sentence in the
+          L§8.4/§6.11 edit.
     - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
           the `cell_boxed`/`CaptureSource` output.
     - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —

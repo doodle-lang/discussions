@@ -982,6 +982,15 @@ runtime** (a call whose proc/fn nature isn't lexically known; S-6's
 consuming-site check owns it). Branch combination for `if`/`try`: any
 branch value-less → static error; else any indeterminate → runtime; else
 OK (so produces-or-diverges mixes are fine: `try f() rescue e raise end`).
+**Divergence refinement (confirmed by the user, 2026-07-17):** a
+non-local exit **diverges with respect to any consumer other than its
+own target** — so `raise`, `return` (bare or with a value), `break`, and
+`continue` as a *branch tail in value position* are fine
+(`let x = if c then 1 else return end`: control leaves before the bind;
+no Void is delivered — the Kotlin/Rust guard idiom). A bare `return` is
+value-less at exactly one place: the `fn`'s own tail, where the consumer
+being judged *is* the return's target (the fn's result). Same lattice,
+context-supplied consumer; pin this sentence in the L§8.4/§6.11 edit.
 The classifier is **condition-blind** — it judges syntactic form, never
 path feasibility — so dead-tail code (`return 1` then a trailing `let`)
 is rejected by design (Java-precedented; the fix is deleting dead code).
