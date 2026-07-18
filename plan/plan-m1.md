@@ -246,7 +246,7 @@ wherever they sit) and treats `with`/`try`/block-arg/nested-callable
 boundaries. Annotated-corpus tests use the `tails` helper in
 `tests/resolve.rs`.
 
-### M1.12 — Golden corpus: every example in L — **TODO**
+### M1.12 — Golden corpus: every example in L — **DONE**
 
 Extract the code examples from `spec/language.md` into
 `conformance/v0.1/lang/…` static tests (or, where an example is
@@ -260,6 +260,16 @@ fragmentary examples get a documented wrap or an exclusion reason.
 *Accept:* the M1 exit criterion "every code example in L parses to a
 golden AST" is mechanically true over the tagged/manifested set;
 extraction script + manifest committed so spec edits flag stale examples.
+
+Landed (doodle-rust `175de57`; tagging in discussions `30b20aa`): all 54
+fences tagged (`doodle`/`grammar`/`text`); the 15 well-formed doodle
+examples + #44 (§10.3 dispatch, `…` wrapped to `show(i)`) extracted to 16
+`spec-bNN.doodle` fixtures (`mode: static`, `stage: full`) + one insta AST
+snapshot each; `scripts/lang-corpus-sync.py` + `conformance/lang-corpus.json`
+give the extraction+manifest with drift detection (both were done — tags
+*and* a manifest — since the Accept line names the manifest unconditionally).
+No deliberately-ill-formed L examples exist, so no negative tests. The
+sync-check is not CI-wired yet (a future job pulling `discussions`).
 
 ### M1.13 — Broken-syntax corpus + message review — **TODO**
 

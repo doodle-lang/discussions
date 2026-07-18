@@ -44,18 +44,15 @@ written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
 
 ## Awaiting the user (blocking)
 
-**M1.12 golden-corpus decisions (gating the extraction/fixtures build; fence
-tagging already landed):**
-1. **#44 dispatch example** (`each(my_range) do(i) … end`, §10.3): **wrap** (`…` →
-   a real body, e.g. `show(i)` — gives §10.3, single dispatch, its ONLY golden-AST
-   coverage; the plan orders wrap before exclude) vs **exclude** (keep the spec
-   example verbatim, record an exclusion reason). Asked while away; unanswered.
-   The fence tag is `doodle` either way — only the extraction disposition waits.
-2. **Cross-repo boundary**: the extractor reads `discussions/spec/language.md`,
-   but the fixtures/goldens live in `doodle-rust`, whose standalone CI has no
-   `discussions` checkout. Decide where the extractor + the "corpus in sync with
-   the spec" check run (workspace-only sync-check + self-contained committed
-   fixtures is the likely shape).
+**Non-blocking, for confirmation — L§8.7 procedure-tail-position wording:** the
+resolver marks `to` procedure tail calls (machine-design §11 already assumes it),
+but L§8.7's positive definition still says "the enclosing *function*." A one-clause
+clarification was drafted and reverted (not pre-authorized); asked twice while the
+user was away, unanswered. §8.7 stands as-is (S-45 amendment only). Re-surface.
+
+(The M1.12 golden-corpus decisions are RESOLVED (user): #44 wrapped (`…` →
+`show(i)`); corpus lives in doodle-rust with a sync-check script, CI wiring
+deferred. Both shipped in doodle-rust `175de57`.)
 
 (The M1.1 error-message rubric was signed off by the user 2026-07-10;
 it stays open to revision and is exercised in earnest at the M1.13 review.
@@ -323,27 +320,32 @@ M1.11** (shadowing warning + tail marking, S-45).
       **Provisional (note, may want revisiting):** param defaults resolve in the
       *enclosing* scope (L§8.2 literal) — a default can't see a sibling param.
 
-- [~] **M1.12 — Golden corpus: every example in L.** In progress.
-  - [x] **Prerequisite: fence-tagging + orphan-fence fix (this landing).** Tagged
-        all 54 code fences in `spec/language.md`: 16 `doodle` (15 well-formed →
-        golden-AST candidates; #44 `each(my_range) do(i) … end` is a `doodle`-tagged
+- [x] **M1.12 — Golden corpus: every example in L.** DONE (doodle-rust `175de57`;
+      fence tagging in discussions `30b20aa`).
+  - [x] **Fence-tagging + orphan-fence fix.** Tagged all 54 code fences in
+        `spec/language.md`: 16 `doodle` (15 well-formed; #44 a `doodle`-tagged
         ellipsis placeholder), 32 `grammar` (EBNF), 6 `text` (keyword/operator/
-        reserved-word lists). Deleted a stray orphan fence at EOF (odd fence count,
-        silently swallowed by naive extraction). Classification ground-truthed by
-        running every block through `parse_program`, then **twice adversarially
-        reviewed (2 read-only agents): zero mis-classifications**.
-  - [ ] **Extraction script + committed manifest** — REQUIRED by the Accept line
-        ("extraction script + manifest committed so spec edits flag stale
-        examples"); inline tags alone do NOT discharge it. Must carry disposition
-        + reason + block→fixture linkage + a stale-detection baseline, and
-        **assert balanced fences** (fail loud on odd counts — the recon script's
-        silent-drop is the trap to avoid).
-  - [ ] **Dual fixtures for the 15 golden blocks** — plan pins BOTH a conformance
-        fixture (`mode: static`, `stage: parse`; `full` where it should resolve
-        clean) AND an insta AST snapshot. Reconcile with the 46 existing
-        hand-authored `conformance/v0.1/lang/` fixtures (coexist w/ provenance,
-        don't duplicate).
-  - See **Awaiting-the-user** for the two decisions gating the rest.
+        reserved-word lists). Deleted a stray orphan fence at EOF. Classification
+        ground-truthed via `parse_program`, twice adversarially reviewed — zero
+        mis-classifications.
+  - [x] **Extraction script + committed manifest.** `scripts/lang-corpus-sync.py`
+        (in doodle-rust): one CommonMark-consistent fence scan (asserts a block
+        can't be left unterminated — how the orphan fence is caught), `--write`
+        regenerates, default `check` fails on any drift (block edited/added/removed/
+        reordered/retagged, fixture out of sync, or hand-edited manifest metadata).
+        Manifest `conformance/lang-corpus.json` records all 54 blocks (section/tag/
+        sha256/disposition); #44 a documented wrap, matched by section+marker.
+  - [x] **Dual fixtures for the 16 golden blocks.** 16 `spec-bNN.doodle`
+        (`mode: static`, `stage: full` — all resolve clean) under
+        `conformance/v0.1/lang/LSEC/`, auto-run by the conformance runner; + an
+        insta AST snapshot each (`tests/lang_corpus.rs`, self-contained). #44
+        (§10.3 dispatch) wrapped (`…` → `show(i)`) so single dispatch gets
+        coverage. Coexists with the hand-authored fixtures (distinct `spec-b*`
+        family, provenance-linked). Adversarial review (3-lens) hardened the fence
+        parser + manifest check; folds landed.
+  - **Decisions RESOLVED (user):** #44 wrapped; corpus in doodle-rust + a
+        sync-check script; **CI wiring deferred** (a future job that pulls
+        `discussions` runs the sync check).
 
 **Stage gate — now at Full (M1.10):** `implemented_through()` returns
 `Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
