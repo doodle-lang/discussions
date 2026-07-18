@@ -1378,7 +1378,13 @@ A call is **not** in tail position when work remains after it returns, including
 - the right-hand side of a `let`/assignment whose binding is then used;
 - any call inside a `with` body (the dynamic binding must be restored on exit,
   §5.5) or inside a `try` body (a handler must be unwound), which therefore does
-  **not** preserve the tail-call property for calls within them.
+  **not** preserve the tail-call property for calls within them;
+- a call that **passes a block argument** (`f(x) do … end`): the block is
+  second-class and references the caller's frame (§8.5), so that frame must
+  outlive the call and cannot be reused. (Because §8.5 forbids forwarding a
+  received block, the only block a call can pass is a literal `do … end` closing
+  over the current frame — so the exclusion is exactly the calls whose frame the
+  block pins.)
 
 A conforming implementation should keep a bounded history of elided tail frames
 so that diagnostics for later errors remain useful (informative).

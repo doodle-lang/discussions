@@ -1233,7 +1233,9 @@ S-45 (L§8.7) A call that passes a block argument is **not** a tail
 position: the block references the caller's frame, so the frame cannot be
 reused (found during machine design — see `machine-design.md` §11). Amend
 L§8.7's non-tail list alongside the with/try barriers. Resolve by M1
-(tail marking), consumed by M2a (frame reuse).
+(tail marking), consumed by M2a (frame reuse). **[resolved M1.11 — L§8.7
+non-tail list amended 2026-07-17; tail marking emits a per-node `tail_calls`
+table (resolver `walk/tailmark.rs`), excluding block-arg calls.]**
 
 **Modules/protocols — resolve by M5.**
 S-13 (L§11.2) Wildcard-collision rule: second wildcard supplying an

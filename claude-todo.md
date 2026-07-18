@@ -265,7 +265,7 @@ M1.11** (shadowing warning + tail marking, S-45).
           diagnostics. Conformance 45/0/1 (`mode: run` still skips). Two read-only
           reviews: no critical/major. doodle-rust `32852b9`.
 
-- [~] **M1.11 — shadowing warning + tail marking (S-45).** In progress.
+- [x] **M1.11 — shadowing warning + tail marking (S-45).** DONE.
   - [x] **shadowing warning (L§5.1)** — DONE. A nested declaration hiding an
         outer binding emits a `shadowing` **warning** (doesn't fail loads). Covers
         `let`/`const`, the `rescue` name, **params + block params** (caret at the
@@ -278,11 +278,19 @@ M1.11** (shadowing warning + tail marking, S-45).
         **Deferred (no `Param` span):** duplicate-params and a precise param/
         block-param/rescue-name caret — the warning points at the enclosing
         decl. Would need the parser to carry per-param + rescue-name spans.
-  - [ ] **tail marking (L§8.7, machine-design §11 + S-45)** — mark each call
-        node *tail* iff its value is the callable's result with no pending work,
-        not inside a `with`/`try` body, and it passes **no block argument**
-        (S-45). Output on `CallableInfo` (or a per-node side table); consumed by
-        M2a frame reuse. Land the L§8.7 amendment (S-45) with it.
+  - [x] **tail marking (L§8.7, machine-design §11 + S-45)** — DONE. Marks each
+        call node *tail* iff its value is the callable's result with no pending
+        work, it is not inside a `with`/`try` body, and it passes **no block
+        argument** (S-45). Output is a **per-node `tail_calls: Vec<bool>`** on
+        `ResolvedModule` (parallel to `resolutions`/`exit_targets` — machine-design
+        §2 groups tail marks with the node annotations; O(1) at the call site for
+        M2a). Beyond fall-through tails, the walk also marks a `return expr`
+        operand wherever it sits (a `return` abandons surrounding work), and
+        treats `with`/`try` bodies, block args, and nested callables as
+        boundaries; a `return` in a loop body (same frame) IS tail, but a `return`
+        crossing a block boundary is not (non-local exit). New `walk/tailmark.rs`;
+        annotated-corpus tests in `tests/resolve.rs` (`tails` helper). L§8.7's
+        non-tail list amended for S-45. doodle-rust `<pending>`.
 
       **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
       review — resolver-design §8). Surfaced building M1.10a: a block nested in a

@@ -230,16 +230,21 @@ re-verified green at their final stages — this is the staging
 checkpoint); the S-5 spec text enumerates exactly what M1 rejects (no
 more, no less).
 
-### M1.11 — Resolver: shadowing warning + tail marking — **TODO**
+### M1.11 — Resolver: shadowing warning + tail marking — **DONE**
 
 The L§5.1 shadowing **warning** (a Diagnostic with severity=warning; does
 not fail loads; surfaced by runner/CLI); tail-position marking per L§8.7
 + machine-design §11 including the **S-45** exclusion (calls passing
-block arguments are not tail — resolve S-45's L§8.7 amendment here, ahead
+block arguments are not tail — S-45's L§8.7 amendment landed here, ahead
 of its M2a consumer).
 *Accept:* warning snapshot tests; tail-marking unit tests over an
 annotated corpus (marked tail sites match hand-annotations, incl.
 with/try/block-arg barriers).
+Tail marking lands as a per-node `tail_calls: Vec<bool>` on `ResolvedModule`
+(`walk/tailmark.rs`); the walk also handles `return expr` operands (tail
+wherever they sit) and treats `with`/`try`/block-arg/nested-callable
+boundaries. Annotated-corpus tests use the `tails` helper in
+`tests/resolve.rs`.
 
 ### M1.12 — Golden corpus: every example in L — **TODO**
 
