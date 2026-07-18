@@ -264,6 +264,26 @@ M1.11** (shadowing warning + tail marking, S-45).
           (atomic with the gate); 8 `stage: full` fixtures over the resolver
           diagnostics. Conformance 45/0/1 (`mode: run` still skips). Two read-only
           reviews: no critical/major. doodle-rust `32852b9`.
+
+- [~] **M1.11 — shadowing warning + tail marking (S-45).** In progress.
+  - [x] **shadowing warning (L§5.1)** — DONE. A nested declaration hiding an
+        outer binding emits a `shadowing` **warning** (doesn't fail loads). Covers
+        `let`/`const`, the `rescue` name, **params + block params** (caret at the
+        callable/block decl node — `Param` has no span), and treats **module
+        globals as whole-scope** (hides a global declared later too) via a
+        pre-pass `collect_global_names`. Split `walk/decls.rs` out (length). A
+        read-only review caught two completeness MAJORs in the first draft
+        (params bypassed the check — the rubric's flagship case; forward-global
+        missed) — both fixed. doodle-rust `30701c3`.
+        **Deferred (no `Param` span):** duplicate-params and a precise param/
+        block-param/rescue-name caret — the warning points at the enclosing
+        decl. Would need the parser to carry per-param + rescue-name spans.
+  - [ ] **tail marking (L§8.7, machine-design §11 + S-45)** — mark each call
+        node *tail* iff its value is the callable's result with no pending work,
+        not inside a `with`/`try` body, and it passes **no block argument**
+        (S-45). Output on `CallableInfo` (or a per-node side table); consumed by
+        M2a frame reuse. Land the L§8.7 amendment (S-45) with it.
+
       **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
       review — resolver-design §8). Surfaced building M1.10a: a block nested in a
       closure referencing a captured var doesn't fit `Resolution::Capture(index)`.
