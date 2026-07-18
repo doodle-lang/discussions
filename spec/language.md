@@ -185,7 +185,7 @@ doodle`) is an ordinary comment, so shebang lines are permitted.
 Identifiers follow Unicode Standard Annex #31 (UAX #31) with `_` permitted as a
 start and continue character:
 
-```
+```grammar
 IDENT       = XID_START XID_CONTINUE*
 XID_START    = '_' | <any character with the Unicode XID_Start property>
 XID_CONTINUE = '_' | <any character with the Unicode XID_Continue property>
@@ -209,7 +209,7 @@ A keyword (§3.5) is not an identifier and may not be used as one.
 
 The following words are reserved and may not be used as identifiers:
 
-```
+```text
 and       as        break     const     continue  do        else
 end       exports   extends   false     fn        for       if
 implement import    is        let       loop      module    next
@@ -241,7 +241,7 @@ Integers are arbitrary precision. A literal is written in base 10, 16, 2, or 8.
 Underscores may appear between digits (not leading, trailing, or adjacent to a
 base prefix) and are ignored.
 
-```
+```grammar
 INT     = DEC | HEX | BIN | OCT
 DEC     = DIGIT ('_'? DIGIT)*
 HEX     = '0x' HEXDIGIT ('_'? HEXDIGIT)*
@@ -263,7 +263,7 @@ operator (§6.5), not part of the literal.
 
 #### 3.6.2 Float literals
 
-```
+```grammar
 FLOAT   = DIGITS '.' DIGITS EXP?
         | DIGITS EXP
 EXP     = ('e' | 'E') ('+' | '-')? DIGITS
@@ -281,7 +281,7 @@ digit is required on each side of `.`. An exponent requires at least one digit
 A string literal is delimited by double quotes and denotes an immutable Unicode
 string.
 
-```
+```grammar
 STRING  = '"' ( CHAR | ESCAPE | INTERP )* '"'
 ```
 
@@ -310,7 +310,7 @@ points of the resulting string may differ from those written in the source.
 
 Examples:
 
-```
+```doodle
 "hello"
 "tab:\there"
 "café \u{2728}"
@@ -327,7 +327,7 @@ escapes and interpolation behave as in any string, and the content may
 contain `"` unescaped (but not `"""`). The **multi-line form** spans lines
 and applies indentation stripping:
 
-```
+```doodle
 """
 content line
 content line
@@ -374,7 +374,7 @@ Rules for the multi-line form:
 
 Example (margin = 4 spaces):
 
-```
+```doodle
 let recipe = """
     Ingredients:
       - flour
@@ -392,7 +392,7 @@ Triple-quoted strings are the idiomatic form for docstrings (§8.6).
 
 A bytes literal denotes an immutable sequence of 8-bit values.
 
-```
+```grammar
 BYTES   = 'b"' ( BYTECHAR | BYTEESCAPE )* '"'
 ```
 
@@ -410,7 +410,7 @@ library (the `binary` module), not the language core.
 
 #### 3.6.6 Boolean and nil literals
 
-```
+```text
 true    false    nil
 ```
 
@@ -421,7 +421,7 @@ true    false    nil
 
 The following tokens are operators or punctuation:
 
-```
+```text
 +   -   *   /   //   %   **
 ==  !=  <   >   <=   >=
 =   .   .*  ,   :   (   )   [   ]   {   }
@@ -671,7 +671,7 @@ parameter depend only on the value's kind:
 
 Thus for a value record `Point`:
 
-```
+```doodle
 let a = Point(x: 3, y: 4)
 let b = a          # b is a copy
 b.x = 10           # does not affect a
@@ -679,7 +679,7 @@ b.x = 10           # does not affect a
 
 and for a reference record `Turtle`:
 
-```
+```doodle
 let t = Turtle(position: home, heading: 0, pen_down: true)
 let u = t          # u and t share the same turtle
 u.heading = 90     # visible as t.heading == 90
@@ -703,7 +703,7 @@ error.
 
 ### 5.2 `let` and `const`
 
-```
+```grammar
 let-stmt   = 'let' IDENT '=' expression
 const-stmt = 'const' IDENT '=' expression
 ```
@@ -720,7 +720,7 @@ Declaring a name that already exists in the *same* scope is a static error.
 
 ### 5.3 Assignment
 
-```
+```grammar
 assign-stmt = lvalue '=' expression
 lvalue      = IDENT
             | expression '.' IDENT
@@ -768,7 +768,7 @@ a reference to it yields the value most recently established by an enclosing
 Dynamic parameters are the language's mechanism for contextual state (for
 example, a drawing library's current pen color or target surface).
 
-```
+```grammar
 parameter-decl = 'parameter' IDENT '=' expression
 with-stmt      = 'with' IDENT '=' expression 'do' body 'end'
 ```
@@ -791,7 +791,7 @@ rebinds a `let`/`const` name, and `=` never rebinds a dynamic parameter.
 
 Example:
 
-```
+```doodle
 parameter pen_color = "black"
 
 to demo()
@@ -812,7 +812,7 @@ precedence.
 
 ### 6.1 Primary expressions
 
-```
+```grammar
 primary = INT | FLOAT | STRING | TRIPLE_STRING | BYTES
         | 'true' | 'false' | 'nil'
         | IDENT
@@ -826,7 +826,7 @@ A bare `IDENT` evaluates to the value currently bound to that name (a variable,
 a procedure/function value, a type, a module, a dynamic parameter, …). It is
 never itself a call.
 
-```
+```grammar
 list-literal = '[' ( expression sep-by ',' ','? )? ']'
 dict-literal = '{' ( dict-entry sep-by ',' ','? )? '}'
 dict-entry   = ( IDENT | expression ) ':' expression
@@ -837,7 +837,7 @@ string key; a computed key is written as an expression followed by `:`.
 
 ### 6.2 Field access
 
-```
+```grammar
 field-access = expression '.' IDENT
 ```
 
@@ -847,7 +847,7 @@ non-existent field, or a field of a non-record/non-module, raises an error.
 
 ### 6.3 Indexing
 
-```
+```grammar
 index = expression '[' expression ']'
 ```
 
@@ -868,7 +868,7 @@ its cost is a property of the type.
 
 ### 6.4 Calls
 
-```
+```grammar
 call        = callee '(' arguments? ')' block-arg?
 callee      = primary | field-access | index | call
 arguments   = argument sep-by ','
@@ -978,7 +978,7 @@ expression it yields the value of the selected branch, and therefore every
 branch — including a final `else` — must be present and must end in an
 expression that produces a value:
 
-```
+```doodle
 let label = if n > 0 then "positive"
             else if n < 0 then "negative"
             else "zero"
@@ -999,7 +999,7 @@ error is caught (§12). In expression position both bodies must produce a value
 
 ### 6.10 Anonymous functions
 
-```
+```grammar
 anon-fn = 'fn' '(' params? ')' body 'end'
 ```
 
@@ -1007,7 +1007,7 @@ An anonymous function is a first-class function value that closes over its
 lexical environment. Its body follows the function rules (§8.4): the value of the
 last expression is returned, and `return expr` returns early. Example:
 
-```
+```doodle
 let double = fn(x) x * 2 end
 ```
 
@@ -1070,7 +1070,7 @@ environment legitimately evaluates bare expressions to display them.
 
 A body is a sequence of statements separated as in §3.2:
 
-```
+```grammar
 body = ( statement ( (NEWLINE | ';') statement )* )?
 ```
 
@@ -1080,7 +1080,7 @@ values are always discarded.
 
 A statement is one of:
 
-```
+```grammar
 statement = let-stmt | const-stmt | assign-stmt
           | expression                     # expression statement
           | if-stmt | while-stmt | loop-stmt | with-stmt
@@ -1111,7 +1111,7 @@ See §5.3.
 
 ### 7.5 `if`
 
-```
+```grammar
 if-stmt = 'if' expression 'then' body
           ( 'else' 'if' expression 'then' body )*
           ( 'else' body )?
@@ -1125,7 +1125,7 @@ final `else` is required.
 
 ### 7.6 `while`
 
-```
+```grammar
 while-stmt = 'while' expression 'do' body 'end'
 ```
 
@@ -1139,14 +1139,14 @@ not a block argument to a call in the condition (§6.4, no-trailing-block mode).
 
 ### 7.7 `loop`
 
-```
+```grammar
 loop-stmt = 'loop' 'do' body 'end'
 ```
 
 `loop do … end` repeats its body indefinitely; exit is via `break` (or `return`,
 or a raised error). It expresses post- and mid-condition loops:
 
-```
+```doodle
 loop do
     let line = read_line()
     if line == "" then break end
@@ -1166,7 +1166,7 @@ See §12.
 
 These are the three non-local exits, at three nesting levels (§8.5, §12):
 
-```
+```grammar
 return-stmt   = 'return' expression?
 break-stmt    = 'break' expression?
 continue-stmt = 'continue' expression?
@@ -1199,7 +1199,7 @@ makes intent visible at the declaration and every call site.
 
 ### 8.1 Declarations
 
-```
+```grammar
 to-decl = 'to' IDENT '(' params? ')' body 'end'
 fn-decl = 'fn' IDENT '(' params? ')' body 'end'
 ```
@@ -1209,7 +1209,7 @@ Both introduce a callable value bound to `name` in the current scope.
 
 ### 8.2 Parameters
 
-```
+```grammar
 params      = param sep-by ','
 param       = IDENT ( '=' expression )?     # ordinary (optionally defaulted)
             | 'do' IDENT                     # block parameter (at most one, last)
@@ -1273,7 +1273,7 @@ them; the language does not enforce purity.
 
 A **block** is the `do … end` unit passed as the trailing argument of a call:
 
-```
+```grammar
 block-arg   = 'do' ( '(' block-params ')' )? body 'end'
 ```
 
@@ -1306,7 +1306,7 @@ passed freely.
 
 Example — a user-defined block-consuming callee and its use:
 
-```
+```doodle
 to each(items, do body)
     let i = 0
     while i < length(items) do
@@ -1348,7 +1348,7 @@ evaluate. (Accepted consequence: deleting a function's implementation while
 keeping its documentation line turns that line into the return value — rarer than
 constant-returning functions, and detectable.)
 
-```
+```doodle
 fn distance(a, b)
     """Euclidean distance between two points."""
     let dx = b.x - a.x
@@ -1399,7 +1399,7 @@ record, §1.3, and, where polymorphism is needed, as protocols, §10).
 
 ### 9.1 Declaration
 
-```
+```grammar
 record-decl = 'ref'? 'record' IDENT 'with' field-list body? 'end'
 field-list  = IDENT sep-by ','
 ```
@@ -1410,7 +1410,7 @@ field-list  = IDENT sep-by ','
 Appendix D). The declaration introduces a type/constructor value named `Name`
 (§4.12) at module level.
 
-```
+```doodle
 record Point with x, y end
 ref record Turtle with position, heading, pen_down end
 ```
@@ -1420,7 +1420,7 @@ ref record Turtle with position, heading, pen_down end
 A record is constructed by calling its type value with **keyword arguments**
 naming its fields:
 
-```
+```doodle
 let p = Point(x: 3, y: 4)
 ```
 
@@ -1466,7 +1466,7 @@ operator overloading.
 
 ### 10.1 Declaration
 
-```
+```grammar
 protocol-decl = 'protocol' IDENT ( 'extends' IDENT )? proto-body 'end'
 proto-body    = ( docstring )? proto-member*
 proto-member  = ( 'to' | 'fn' ) IDENT '(' params? ')' body 'end'
@@ -1490,7 +1490,7 @@ implementing `Parent` (a requirement relationship, not code inheritance). Defaul
 members of `Parent` are available to `Child` implementors through the ordinary
 default-member mechanism.
 
-```
+```doodle
 protocol Iterable
     """Types whose elements can be visited in order."""
     to each(self, do body)
@@ -1501,7 +1501,7 @@ end
 
 ### 10.2 Implementation
 
-```
+```grammar
 implement-decl = 'implement' IDENT 'for' IDENT impl-body 'end'
 impl-body      = ( to-decl | fn-decl )*
 ```
@@ -1510,7 +1510,7 @@ impl-body      = ( to-decl | fn-decl )*
 members (and any overrides of defaults). It is a module-level declaration and
 registers the `(type, protocol member) → callable` associations at load time.
 
-```
+```doodle
 implement Iterable for Range
     to each(r, do body)
         let i = r.start
@@ -1530,7 +1530,7 @@ protocol it `extends`); a partial or missing implementation is an error.
 Protocol members are called like ordinary callables, dispatching on the
 **runtime type of the first argument** (single dispatch):
 
-```
+```doodle
 each(my_range) do(i) … end     # dispatches on my_range's type
 ```
 
@@ -1570,7 +1570,7 @@ A module's members are its module-level definitions. A module may begin with a
 docstring (§8.6). By default all module-level definitions are public. A module
 may restrict its public surface with an `exports` declaration:
 
-```
+```grammar
 exports-stmt = 'exports' IDENT sep-by ','
 ```
 
@@ -1579,7 +1579,7 @@ module.
 
 An explicit `module Name … end` block form is also provided:
 
-```
+```grammar
 module-decl = 'module' IDENT body 'end'
 ```
 
@@ -1591,7 +1591,7 @@ modules is provisional; see Appendix D.)
 
 ### 11.2 Import forms
 
-```
+```grammar
 import-stmt = 'import' import-target sep-by ','
 import-target
             = module-path ( 'as' IDENT )?          # qualified (optionally renamed)
@@ -1671,7 +1671,7 @@ the top of a program.
 
 ### 12.1 Raising
 
-```
+```grammar
 raise-stmt = 'raise' expression?
 ```
 
@@ -1686,7 +1686,7 @@ where the error originated.
 
 ### 12.2 Handling
 
-```
+```grammar
 try-stmt = 'try' body 'rescue' IDENT body 'end'
 ```
 
@@ -1817,7 +1817,7 @@ section, so that the language↔library boundary stays explicit.
 Lexical nonterminals (`INT`, `FLOAT`, `STRING`, `TRIPLE_STRING`, `BYTES`,
 `IDENT`, etc.) are defined in §3. `NEWLINE` is a statement terminator (§3.2).
 
-```
+```grammar
 program     = ( module-item ( sep module-item )* )?
 sep         = NEWLINE | ';'
 
@@ -1913,7 +1913,7 @@ This summary is a guide; §3–§13 are authoritative where they differ.
 
 The 35 keywords carried over from the design discussion:
 
-```
+```text
 and  as  break  const  continue  do  else  end  exports  extends
 false  fn  for  if  implement  import  is  let  loop  module
 nil  not  or  protocol  raise  record  ref  rescue  return  then
@@ -1922,13 +1922,13 @@ to  true  try  while  with
 
 Added by this specification:
 
-```
+```text
 parameter          # dynamic-parameter declaration (§5.5)
 ```
 
 Reserved but unused in this version (held for possible future use; §3.5):
 
-```
+```text
 next  use
 ```
 
@@ -2147,4 +2147,3 @@ likely to change.
   expose a generic `Box` remains open.
 - **Re-export.** No syntax exists yet for a module to re-export a name it
   imported; deferred.
-```
