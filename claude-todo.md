@@ -236,26 +236,25 @@ conformance) have landed.
           the fn's own tail, where the judged consumer IS the return's
           target. voidcheck implements this; pin the sentence in the
           L§8.4/§6.11 edit.
-    - [ ] **closure captures** (resolve the deferred cross-`fn` refs, per B) +
-          the `cell_boxed`/`CaptureSource` output.
-          **CaptureSource shape refinement RATIFIED (user, 2026-07-17):**
-          `ParentLocal(slot)`/`ParentCapture(idx)` can't express a closure
-          created inside a *block* capturing an enclosing-fn local (the
-          source is hops>0 up the defining chain). Replace both with
-          **`CaptureFrom { hops, slot }`** — a §7 static link from the
-          *creating* frame; hops=0 subsumes the old variants (under B,
-          capture slots are just trailing frame slots — one slot space).
-          Everything else in B unchanged. **Condition of ratification — the
-          totality invariant:** hops never crosses a `Callable` frame
-          boundary (the chase runs through Block frames only, terminating at
-          the home callable; captures from beyond it must be threaded through
-          that callable's own capture slots). State it in resolver-design §8,
-          `debug_assert` it in the machine's closure-creation walk, and pin
-          with tests: the helper-in-block example, plus a deep
-          closure-in-block-in-closure-in-block case exercising hops>0 and
-          intervening-closure threading in one program. (Frame liveness at
-          creation is safe by construction; escaped closures hold cells, not
-          frames.)
+    - [x] **closure captures** (representation B) — DONE. Cross-`fn` refs resolve
+          to a cell-boxed capture slot (`LocalSlot`/`BlockOuter` + `cell_boxed`);
+          `CallableInfo` gains `cell_boxed`/`captures`; `deferred_captures` dropped.
+          `CaptureSource { slot, from: CaptureFrom { hops, slot } }` ratified — a §7
+          static link from the *creating* frame (hops=0 = its own slot; hops>0
+          chases the block `defining` chain). `resolve_capture` (new `walk/refs.rs`)
+          threads the cell through each intervening closure (dedup by origin;
+          pass-throughs get a slot), `debug_assert`s the totality invariant (chase
+          through Block frames only). §8 states the invariant. Tests: helper-in-block
+          (hops 1 for the fn local, 0 for the block local) + deep
+          closure-in-block-in-closure-in-block threading. doodle-rust `560e4d1`.
+          **Review (3-lens find→verify workflow, 8 agents) caught a MAJOR:** a param
+          default naming an enclosing-fn local was resolved against the wrong frame
+          (defaults were resolved before opening the callee frame) — a default runs
+          at call time in the closure's activation (L§8.2), so it must **capture**.
+          Fixed: alloc param slots first (0..n), resolve defaults with the frame
+          current but params not yet scope-visible, then bind param names. Plus a
+          "trailing"-wording MINOR (capture slots are discovery-order, not a
+          contiguous suffix; splice by explicit slot) + two NITs folded.
     - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —
           the M1 staging checkpoint; do LAST (once the battery is complete so
           `stage: full` fixtures pass).

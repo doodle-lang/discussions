@@ -437,11 +437,33 @@ would *contradict* §10, so A was the deviation, not B.)
 reference — direct or via a block static link — is `LocalSlot`/`BlockOuter` +
 the `cell_boxed` flag (the machine derefs). **`Resolution::Capture` is dropped**
 (the §2 sketch of it is superseded). A per-closure **capture list**
-(`CaptureSource`) survives only to drive closure creation: fill each capture slot
-from the enclosing env (`ParentLocal(slot)` / `ParentCapture(idx)`).
+(`CaptureSource`) survives only to drive closure creation.
+
+**`CaptureSource` shape — RATIFIED (user, 2026-07-17):**
+`CaptureSource { slot: u16, from: CaptureFrom }` and
+`CaptureFrom { hops: u16, slot: u16 }`. `slot` is the trailing capture slot in
+*this* closure; `from` is a **§7 static link from the *creating* frame** to where
+the cell already lives: `hops = 0` is the creating frame's own slot (a cell-boxed
+local, or a pass-through capture slot — under B both are just frame slots, which
+is why one variant subsumes the old `ParentLocal`/`ParentCapture`); `hops > 0`
+chases the creating frame's `defining` chain (the closure was created **inside a
+block** — e.g. `helper()` created in a `do (item)` block capturing an
+enclosing-fn `x` reads `x` at `hops = 1`). The earlier `ParentLocal`/`ParentCapture`
+pair could not express that block case (its source is `hops > 0`), which is what
+forced this refinement.
+
+**Totality invariant (condition of the ratification):** a `from` chase runs
+through **`Block` frames only** and **never crosses a `Callable` boundary** — it
+terminates at (or before) the creating frame's home callable. A capture from
+*beyond* that callable is threaded through the intervening closure's **own**
+capture slots (so the deepest `from` is always to the nearest enclosing closure,
+never a far frame). The resolver `debug_assert`s this where it emits each source;
+it holds *by construction* because every intervening `fn` frame is open on the
+frame stack when the deepest reference resolves, so each hop is resolved one
+closure at a time.
 
 Adversarial review (all 7 axes B-SOUND; tail-reuse, multi-level threading,
-mutation, GC roots, no info loss). **Pin in M1.10c:**
+mutation, GC roots, no info loss). **Pins (landed M1.10c):**
 - Capture slots are **trailing, discovery-order** slots (forward-pass-safe — a
   late capture never renumbers already-emitted param/body slots).
 - `CaptureSource` **carries its target slot** (the splice fills it).
