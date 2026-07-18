@@ -92,8 +92,10 @@ follow-up for the next parser work item:** a pinning accept-side test
 Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
 conformance tests landing at `stage: lex/parse` per item and upgraded to
 `full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
-M1.1–M1.7 (lexer, expression + statement parser, `stage: lex`/`parse`
-conformance) have landed.
+**M1.1–M1.10 have landed** (lexer, expression + statement parser, declarations,
+imports/calls/blocks, and the **resolver** — scopes/slots, static-error battery,
+value discipline, closure captures; the stage gate is now at **Full**). **Next:
+M1.11** (shadowing warning + tail marking, S-45).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -189,7 +191,8 @@ conformance) have landed.
           unknown bucket gets the dual-intent message (typo-`let` vs
           wildcard read-only). Only wildcard provenance-*naming* waits for
           M5. (AD5's linter delegation still governs unknown-name *reads*.)
-  - [~] **M1.10c** — value discipline + captures + stage gate. In progress.
+  - [x] **M1.10c** — value discipline + captures + stage gate. COMPLETE — all
+        pieces below landed; **M1.10 (Resolver) is DONE**.
     - [x] **fn-falls-off-end (S-5)** — the four-way tail classifier
           (produces/diverges/value-less/indeterminate), `loop`-divergence via
           `loops_with_break`, `to`-call tail = Void, `fn` bodies only, tail-`while`
@@ -255,9 +258,12 @@ conformance) have landed.
           current but params not yet scope-visible, then bind param names. Plus a
           "trailing"-wording MINOR (capture slots are discovery-order, not a
           contiguous suffix; splice by explicit slot) + two NITs folded.
-    - [ ] **stage-gate bump Parse→Full** (+ conformance-runner Full executor) —
-          the M1 staging checkpoint; do LAST (once the battery is complete so
-          `stage: full` fixtures pass).
+    - [x] **stage-gate bump Parse→Full** — DONE. `implemented_through()` →
+          `Some(Stage::Full)`; `full_to_diagnostics` (lex→parse→resolve, skipping
+          resolve on a partial AST) + the conformance-runner `Full` executor arm
+          (atomic with the gate); 8 `stage: full` fixtures over the resolver
+          diagnostics. Conformance 45/0/1 (`mode: run` still skips). Two read-only
+          reviews: no critical/major. doodle-rust `32852b9`.
       **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
       review — resolver-design §8). Surfaced building M1.10a: a block nested in a
       closure referencing a captured var doesn't fit `Resolution::Capture(index)`.
@@ -276,11 +282,12 @@ conformance) have landed.
       **Provisional (note, may want revisiting):** param defaults resolve in the
       *enclosing* scope (L§8.2 literal) — a default can't see a sibling param.
 
-**Stage gate — now at Parse (M1.7):** `implemented_through()` returns
-`Some(Stage::Parse)`; the conformance runner executes `stage: lex` and
-`stage: parse` (matcher `run_static`, parametrized by stage — lexer vs.
-`parse_to_diagnostics`). Future stage bumps (full/run) must likewise co-land
-their executor arm in `tools/conformance-runner/src/matcher.rs` atomically.
+**Stage gate — now at Full (M1.10):** `implemented_through()` returns
+`Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
+(matcher `run_static`, parametrized by stage — lexer / `parse_to_diagnostics` /
+`full_to_diagnostics` = lex+parse+resolve). The remaining bump (`run`, M2) must
+likewise co-land its executor arm in `tools/conformance-runner/src/matcher.rs`
+atomically; `mode: run` tests skip until then.
 
 **M2a gate:** satisfied — `plan/machine-design.md` v0.2 accepted by the
 user 2026-07-10. (Mechanism changes still require revising that document
