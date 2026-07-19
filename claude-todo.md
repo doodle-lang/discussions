@@ -44,13 +44,22 @@ written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
 
 ## Awaiting the user (blocking)
 
-**M1.13 message sign-off (blocking for M1.15).** The broken-syntax corpus (41
-programs) + the agent's rubric-pass are landed (doodle-rust `3066a7d`,
-`crates/doodle-core/tests/broken-syntax/README.md`). Per the rubric the agent
-can't self-certify: review each message and fill the README `Sign-off` column
-(`ok` / a note). The agent flagged 8 FAIL + 11 NEEDS-WORK; the message-quality
-fixes are spun off (not gating), but the span fixes are in M1.13 scope and wait on
-this sign-off.
+(none)
+
+**M1.13 SIGN-OFF COMPLETE (user, 2026-07-19; doodle-rust `69e087f`):** all 41
+rows approved as tabled (a NEEDS-WORK/FAIL sign-off endorses the verdict +
+intended fix), after spot-check verification of 05/06/19/25/37 against
+snapshots. **Unblocked/added for the corpus work:** (1) the held **span
+fixes** (systemic finding 1: unclosed-construct errors point at the opening
+token, not EOF; + the `26` "original is here" note) — in M1.13 scope, land
+them + re-verify to close M1.13; (2) **corpus additions 42–45** (rows in the
+README): empty `{}` (S-48), comment-in-interpolation (S-50), open
+interpolation (S-47), string-side short `\x` (S-49) — the ruled diagnostics
+absent from the corpus; (3) the **`25` follow-up sharpened**: emit the
+imported-name/`with` hedge *only when the module lexically contains a
+wildcard import* (S-39's specific-where-known, one level deeper); (4) `05`
+folds into the M1.9b `stray_do` enrichment. Message-quality follow-ups
+remain spun off, not gating.
 
 **S-55 RESOLVED (user, 2026-07-18) — the twice-flagged §8.7 item, closed
 with an extension:** procedure tail positions confirmed AND (surfaced in
