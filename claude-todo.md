@@ -401,7 +401,10 @@ M1.11** (shadowing warning + tail marking, S-45).
         (the last incl. the resolver), replacing the M0 `fuzz_smoke` placeholder;
         fuzz crate on its own workspace (nightly/ASan off the pinned-stable build).
         Smoke soak clean (60s each: 3.8M / 1.4M / 2.0M runs, zero crashes).
-  - [ ] **1 h exit-criterion soak** (running on `full`; zero panics/hangs/OOMs).
+  - [ ] **1 h exit-criterion soak** — partial run clean (23k-input corpus, **zero
+        crashes**; corpus preserved for a resumed run), but the contiguous 1 h run
+        was stopped early by the environment's background-duration cap. Complete it
+        (in chunks — libFuzzer resumes from the corpus) when closing M1.15.
   - [ ] **CI fuzz-smoke job + reproducibility pin** — HELD for the user (CI hookup
         is the user's call, workspace CLAUDE.md). Wiring it also pins a dated
         `nightly-YYYY-MM-DD` for the fuzz crate + commits `fuzz/Cargo.lock`. Asked
