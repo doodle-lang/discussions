@@ -1179,6 +1179,24 @@ the pinned behavior; code follow-up: the expression-position `.*`
 targeted diagnostic ("a field access needs a name after the `.`")]**
 
 **Core semantics — resolve by M2a/M2b/M4.**
+S-55 (L§8.7, machine-design §11) Procedure tail positions + kind-matched
+tail chains. **RESOLVED (user, 2026-07-18):** tail position is defined
+for callable bodies generally — a `to`'s final-action call is a tail
+call (fixing §8.7's function-only wording; `to polygon … polygon` is the
+original Logo workhorse) — **and frame reuse requires the callee's kind
+to match the frame's original callable kind** (fn→fn, to→to; Block
+frames reuse for either — no completion contract of their own, S-6's
+consumer judges the yield). Naive mixed-kind reuse is semantics-visible
+(a to-tail-called fn's value would leak past the Void completion; an
+fn-tail-called to would bypass the falls-off error), so mismatched
+marked-tail calls execute as ordinary calls — exact parity, no
+adapters; sound because every unbounded mixed-kind cycle contains an
+fn→to falls-off edge, making legitimate recursion kind-pure. Marking
+stays positional (M1.11 unaffected); the kind check happens at apply
+time. **[spec resolved — L§8.7 + App D.1 + machine-design §11 (v0.2.1)
+landed with this entry; code follow-up: the M2a reuse kind-check +
+mixed-kind parity conformance tests (to-tail-fn value discarded;
+fn-tail-to falls-off at the fn's own completion)]** ·
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
 loop control from a `with` body is impossible — almost certainly
 unintended; fix the interaction (and specify the `try`-body case). ·

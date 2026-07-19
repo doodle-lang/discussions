@@ -1363,11 +1363,13 @@ A conforming implementation **must** implement proper tail calls: a call in tail
 position executes in constant control-stack space relative to the caller. This
 makes recursion a sound primary means of iteration.
 
-A call is in **tail position** when its result is the result of the enclosing
-function with no further computation pending, specifically:
+A call is in **tail position** when its completion is the completion of the
+enclosing callable — the value of an `fn`, the final action of a `to` — with
+no further computation pending, specifically:
 
-- the last expression of a function body (or of a block invocation, with respect
-  to that invocation);
+- the last expression or statement of a callable body — a procedure's
+  final-action call is a tail call — or of a block invocation, with respect
+  to that invocation;
 - the selected branch of an `if` that is itself in tail position;
 - the body position handed to a block-consuming callee, with respect to that
   block's invocation.
@@ -1385,6 +1387,20 @@ A call is **not** in tail position when work remains after it returns, including
   received block, the only block a call can pass is a literal `do … end` closing
   over the current frame — so the exclusion is exactly the calls whose frame the
   block pins.)
+
+**Tail chains preserve callable kind.** Frame reuse — and with it the
+constant-space guarantee — applies when the tail callee is the **same kind**
+of callable as the body it completes: an `fn` tail-calling an `fn`, a `to`
+tail-calling a `to`. (A block invocation reuses for either kind: a block has
+no completion contract of its own — its consumer judges the yield, §6.11.)
+A tail-position call to a *mismatched* kind executes as an ordinary call,
+preserving exact non-tail semantics: a procedure's completion yields no value
+even when its final call was to a function (the value is discarded, §7.2),
+and a function whose final call is to a procedure still fails as falling off
+the end (§8.4) at its own completion. Nothing real is lost: any unbounded
+mixed-kind tail cycle necessarily contains an `fn`-calling-`to` edge — the
+falls-off-the-end error — so every sound recursive loop is kind-pure and
+retains the full guarantee.
 
 A conforming implementation should keep a bounded history of elided tail frames
 so that diagnostics for later errors remain useful (informative).
@@ -2120,6 +2136,20 @@ likely to change.
   triggers, while bare `*` (multiplication) still continues. `.` is never
   validly followed by `*` elsewhere, so no valid program changes meaning; in
   expression position `.*` gets a targeted diagnostic.
+- **Procedure tail positions + kind-matched tail chains (§8.7; resolves
+  implementation-plan Appendix C S-55).** The draft defined tail position
+  only against "the enclosing function's result," though procedure
+  self-recursion (`to polygon(…) … polygon(…) end`) is the language's
+  original workhorse. Resolved: tail position is defined for callable
+  bodies generally — a `to`'s final-action call is a tail call — **and**
+  frame reuse requires the callee's kind to match (fn→fn, to→to; block
+  invocations reuse for either). Naive mixed-kind reuse is
+  semantics-visible: it would leak a tail-called `fn`'s value past a
+  `to`'s Void completion, and bypass the falls-off-the-end error of an
+  `fn` whose final call is a `to`. Mismatched tail-position calls execute
+  as ordinary calls (exact behavioral parity); nothing is lost because any
+  unbounded mixed-kind cycle contains an `fn`→`to` edge — the
+  falls-off-the-end error — so all sound recursive loops are kind-pure.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

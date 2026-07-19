@@ -348,15 +348,31 @@ cannot move a collection or a limit fault (E§7.7).
 
 ## 11. Proper tail calls
 
-The resolver marks a call node *tail* iff its value is the enclosing
-callable's result with no pending work, **and** it is not inside a
-`with`/`try` body (L§8.7), **and** it does not pass a block argument
-(**S-45**, resolved at M1: since L§8.5 forbids forwarding a received
-block, the only passable block is a literal `do … end` referencing the
-*current* frame — so the blanket exclusion is exactly the necessary set;
-if block forwarding is ever legalized, S-45's form must be revisited).
+The resolver marks a call node *tail* iff its completion is the enclosing
+callable's completion (an `fn`'s value; a `to`'s final action — procedure
+bodies have tail positions too, S-55) with no pending work, **and** it is
+not inside a `with`/`try` body (L§8.7), **and** it does not pass a block
+argument (**S-45**, resolved at M1: since L§8.5 forbids forwarding a
+received block, the only passable block is a literal `do … end`
+referencing the *current* frame — so the blanket exclusion is exactly the
+necessary set; if block forwarding is ever legalized, S-45's form must be
+revisited).
 
-Executing a marked tail call: push `(callable, call_site, span,
+**Reuse requires kind match (S-55, v0.2.1).** Marking is positional; the
+*reuse* decision is made at apply time, when the callee's actual kind is
+known: a `Callable` frame is reused iff the callee's kind (`to`/`fn`)
+equals the frame's original callable kind; a `Block` frame is reused for
+either kind (blocks have no completion contract — the consumer judges
+the yield, S-6). A marked-tail call with a mismatched kind pushes an
+**ordinary frame** — exact non-tail semantics by construction (no value
+squashing, no contract adapters; a `to` still completes Void after
+tail-calling an `fn`, and an `fn` tail-calling a `to` still falls off at
+its own barrier). No sound loop is lost: any unbounded mixed-kind cycle
+contains an `fn`→`to` edge, the falls-off error, so legitimate recursion
+is kind-pure. Pathological finite mixed chains consume ordinary frames
+and hit the stack-depth limit or the falls-off raise — loud either way.
+
+Executing a marked tail call (kind-matched): push `(callable, call_site, span,
 consuming_frame_serial)` of the current occupant into `ring` (S-34), then
 overwrite the frame **completely**: `kind` (including `defining`/
 `consumer` when a callable tail-invokes its own block parameter — the
@@ -582,6 +598,10 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 ## 21. Change log
 
+- **v0.2.1 (2026-07-18):** §11 amended per S-55 (user-ratified):
+  procedure bodies have tail positions, and frame reuse requires the
+  callee's kind to match the frame's original callable kind (Block frames
+  reuse for either); mismatched marked-tail calls push ordinary frames.
 - **v0.2 (2026-07-10):** post-review revision. Rewrote §12 around
   resolver-annotated exit targets + frame kind/consumer linkage (four
   blockers: return punch-through target, loop exits unrepresentable,

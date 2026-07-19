@@ -52,11 +52,17 @@ can't self-certify: review each message and fill the README `Sign-off` column
 fixes are spun off (not gating), but the span fixes are in M1.13 scope and wait on
 this sign-off.
 
-**Non-blocking, for confirmation — L§8.7 procedure-tail-position wording:** the
-resolver marks `to` procedure tail calls (machine-design §11 already assumes it),
-but L§8.7's positive definition still says "the enclosing *function*." A one-clause
-clarification was drafted and reverted (not pre-authorized); asked twice while the
-user was away, unanswered. §8.7 stands as-is (S-45 amendment only). Re-surface.
+**S-55 RESOLVED (user, 2026-07-18) — the twice-flagged §8.7 item, closed
+with an extension:** procedure tail positions confirmed AND (surfaced in
+review of the question) **frame reuse requires kind match** — naive
+mixed-kind reuse is semantics-visible (to-tail-fn leaks the value past
+Void completion; fn-tail-to bypasses the falls-off error), so mismatched
+marked-tail calls run as ordinary calls; sound loops are kind-pure
+(every unbounded mixed cycle contains an fn→to falls-off edge). Landed:
+L§8.7 + App D.1 + machine-design §11 v0.2.1 + App C S-55. **M1.11
+marking is unaffected** (positional; the kind check is apply-time).
+**M2a follow-up:** the reuse kind-check + mixed-kind parity conformance
+tests.
 
 (The M1.12 golden-corpus decisions are RESOLVED (user): #44 wrapped (`…` →
 `show(i)`); corpus lives in doodle-rust with a sync-check script, CI wiring
