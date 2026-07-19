@@ -44,6 +44,14 @@ written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
 
 ## Awaiting the user (blocking)
 
+**M1.13 message sign-off (blocking for M1.15).** The broken-syntax corpus (41
+programs) + the agent's rubric-pass are landed (doodle-rust `3066a7d`,
+`crates/doodle-core/tests/broken-syntax/README.md`). Per the rubric the agent
+can't self-certify: review each message and fill the README `Sign-off` column
+(`ok` / a note). The agent flagged 8 FAIL + 11 NEEDS-WORK; the message-quality
+fixes are spun off (not gating), but the span fixes are in M1.13 scope and wait on
+this sign-off.
+
 **Non-blocking, for confirmation — L§8.7 procedure-tail-position wording:** the
 resolver marks `to` procedure tail calls (machine-design §11 already assumes it),
 but L§8.7's positive definition still says "the enclosing *function*." A one-clause
@@ -346,6 +354,41 @@ M1.11** (shadowing warning + tail marking, S-45).
   - **Decisions RESOLVED (user):** #44 wrapped; corpus in doodle-rust + a
         sync-check script; **CI wiring deferred** (a future job that pulls
         `discussions` runs the sync check).
+
+- [~] **M1.13 — Broken-syntax corpus + message review.** Agent rubric-pass DONE;
+      **user sign-off PENDING** (blocking for M1.15 — see Awaiting-the-user).
+  - [x] **Corpus + rubric-pass (doodle-rust `3066a7d`).** 41 hand-written broken
+        programs (one mistake each, kid-plausible) rendered through the M1.1
+        renderer and snapshotted (`tests/broken_syntax.rs`); the agent's rubric-pass
+        table with a sign-off column is in `tests/broken-syntax/README.md`
+        (**22 PASS / 11 NEEDS-WORK / 8 FAIL**). Two read-only adversarial reviews
+        hardened it (relabeled a mislabeled program, added the tab/margin-mix
+        category + bytes cases, corrected 5 over-generous PASS verdicts).
+        **Scope (user):** catalog + fix-spans-only; message-quality fixes spun off
+        (below); parser fixes held until sign-off (the review informs the fixes).
+  - [ ] **User sign-off** on every message vs. the rubric (the agent must not
+        self-certify). Fill the README `Sign-off` column.
+  - [ ] **Span fixes (in M1.13 scope, after sign-off):** unclosed-construct errors
+        (`expected end`/`)`/`]`) point at a blank EOF line, not the opening token —
+        one systematic parser fix (the unterminated-*string* path already does it
+        right); + add the "original is here" note to `duplicate-declaration`.
+
+  **Spun off from M1.13 (message-quality; NOT gating M1.13):**
+  - [ ] **Parser error-recovery / cascade suppression** — one mistake currently
+        yields 2–9 diagnostics (`to f(fn)`: 9; `let end = 3`: 6; `if x = 3`: 5).
+        Stop after the first token-level syntax error per statement (or recover) so
+        one mistake → one message. Highest-value for beginners; reshapes many
+        broken-syntax snapshots.
+  - [ ] **Pattern diagnostics + de-jargon** — recognize `=`→`==`, missing comma
+        (call + list), stray `do`, misplaced `else`, keyword-as-name, extra `.`;
+        replace `expected a statement separator`/`expected an expression` with
+        plain kid wording + a "did you mean …?" fix.
+  - [ ] **Rubric Appendix-A reconciliation** — the code catalog in
+        `plan/error-message-rubric.md` drifted from shipped slugs
+        (`assign-to-undeclared`→`undeclared-assignment`, `bad-escape`→
+        `unknown-escape`, the three `*-outside-*`→`misplaced-exit`,
+        `function-missing-value`→`function-falls-off-end`,
+        `under-indented-line`→`margin-mismatch`); update the catalog to match.
 
 **Stage gate — now at Full (M1.10):** `implemented_through()` returns
 `Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
