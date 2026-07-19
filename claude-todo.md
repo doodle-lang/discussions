@@ -396,6 +396,17 @@ M1.11** (shadowing warning + tail marking, S-45).
         `function-missing-value`→`function-falls-off-end`,
         `under-indented-line`→`margin-mismatch`); update the catalog to match.
 
+- [~] **M1.14 — Parser fuzz targets + soak.** Targets DONE (doodle-rust `5e08b97`).
+  - [x] **Three cargo-fuzz targets over the front end** — `lex`/`parse`/`full`
+        (the last incl. the resolver), replacing the M0 `fuzz_smoke` placeholder;
+        fuzz crate on its own workspace (nightly/ASan off the pinned-stable build).
+        Smoke soak clean (60s each: 3.8M / 1.4M / 2.0M runs, zero crashes).
+  - [ ] **1 h exit-criterion soak** (running on `full`; zero panics/hangs/OOMs).
+  - [ ] **CI fuzz-smoke job + reproducibility pin** — HELD for the user (CI hookup
+        is the user's call, workspace CLAUDE.md). Wiring it also pins a dated
+        `nightly-YYYY-MM-DD` for the fuzz crate + commits `fuzz/Cargo.lock`. Asked
+        while the user was away; defaulted to hold.
+
 **Stage gate — now at Full (M1.10):** `implemented_through()` returns
 `Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
 (matcher `run_static`, parametrized by stage — lexer / `parse_to_diagnostics` /

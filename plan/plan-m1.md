@@ -291,12 +291,21 @@ suppression, `=`/`==` & comma suggestions, de-jargon) spun off to `claude-todo.m
 **Remaining for M1.13:** the user's sign-off, then the in-scope span fixes (point
 unclosed-construct errors at the opening token, not EOF — one systematic fix).
 
-### M1.14 — Parser fuzz targets + soak — **TODO**
+### M1.14 — Parser fuzz targets + soak — **targets DONE; 1 h soak + CI pending**
 
 cargo-fuzz targets: lexer (arbitrary bytes) and parser (token-level or
 text); a short fuzz job in CI (minutes); a 1 h local soak for the exit
 criterion.
 *Accept:* 1 h soak with zero panics/hangs/OOMs; CI fuzz-smoke job green.
+
+Targets landed (doodle-rust `5e08b97`): three targets over the front end —
+`lex` (`lex_to_diagnostics`), `parse` (`parse_to_diagnostics`), `full`
+(`full_to_diagnostics`, incl. the resolver) — replacing the M0 `fuzz_smoke`
+placeholder; the fuzz crate stays on its own workspace (nightly/ASan off the
+pinned-stable main build). Smoke soak clean (60 s each: lex 3.8M / parse 1.4M /
+full 2.0M runs, zero crashes). **Remaining:** the 1 h exit soak, and — a user
+scope call (CI hookup is the user's per workspace CLAUDE.md) — the fuzz-smoke CI
+job + the dated-nightly / committed-`Cargo.lock` pin for reproducible CI builds.
 
 ### M1.15 — M1 exit review — **TODO**
 
