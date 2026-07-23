@@ -383,16 +383,20 @@ M1.11** (shadowing warning + tail marking, S-45).
         checked). Duplicate-declaration gained the "the original is here" note.
         01/08/16/32/35 → PASS. Final: **30 PASS / 7 NEEDS-WORK / 8 FAIL.** A review
         caught two hand-rolled close-sites outside the first sweep → folded.
-  - **Still spun off (message-quality, NOT M1.13):** cascade suppression; pattern
-        diagnostics + de-jargon; the `05` stray-`do` misdiagnosis (→ M1.9b); the
-        `25` wildcard-only hedge; rubric Appendix-A code-catalog reconciliation.
+  - **Still spun off (message-quality, NOT M1.13):** pattern diagnostics +
+        de-jargon; the `05` stray-`do` misdiagnosis (→ M1.9b); the `25`
+        wildcard-only hedge; rubric Appendix-A code-catalog reconciliation.
+        (**Cascade suppression is now DONE** — see below.)
 
   **Spun off from M1.13 (message-quality; NOT gating M1.13):**
-  - [ ] **Parser error-recovery / cascade suppression** — one mistake currently
-        yields 2–9 diagnostics (`to f(fn)`: 9; `let end = 3`: 6; `if x = 3`: 5).
-        Stop after the first token-level syntax error per statement (or recover) so
-        one mistake → one message. Highest-value for beginners; reshapes many
-        broken-syntax snapshots.
+  - [x] **Parser error-recovery / cascade suppression** — DONE (doodle-rust
+        `587a7b4`). Panic-mode recovery: a `recovering` flag set on the first
+        parser error, cleared at the next statement separator; suppresses follow-on
+        *parser* errors (lexer/resolver unaffected). Same-statement cascades → 1
+        message (02 5→1, 04 4→1, 11 5→1, 13 6→1, 36 2→1), cross-line residue
+        reduced (19 9→4, 44 4→3); six corpus rows FAIL→NEEDS-WORK. Corpus now
+        **30 PASS / 13 NEEDS-WORK / 2 FAIL**. Read-only review: sound (no primary
+        lost, parser-scoped, deterministic).
   - [ ] **Pattern diagnostics + de-jargon** — recognize `=`→`==`, missing comma
         (call + list), stray `do`, misplaced `else`, keyword-as-name, extra `.`;
         replace `expected a statement separator`/`expected an expression` with
