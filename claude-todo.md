@@ -46,20 +46,16 @@ written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
 
 (none)
 
-**M1.13 SIGN-OFF COMPLETE (user, 2026-07-19; doodle-rust `69e087f`):** all 41
-rows approved as tabled (a NEEDS-WORK/FAIL sign-off endorses the verdict +
-intended fix), after spot-check verification of 05/06/19/25/37 against
-snapshots. **Unblocked/added for the corpus work:** (1) the held **span
-fixes** (systemic finding 1: unclosed-construct errors point at the opening
-token, not EOF; + the `26` "original is here" note) — in M1.13 scope, land
-them + re-verify to close M1.13; (2) **corpus additions 42–45** (rows in the
-README): empty `{}` (S-48), comment-in-interpolation (S-50), open
-interpolation (S-47), string-side short `\x` (S-49) — the ruled diagnostics
-absent from the corpus; (3) the **`25` follow-up sharpened**: emit the
-imported-name/`with` hedge *only when the module lexically contains a
-wildcard import* (S-39's specific-where-known, one level deeper); (4) `05`
-folds into the M1.9b `stray_do` enrichment. Message-quality follow-ups
-remain spun off, not gating.
+**M1.13 COMPLETE (doodle-rust `9af5f7b`).** User sign-off 2026-07-19 (all 41 rows
+approved as tabled; a NEEDS-WORK/FAIL sign-off endorses the verdict + intended
+fix), then the in-scope work landed: (1) the **span fixes** — unclosed-construct/
+-delimiter errors now point at the opening token (systematic across all 15 sites;
+a review caught two hand-rolled ones — group `(`, interpolation `{` — folded in) +
+the `26` "original is here" note; (2) **corpus additions 42–45** (interpolation/
+escape diagnostics). Final table **30 PASS / 7 NEEDS-WORK / 8 FAIL** (45 programs),
+every diagnostic on the correct span. Still spun off (not gating): the `25`
+wildcard-only hedge (S-39 one level deeper), `05`'s stray-`do` misdiagnosis (→
+M1.9b), cascade suppression, de-jargon, rubric Appendix-A reconciliation.
 
 **S-55 RESOLVED (user, 2026-07-18) — the twice-flagged §8.7 item, closed
 with an extension:** procedure tail positions confirmed AND (surfaced in
@@ -370,23 +366,26 @@ M1.11** (shadowing warning + tail marking, S-45).
         sync-check script; **CI wiring deferred** (a future job that pulls
         `discussions` runs the sync check).
 
-- [~] **M1.13 — Broken-syntax corpus + message review.** Agent rubric-pass DONE;
-      **user sign-off PENDING** (blocking for M1.15 — see Awaiting-the-user).
-  - [x] **Corpus + rubric-pass (doodle-rust `3066a7d`).** 41 hand-written broken
-        programs (one mistake each, kid-plausible) rendered through the M1.1
-        renderer and snapshotted (`tests/broken_syntax.rs`); the agent's rubric-pass
-        table with a sign-off column is in `tests/broken-syntax/README.md`
-        (**22 PASS / 11 NEEDS-WORK / 8 FAIL**). Two read-only adversarial reviews
-        hardened it (relabeled a mislabeled program, added the tab/margin-mix
-        category + bytes cases, corrected 5 over-generous PASS verdicts).
-        **Scope (user):** catalog + fix-spans-only; message-quality fixes spun off
-        (below); parser fixes held until sign-off (the review informs the fixes).
-  - [ ] **User sign-off** on every message vs. the rubric (the agent must not
-        self-certify). Fill the README `Sign-off` column.
-  - [ ] **Span fixes (in M1.13 scope, after sign-off):** unclosed-construct errors
-        (`expected end`/`)`/`]`) point at a blank EOF line, not the opening token —
-        one systematic parser fix (the unterminated-*string* path already does it
-        right); + add the "original is here" note to `duplicate-declaration`.
+- [x] **M1.13 — Broken-syntax corpus + message review.** COMPLETE — review gate
+      MET (doodle-rust `9af5f7b`).
+  - [x] **Corpus + rubric-pass.** 41 → **45** hand-written broken programs rendered
+        through the M1.1 renderer and snapshotted (`tests/broken_syntax.rs`); the
+        rubric-pass table with the sign-off column is in
+        `tests/broken-syntax/README.md`. Two read-only reviews hardened it.
+  - [x] **User sign-off (2026-07-19):** all 41 rows signed `ok` (verdict + fix
+        direction), plus four corpus additions pre-approved.
+  - [x] **Corpus additions (rows 42–45):** the individually-ruled interpolation/
+        escape diagnostics — empty-`{}` (S-48), comment-in-`{…}` (S-50),
+        newline-in-`{…}` (S-47), string `\x`-one-digit (S-49).
+  - [x] **Span fixes (in scope):** unclosed-construct/-delimiter errors now point
+        at the OPENING token (systematic: `expect_end_span`/`expect_close` take the
+        opener span; all 15 sites incl. group `(` and interpolation `{`, spot-
+        checked). Duplicate-declaration gained the "the original is here" note.
+        01/08/16/32/35 → PASS. Final: **30 PASS / 7 NEEDS-WORK / 8 FAIL.** A review
+        caught two hand-rolled close-sites outside the first sweep → folded.
+  - **Still spun off (message-quality, NOT M1.13):** cascade suppression; pattern
+        diagnostics + de-jargon; the `05` stray-`do` misdiagnosis (→ M1.9b); the
+        `25` wildcard-only hedge; rubric Appendix-A code-catalog reconciliation.
 
   **Spun off from M1.13 (message-quality; NOT gating M1.13):**
   - [ ] **Parser error-recovery / cascade suppression** — one mistake currently

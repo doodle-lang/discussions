@@ -271,7 +271,7 @@ give the extraction+manifest with drift detection (both were done — tags
 No deliberately-ill-formed L examples exist, so no negative tests. The
 sync-check is not CI-wired yet (a future job pulling `discussions`).
 
-### M1.13 — Broken-syntax corpus + message review — **agent pass DONE; user sign-off PENDING**
+### M1.13 — Broken-syntax corpus + message review — **DONE**
 
 ~40 hand-written broken programs (one mistake each, kid-plausible:
 missing `end`, `=` vs `==`, unclosed string, stray `do`, tab-margin
@@ -288,8 +288,11 @@ render-snapshots + the rubric-pass table in `tests/broken-syntax/README.md`
 (22 PASS / 11 NEEDS-WORK / 8 FAIL), hardened by two read-only reviews. Scope set
 with the user: catalog + fix-spans-only; message-quality fixes (cascade
 suppression, `=`/`==` & comma suggestions, de-jargon) spun off to `claude-todo.md`.
-**Remaining for M1.13:** the user's sign-off, then the in-scope span fixes (point
-unclosed-construct errors at the opening token, not EOF — one systematic fix).
+User sign-off 2026-07-19; the in-scope span fixes (unclosed-construct/-delimiter
+errors point at the opening token — systematic, all 15 sites) + the `26`
+"original is here" note + corpus additions 42–45 landed (doodle-rust `9af5f7b`).
+Final: 45 programs, 30 PASS / 7 NEEDS-WORK / 8 FAIL. Message-quality follow-ups
+spun off to claude-todo.
 
 ### M1.14 — Parser fuzz targets + soak — **targets DONE; 1 h soak + CI pending**
 
