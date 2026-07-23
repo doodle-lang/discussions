@@ -422,6 +422,27 @@ M1.11** (shadowing warning + tail marking, S-45).
         `nightly-YYYY-MM-DD` for the fuzz crate + commits `fuzz/Cargo.lock`. Asked
         while the user was away; defaulted to hold.
 
+- [~] **M1.15 — M1 exit review.** Audit DONE; **2 blockers remain** to close M1.
+  - [x] **Exit criteria walked:** (1) every L example → golden AST ✅ (M1.12);
+        (2) reviewed span-correct broken-syntax corpus ✅ (M1.13); (3) every
+        static-error class has a position-asserting test ✅ (a read-only audit
+        confirmed **22/22** — broken-syntax caret snapshots + conformance
+        `@line:col`; 3 codes single-sourced, `shadowing` is the lone warning);
+        (4) fuzzer survives 1 h ⏳ (M1.14).
+  - [x] **Status markers corrected** — M1.3–M1.10 were stale `TODO` in plan-m1 →
+        `DONE`. Hygiene green throughout.
+  - [x] **S-item audit** — S-1/2/4/5/6/45 resolved-in-spec + tested; S-7
+        M1-complete (parser records the dotted path; runtime resolution → M6);
+        S-3/S-27 done in substance, App-C `[landed]` brackets added.
+  - [ ] **BLOCKER — S-11 (§6.10 spec delta):** the ratified closure-mutation
+        decision (capture by reference, may-mutate, shared bindings, `const`
+        non-assignable, per-iteration loop scopes) **never landed in normative
+        L§6.10** — §6.10 still says only "closes over its lexical environment."
+        Code + machine-design §7 already implement it; only the L text is missing.
+        §6.10 edit DRAFTED, awaiting user (normative L — not landing unilaterally).
+  - [ ] **BLOCKER — M1.14:** the contiguous 1 h fuzz soak (env-interrupted;
+        23k-corpus, 0 crashes so far) + the fuzz-smoke CI job (user's call).
+
 **Stage gate — now at Full (M1.10):** `implemented_through()` returns
 `Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
 (matcher `run_static`, parametrized by stage — lexer / `parse_to_diagnostics` /

@@ -83,7 +83,7 @@ surfaced to the user (`claude-todo.md`): **XID vs ID** in L§3.4 (the code uses
 NFC-closed XID; recommend the spec follow) and **CRLF→LF** normalization
 (beyond S-1, deferred to a user decision).
 
-### M1.3 — Lexer core: tokens, numbers, newline/continuation (S-2) — **TODO**
+### M1.3 — Lexer core: tokens, numbers, newline/continuation (S-2) — **DONE**
 
 Token set (L§3.5–3.7); integer/float literals with underscore rules and
 all bases; comments/shebang; **conditional NEWLINE emission** per the
@@ -95,7 +95,7 @@ negative tests (bad underscores, bad floats) with positions; conformance
 `L3.2-*`/`L3.6.1-*`/`L3.6.2-*` tests green at `stage: lex` (plus the
 M1.2 identifier cases).
 
-### M1.4 — Lexer: strings, escapes, interpolation modes (S-47, S-48, S-49) — **TODO**
+### M1.4 — Lexer: strings, escapes, interpolation modes (S-47, S-48, S-49) — **DONE**
 
 String literals with the full escape set; surrogate `\u{…}` as a static
 error (L§3.6.3); the string↔expression **mode stack** for `{expr}`
@@ -117,7 +117,7 @@ escape errors *inside* interpolations, the S-47 newline-in-interpolation
 error (single-line and triple-quoted cases), S-48 empty-interpolation
 error, and S-49 unknown/malformed-escape + `"\xE9" == "\u{E9}"` cases.
 
-### M1.5 — Lexer: triple-quoted strings + margins (S-3) — **TODO**
+### M1.5 — Lexer: triple-quoted strings + margins (S-3) — **DONE**
 
 Raw-span capture, closing-delimiter margin computation, per-line
 validation, strip, then escape/interpolation processing (order per plan
@@ -137,7 +137,7 @@ first-differing-character diagnostic; escapes-don't-create-lines;
 comment-after-opener error; `\"""` line-initial-literal case;
 zero-content-lines = `""`.
 
-### M1.6 — Parser: expressions (Pratt) — **TODO**
+### M1.6 — Parser: expressions (Pratt) — **DONE**
 
 Primary/postfix/unary/binary per the 9-level table (L§6.5, App A/C);
 right-assoc `**`; **non-associative comparisons** rejected with the
@@ -147,7 +147,7 @@ arguments in call syntax (`name: expr`, positional-before-keyword).
 *Accept:* golden AST dumps for an expression corpus; `L6.5-*` tests
 (`stage: parse`) incl. the chained-comparison diagnostic with span.
 
-### M1.7 — Parser: statements + construct headers (S-4) — **TODO**
+### M1.7 — Parser: statements + construct headers (S-4) — **DONE**
 
 Statement separation; `let`/`const`/assignment (lvalue grammar);
 `if`/`while`/`loop`/`with` statements; `return`/`break`/`continue`/
@@ -158,7 +158,7 @@ land the L§6.4/§7 edit.
 `while f() do … end do … end`-style ambiguities produce the S-4
 diagnostic; statement-form conformance tests green at `stage: parse`.
 
-### M1.8 — Parser: declarations + docstrings (S-27) — **TODO**
+### M1.8 — Parser: declarations + docstrings (S-27) — **DONE**
 
 `to`/`fn` declarations (params, defaults, `do body` block param —
 at most one, last); `record`/`ref record`; `protocol`/`extends` with
@@ -178,7 +178,7 @@ L§8.6 edit with this item.
 lone string as docstring (raw), doc+result `fn` gets both; placement-rule
 negatives (module-level-only declarations, L§7.1) with positions.
 
-### M1.9 — Parser: imports + calls + blocks — **TODO**
+### M1.9 — Parser: imports + calls + blocks — **DONE**
 
 Import forms (`m`, `m as x`, `m.item`, `m.item as x`, `m.*`,
 comma-separated; `.*` not renamable) with the **S-7 grammar note**
@@ -190,7 +190,7 @@ arguments `do (params) … end`.
 (`stage: parse`; `.* as` rejected, keyword-after-positional enforced
 elsewhere).
 
-### M1.10 — Resolver: scopes, slots, static-error battery (S-5, S-6) — **TODO**
+### M1.10 — Resolver: scopes, slots, static-error battery (S-5, S-6) — **DONE**
 
 Scope construction (module/body/block, per-invocation scopes are a
 runtime matter); slot assignment; capture marking (cell-boxed, per
@@ -310,11 +310,23 @@ full 2.0M runs, zero crashes). **Remaining:** the 1 h exit soak, and — a user
 scope call (CI hookup is the user's per workspace CLAUDE.md) — the fuzz-smoke CI
 job + the dated-nightly / committed-`Cargo.lock` pin for reproducible CI builds.
 
-### M1.15 — M1 exit review — **TODO**
+### M1.15 — M1 exit review — **audit DONE; 2 blockers remain**
 
 Walk the plan's M1 acceptance; S-item audit (S-1…S-7, S-11, S-27, S-45
 resolved in spec with tests); update `claude-todo.md` + status markers;
 hygiene + CI green; file discovered deltas.
+
+**Audit outcome (see claude-todo "M1 exit review").** Exit criteria: (1) every
+L example → golden AST ✅ (M1.12); (2) reviewed span-correct broken-syntax corpus
+✅ (M1.13, 45 programs, user-signed); (3) every static-error class has a
+position-asserting test ✅ (audited 22/22 — broken-syntax snapshots + conformance
+`@line:col`); (4) fuzzer survives 1 h ⏳ (M1.14). Status markers corrected
+(M1.3–M1.10 were stale TODO → DONE). S-items: S-1/2/4/5/6/45 resolved+tested;
+S-7 M1-complete (runtime → M6); S-3/S-27 done, App-C `[landed]` brackets added.
+**Blockers to close M1:** (a) **S-11** — the ratified closure-mutation decision
+never landed in normative L§6.10 (§6.10 text drafted, awaiting user); (b)
+**M1.14** — the contiguous 1 h fuzz soak (env-interrupted at 23k-corpus/0 crashes)
+and the fuzz-smoke CI job (user's call).
 
 **Suggested order / parallelism:** M1.1 → M1.2 → M1.3 → {M1.4, M1.5} →
 M1.6 → {M1.7, M1.8, M1.9} → M1.10 → M1.11 → {M1.12, M1.13, M1.14} →

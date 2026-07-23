@@ -961,7 +961,8 @@ opening `"""` on its line ("the contents start on the next line");
 ordinary code may follow the closing `"""`; a mid-line `"""` in content is
 literal; a line-initial literal `"""` is written `\"""`. (6) Value =
 stripped content lines joined with `\n`; zero content lines = `""`.
-Land the L§3.6.4 edit with M1.5. ·
+Land the L§3.6.4 edit with M1.5. **[L§3.6.4 landed (margin rules in §3.6.4);
+tested — triple.rs, conformance tq-001/002/003, broken-syntax 38/39/09.]** ·
 S-4 (L§6.4/§7) `do`-attachment in construct headers (`while f() do`):
 header expressions parse in no-trailing-block mode. **[resolved M1.7 —
 L§6.4/§7.6 + App D.1]** ·
@@ -1086,7 +1087,9 @@ practice, lintable. Rejected: lone-string-is-docstring everywhere
 following-statement (silently drops stub/module docs), and a dedicated
 docstring *syntax* (the only other principled option, but new syntax for
 what the position convention already handles; revisitable later without
-breaking programs). Land the L§8.6 edit with M1.8. ·
+breaking programs). Land the L§8.6 edit with M1.8. **[L§8.6 landed (lone-string
+classification); tested — parse.rs docstrings_classified_per_s27, conformance
+docstring-001, record-002. Runtime "fn returns the lone string" is M2.]** ·
 S-47 (L§3.6.3/§3.6.4/§6.7) Interpolations never contain line terminators,
 in **any** string form: a single-line string's `{expr}` cannot introduce a
 newline the literal itself forbids (and preserves end-of-line error
@@ -1220,7 +1223,15 @@ uglier) and copy-at-creation (worst aliasing story; observable staleness
 vs. the enclosing frame). Ratifies machine-design §7's read-write
 cell-boxed captures; mainstream semantics (Scheme/JS/Ruby/Lua) and the
 "objects are closures" idiom the design discussion valued. Land the
-L§6.10 (+§8.5 alignment sentence) edits with M1.10. ·
+L§6.10 (+§8.5 alignment sentence) edits with M1.10. **[M1.15 exit-audit
+DELTA: the §8.5 alignment landed (§8.5 says blocks "read and mutate"), but
+the §6.10 edit did NOT — §6.10 still says only "closes over its lexical
+environment", omitting the by-reference / may-mutate / shared-binding /
+const-non-assignable / per-iteration-loop corollaries above. Behavior is
+already correct in code (capture representation B, cell-boxed read-write
+captures, M1.10c/M1.11) and machine-design §7 pins it; only the normative
+L§6.10 text is missing. No conformance test yet (closure mutation is M2
+runtime). Drafted §6.10 text awaiting user approval; blocks M1 exit.]** ·
 S-12 (L§4.2) `**` open corners: `0 ** negative` (division-by-zero
 analog?) and resource behavior for huge exponents (ties to R8's interior
 poll points). (Int ** negative-Int → Float is already settled by L§4.2.) ·
