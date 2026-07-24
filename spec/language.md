@@ -1004,11 +1004,34 @@ anon-fn = 'fn' '(' params? ')' body 'end'
 ```
 
 An anonymous function is a first-class function value that closes over its
-lexical environment. Its body follows the function rules (§8.4): the value of the
-last expression is returned, and `return expr` returns early. Example:
+lexical environment, **capturing the variables it uses by reference to their
+bindings**. Its body follows the function rules (§8.4): the value of the last
+expression is returned, and `return expr` returns early.
+
+A captured variable is the *same* variable the enclosing scope named: the function
+reads and writes it, and keeps doing so after that scope's call has returned — so a
+function that updates a captured local carries state between calls. Functions that
+capture the same binding — and a function and a `do` block (§8.5) that capture the
+same binding — **share** it: a write through one is seen through the others. A
+captured `const` remains non-reassignable (const-ness travels with the binding).
+Because each loop iteration runs in its own scope (§5.4), functions created in
+different iterations capture **distinct** bindings, so collecting one function per
+element captures each element's own value rather than a single shared variable.
+Example:
 
 ```doodle
 let double = fn(x) x * 2 end
+```
+
+Each closure captures its own copy of a per-iteration binding, so the classic
+"one shared loop variable" footgun is absent:
+
+```doodle
+let fns = []
+each([1, 2, 3]) do (x)
+  append(fns, fn() x end)
+end
+# each function captured its own x: calling them yields 1, 2, 3
 ```
 
 There is no anonymous *procedure* form; a block (§8.5) fills the role of

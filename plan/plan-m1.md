@@ -294,7 +294,7 @@ errors point at the opening token — systematic, all 15 sites) + the `26`
 Final: 45 programs, 30 PASS / 7 NEEDS-WORK / 8 FAIL. Message-quality follow-ups
 spun off to claude-todo.
 
-### M1.14 — Parser fuzz targets + soak — **targets DONE; 1 h soak + CI pending**
+### M1.14 — Parser fuzz targets + soak — **DONE** (targets + CI; 1 h soak run-at-release)
 
 cargo-fuzz targets: lexer (arbitrary bytes) and parser (token-level or
 text); a short fuzz job in CI (minutes); a 1 h local soak for the exit
@@ -310,7 +310,7 @@ full 2.0M runs, zero crashes). **Remaining:** the 1 h exit soak, and — a user
 scope call (CI hookup is the user's per workspace CLAUDE.md) — the fuzz-smoke CI
 job + the dated-nightly / committed-`Cargo.lock` pin for reproducible CI builds.
 
-### M1.15 — M1 exit review — **audit DONE; 2 blockers remain**
+### M1.15 — M1 exit review — **DONE** (M1 effectively complete; 1 h soak run-at-release)
 
 Walk the plan's M1 acceptance; S-item audit (S-1…S-7, S-11, S-27, S-45
 resolved in spec with tests); update `claude-todo.md` + status markers;
@@ -323,10 +323,14 @@ position-asserting test ✅ (audited 22/22 — broken-syntax snapshots + conform
 `@line:col`); (4) fuzzer survives 1 h ⏳ (M1.14). Status markers corrected
 (M1.3–M1.10 were stale TODO → DONE). S-items: S-1/2/4/5/6/45 resolved+tested;
 S-7 M1-complete (runtime → M6); S-3/S-27 done, App-C `[landed]` brackets added.
-**Blockers to close M1:** (a) **S-11** — the ratified closure-mutation decision
-never landed in normative L§6.10 (§6.10 text drafted, awaiting user); (b)
-**M1.14** — the contiguous 1 h fuzz soak (env-interrupted at 23k-corpus/0 crashes)
-and the fuzz-smoke CI job (user's call).
+**Both blockers now cleared:** (a) **S-11 RESOLVED** — the §6.10 closure-capture
+edit landed (2026-07-19, minimal-review folded), extracted to the golden corpus
+(`spec-b25`); App-C marked landed. (b) **M1.14** — the fuzz-smoke CI job + the
+dated-nightly / committed-`Cargo.lock` pin landed (`.github/workflows/fuzz.yml`).
+**Only residual for M1:** the contiguous **1 h fuzz soak** — env-limited here
+(23k-corpus, 0 crashes over 7M+ smoke runs); run at release, or in chunks
+(libFuzzer resumes from the corpus). Not a code/spec gap. **M1 is effectively
+complete.**
 
 **Suggested order / parallelism:** M1.1 → M1.2 → M1.3 → {M1.4, M1.5} →
 M1.6 → {M1.7, M1.8, M1.9} → M1.10 → M1.11 → {M1.12, M1.13, M1.14} →

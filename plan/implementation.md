@@ -1223,15 +1223,15 @@ uglier) and copy-at-creation (worst aliasing story; observable staleness
 vs. the enclosing frame). Ratifies machine-design §7's read-write
 cell-boxed captures; mainstream semantics (Scheme/JS/Ruby/Lua) and the
 "objects are closures" idiom the design discussion valued. Land the
-L§6.10 (+§8.5 alignment sentence) edits with M1.10. **[M1.15 exit-audit
-DELTA: the §8.5 alignment landed (§8.5 says blocks "read and mutate"), but
-the §6.10 edit did NOT — §6.10 still says only "closes over its lexical
-environment", omitting the by-reference / may-mutate / shared-binding /
-const-non-assignable / per-iteration-loop corollaries above. Behavior is
-already correct in code (capture representation B, cell-boxed read-write
-captures, M1.10c/M1.11) and machine-design §7 pins it; only the normative
-L§6.10 text is missing. No conformance test yet (closure mutation is M2
-runtime). Drafted §6.10 text awaiting user approval; blocks M1 exit.]** ·
+L§6.10 (+§8.5 alignment sentence) edits with M1.10. **[§8.5 alignment landed
+with M1.10; the §6.10 edit was missed and caught in the M1.15 exit audit —
+now LANDED (2026-07-19, minimal-review folded: `append`/non-reassignable):
+§6.10 pins capture-by-reference, may-mutate (state across calls), same-binding
+sharing incl. closure↔block, `const` captures non-reassignable, and per-
+iteration distinct loop captures + a loop example (extracted to the golden
+corpus, `spec-b25`). No conformance test of the *mutation* itself (M2 runtime);
+behavior already implemented (capture representation B) and pinned in
+machine-design §7.]** ·
 S-12 (L§4.2) `**` open corners: `0 ** negative` (division-by-zero
 analog?) and resource behavior for huge exponents (ties to R8's interior
 poll points). (Int ** negative-Int → Float is already settled by L§4.2.) ·

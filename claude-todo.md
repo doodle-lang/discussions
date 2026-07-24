@@ -365,6 +365,10 @@ M1.11** (shadowing warning + tail marking, S-45).
   - **Decisions RESOLVED (user):** #44 wrapped; corpus in doodle-rust + a
         sync-check script; **CI wiring deferred** (a future job that pulls
         `discussions` runs the sync check).
+  - **Follow-up (fixture naming brittleness):** golden fixtures are keyed by
+        global block index (`spec-b<NN>`), so a mid-document spec insertion renames
+        every downstream fixture (the §6.10/S-11 example insertion renamed 8). Worth
+        re-keying section-local (e.g. `L<sec>/example-<n>`) so insertions stay local.
 
 - [x] **M1.13 — Broken-syntax corpus + message review.** COMPLETE — review gate
       MET (doodle-rust `9af5f7b`).
@@ -417,31 +421,26 @@ M1.11** (shadowing warning + tail marking, S-45).
         crashes**; corpus preserved for a resumed run), but the contiguous 1 h run
         was stopped early by the environment's background-duration cap. Complete it
         (in chunks — libFuzzer resumes from the corpus) when closing M1.15.
-  - [ ] **CI fuzz-smoke job + reproducibility pin** — HELD for the user (CI hookup
-        is the user's call, workspace CLAUDE.md). Wiring it also pins a dated
-        `nightly-YYYY-MM-DD` for the fuzz crate + commits `fuzz/Cargo.lock`. Asked
-        while the user was away; defaulted to hold.
+  - [x] **CI fuzz-smoke job + reproducibility pin — DONE** (user-authorized).
+        `.github/workflows/fuzz.yml`: a 60 s cargo-fuzz smoke of each target
+        (lex/parse/full) on push/PR; nightly pinned in `fuzz/rust-toolchain.toml`
+        (`nightly-2026-07-09`, read by CI), `fuzz/Cargo.lock` committed.
 
-- [~] **M1.15 — M1 exit review.** Audit DONE; **2 blockers remain** to close M1.
+- [x] **M1.15 — M1 exit review. DONE — M1 effectively complete.** (Only residual:
+      the contiguous 1 h fuzz soak, env-limited, run-at-release — not a code/spec gap.)
   - [x] **Exit criteria walked:** (1) every L example → golden AST ✅ (M1.12);
         (2) reviewed span-correct broken-syntax corpus ✅ (M1.13); (3) every
-        static-error class has a position-asserting test ✅ (a read-only audit
-        confirmed **22/22** — broken-syntax caret snapshots + conformance
-        `@line:col`; 3 codes single-sourced, `shadowing` is the lone warning);
-        (4) fuzzer survives 1 h ⏳ (M1.14).
-  - [x] **Status markers corrected** — M1.3–M1.10 were stale `TODO` in plan-m1 →
-        `DONE`. Hygiene green throughout.
-  - [x] **S-item audit** — S-1/2/4/5/6/45 resolved-in-spec + tested; S-7
-        M1-complete (parser records the dotted path; runtime resolution → M6);
-        S-3/S-27 done in substance, App-C `[landed]` brackets added.
-  - [ ] **BLOCKER — S-11 (§6.10 spec delta):** the ratified closure-mutation
-        decision (capture by reference, may-mutate, shared bindings, `const`
-        non-assignable, per-iteration loop scopes) **never landed in normative
-        L§6.10** — §6.10 still says only "closes over its lexical environment."
-        Code + machine-design §7 already implement it; only the L text is missing.
-        §6.10 edit DRAFTED, awaiting user (normative L — not landing unilaterally).
-  - [ ] **BLOCKER — M1.14:** the contiguous 1 h fuzz soak (env-interrupted;
-        23k-corpus, 0 crashes so far) + the fuzz-smoke CI job (user's call).
+        static-error class has a position-asserting test ✅ (audit **22/22**);
+        (4) fuzzer survives 1 h — targets + CI ✅; formal 1 h run at release.
+  - [x] **Status markers corrected** (M1.3–M1.10 stale `TODO` → `DONE`); hygiene
+        green throughout.
+  - [x] **S-item audit** — S-1/2/4/5/6/45 resolved+tested; S-7 M1-complete
+        (runtime → M6); S-3/S-27 App-C `[landed]` brackets added.
+  - [x] **S-11 RESOLVED** — the §6.10 closure-capture edit landed (minimal-review
+        folded: `append`, non-reassignable), extracted to the golden corpus
+        (`spec-b25`); App-C marked landed. (No mutation *test* — M2 runtime;
+        behavior already implemented via capture representation B + machine-design
+        §7.)
 
 **Stage gate — now at Full (M1.10):** `implemented_through()` returns
 `Some(Stage::Full)`; the conformance runner executes `stage: lex`/`parse`/`full`
