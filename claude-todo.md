@@ -118,13 +118,21 @@ follow-up for the next parser work item:** a pinning accept-side test
 
 ## Next up
 
-Milestone **M1 — Front End** (see `plan/plan-m1.md`): M1.1 … M1.15, with
-conformance tests landing at `stage: lex/parse` per item and upgraded to
-`full` at the M1.10 checkpoint. M1 was blocked on M0.3/M0.4/M0.7 — all done.
-**M1.1–M1.10 have landed** (lexer, expression + statement parser, declarations,
-imports/calls/blocks, and the **resolver** — scopes/slots, static-error battery,
-value discipline, closure captures; the stage gate is now at **Full**). **Next:
-M1.11** (shadowing warning + tail marking, S-45).
+**M1 is complete** (front end: lexer, parser, resolver, diagnostics; stage
+gate at **Full**; M1.1–M1.15 all landed — see the Done log and `plan-m1.md`).
+CI green on both repos (the M1.14 fuzz workflow was fixed 2026-07-24:
+`taiki-e/install-action` needs `with: tool: cargo-fuzz`, and the fuzz build
+must pin `--target x86_64-unknown-linux-gnu` — the musl prebuilt defaults
+break ASan; doodle-rust `3597302`).
+
+Milestone **M2a — Machine Core** (`[L]`; see the new **`plan/plan-m2a.md`**).
+The CESK machine + slab heap/GC v0 + handles over the demo subset. The
+*design* (`plan/machine-design.md` v0.2.1) is accepted (M2a gate satisfied);
+`plan-m2a.md` sequences it into work items **M2a.1 … M2a.12**, dependency-
+ordered. **Next: M2a.1** (heap foundation — slabs/objects/allocation
+accounting, no GC yet). Spec-delta obligations due in M2a are listed in
+`plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests,
+S-41; plus S-10/S-12/S-28 rulings that surface mid-milestone).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
