@@ -129,8 +129,13 @@ Milestone **M2a — Machine Core** (`[L]`; see the new **`plan/plan-m2a.md`**).
 The CESK machine + slab heap/GC v0 + handles over the demo subset. The
 *design* (`plan/machine-design.md` v0.2.1) is accepted (M2a gate satisfied);
 `plan-m2a.md` sequences it into work items **M2a.1 … M2a.12**, dependency-
-ordered. **Next: M2a.1** (heap foundation — slabs/objects/allocation
-accounting, no GC yet). Spec-delta obligations due in M2a are listed in
+ordered. **M2a.1 landed** (heap foundation: generic `Slab<T>`, the `Heap`
+with strings/bytes/lists slabs, len-based deterministic payload accounting,
+serial identity, `same_ref`; no GC yet — read-only review clean, one MAJOR
+folded by dropping an untracked-growth accessor; the payload-count gap is
+tracked in the spec-delta queue below). **Next: M2a.2** (machine skeleton
+over `ResolvedModule`: frames, `Cont`, `step()`, literals; resolves E§7.2
+top-level completion). Spec-delta obligations due in M2a are listed in
 `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests,
 S-41; plus S-10/S-12/S-28 rulings that surface mid-milestone).
 
@@ -481,6 +486,26 @@ resolutions discussed with and agreed by the user 2026-07-10)**. Later:
 S-41 by M2a; **S-9** (machine-design §12 carries the proposed
 resolution) by M2a; **S-46** (non-local exits through native consumers)
 by M2b.
+
+Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
+delta **before M2a.9** trusts the heap limit — surfaced in the read-only
+review): **`bytes_allocated` counts payload only, so object *count* is
+unbounded.** MD §4 charges "program-driven payload bytes," i.e. a string's
+byte length / a list's element-width — an *empty* or tiny object charges
+~0. An unbounded loop allocating small/empty objects (each a fresh `Slot`
+in a slab `Vec`) grows real memory while `bytes_allocated` stays flat, so
+the GC trigger never fires and `Faulted(LimitExceeded(heap))` never trips —
+an OOM-instead-of-clean-fault hole, and it breaks exit criterion 3's
+"deterministic step" for that class. **Not fixed in code** (a per-object
+minimum charge is a *mechanism* change to MD §4/§15, which must be revised
+first — spec is source of truth). Options: a fixed per-object byte charge
+so count contributes; or a separate object-count limit alongside the byte
+limit. Resolve with the M2a.9 heap-limit item. The M2a.1 code implements MD
+§4 faithfully as written; nothing wrong ships, but the *model* has this
+gap. (The related in-place-growth accounting hole — a growing list not
+re-charging — is already closed structurally: the heap exposes no raw
+mutable payload accessor, so growth must route through accounting-aware
+methods when they land.)
 
 Discovered at M0.3 (needs an S-number when the user next curates Appendix
 C): **top-level `Completed` value** — E§7.2 pins the `Completed(value?)`

@@ -102,7 +102,13 @@ Dependency-ordered; each is one session-ish (a couple may split). The
 `machine.rs`/`drive.rs` M0 placeholders are **replaced**, not extended —
 they walk a bare `Ast`; the real machine consumes a `ResolvedModule`.
 
-### M2a.1 — Heap foundation: slabs, objects, allocation accounting (no GC)
+### M2a.1 — Heap foundation: slabs, objects, allocation accounting (no GC) — **DONE**
+*(doodle-rust: generic `Slab<T>` + `Heap` {strings, bytes, lists} + len-based
+deterministic payload accounting + serial identity + `same_ref`; read-only
+review clean, MAJOR folded by dropping the untracked-growth accessor. Follow-up
+tracked: the payload-count accounting-model gap needs an MD §4/§15 ruling before
+M2a.9 — see claude-todo.)*
+
 `Heap` with one `Slab<T>` per demo-subset kind (MD §4): `bigints`,
 `strings`, `bytes`, `lists`, `callables`, `cells`, `types` (dicts/records
 join at M4). `Slot = Occupied { obj, mark, serial } | Free { next_free }`;
