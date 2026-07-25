@@ -133,9 +133,12 @@ ordered. **M2a.1 landed** (heap foundation: generic `Slab<T>`, the `Heap`
 with strings/bytes/lists slabs, len-based deterministic payload accounting,
 serial identity, `same_ref`; no GC yet — read-only review clean, one MAJOR
 folded by dropping an untracked-growth accessor; the payload-count gap is
-tracked in the spec-delta queue below). **Next: M2a.2** (machine skeleton
-over `ResolvedModule`: frames, `Cont`, `step()`, literals; resolves E§7.2
-top-level completion). Spec-delta obligations due in M2a are listed in
+tracked in the spec-delta queue below). **M2a.2 landed** (machine skeleton:
+`Machine`/`Frame`/`Cont`/`step()` over `ResolvedModule`; the M0 `Instance`/
+`drive` walk replaced; literals + statement sequencing + module-top-level
+Void return; E§7.2 top-level completion resolved to `Completed(None)`). **Next:
+M2a.3** (expressions: operators, numeric tower + bignum promotion, strict
+booleans, Void enforcement). Spec-delta obligations due in M2a are listed in
 `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests,
 S-41; plus S-10/S-12/S-28 rulings that surface mid-milestone).
 
@@ -507,14 +510,14 @@ re-charging — is already closed structurally: the heap exposes no raw
 mutable payload accessor, so growth must route through accounting-aware
 methods when they land.)
 
-Discovered at M0.3 (needs an S-number when the user next curates Appendix
-C): **top-level `Completed` value** — E§7.2 pins the `Completed(value?)`
-payload only for a returning `fn`; it does not say what a *top-level*
-module drive completes with. The M0.3 skeleton provisionally returns the
-result register's last value so the acceptance can observe it; real
-top-level completion is expected to be Void (`None`). Resolve in E§7.2 by
-M2a (when the machine core replaces the placeholder). No behavior ships
-before then.
+**RESOLVED (M2a.2): top-level `Completed` value is Void.** (Was: discovered
+at M0.3 — E§7.2 pinned the `Completed(value?)` payload only for a returning
+`fn`, leaving a *top-level* module drive unspecified; the M0 skeleton
+provisionally returned the last expression's value for observation.) The
+M2a.2 machine skeleton replaced that placeholder; a top-level module drive
+now completes **`Completed(None)`** — a module runs for effect (L§6.11).
+Landed: `drive::run` returns `Completed(None)`; E§7.2 prose + Appendix B.1
+decision entry (`spec/engine.md`); `drive_smoke` integration tests updated.
 
 Discovered at M1.1 (diagnostics; resolve in E Appendix B / L Appendix D at
 the milestone that ships the behavior — provisional choices documented in

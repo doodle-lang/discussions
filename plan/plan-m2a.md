@@ -120,7 +120,19 @@ allocate-only; the free list exists but is only exercised once GC lands
 (M2a.10). *Accept:* alloc → distinct indices + monotonic serials;
 `bytes_allocated` tracks payloads; `is_same` correct; unit tests.
 
-### M2a.2 — Machine skeleton: `Instance`/`Machine` over `ResolvedModule`; frames, `Cont`, `step()`; literals
+### M2a.2 — Machine skeleton: `Instance`/`Machine` over `ResolvedModule`; frames, `Cont`, `step()`; literals — **DONE**
+*(doodle-rust: `Machine`/`Frame`/`FrameKind`/`Cont`/`step` in `machine/{frame,cont,step}.rs`;
+the M0 `Instance`/`drive` walk replaced with load(`ResolvedModule`) → `ModuleTopLevel`
+frame → `Seq`/`Eval` conts; immediate + bytes literals; module-top-level Void return.
+**E§7.2 resolved** — top-level completes `Completed(None)` (prose + Appendix B.1 entry;
+`drive_smoke` updated). `mode: run` conformance still SKIPs until the run-arm at M2a.12.
+**Deferred from this item (review-flagged, tracked to M2a.4):** `load` does not yet
+create module cells for globals — harmless now (a global-declaring statement isn't an
+`ExprStmt`, so it hits the not-yet-implemented path before a cell is read), but M2a.4
+must add it. **Forward note (M2a.9):** `reg` is not reset at a statement boundary, so a
+future safe-point observer would read the prior statement's value — pin the
+statement-boundary register semantics when safe points land.)*
+
 Replace the M0 `machine.rs` `Instance` and `drive.rs` walk. `Machine` (MD
 §8): `frames`, `reg: Option<Value>`, `ring`, `fuel` (stub until M2a.9).
 `Frame` (kind/`locals`/`conts`/`serial`/…). The `Cont` enum seeded with
@@ -147,8 +159,13 @@ resolver's static S-6 check — covers the dynamic cases). Runtime errors →
 raises; comparison/`==` per the ruling; raise-only conformance fixtures.
 
 ### M2a.4 — Statements & intra-frame control: `let`/`const`/assign, `if`, `while`, `loop`
-`BindSlot`/`BindCell` conts (place chains are M4; simple targets now);
-assignment to a local slot, a cell-boxed slot, or a module cell.
+**Module cells for globals (carried from M2a.2):** `load` must create the
+module-binding cells for `globals` (MD §6; `GlobalKind` → `CellKind`) — decide
+create-at-load vs. lazy-at-decl-execution, and settle the **forward-reference /
+hoisting** question (module globals are whole-scope per the resolver, so a body
+may reference a global declared textually later; the cell must exist before that
+body runs). Then: `BindSlot`/`BindCell` conts (place chains are M4; simple
+targets now); assignment to a local slot, a cell-boxed slot, or a module cell.
 `IfElse`; `WhileReloop{node,cond,body}`/`LoopReloop{node,body}` (carry
 `NodeId` so M2a.6 exits can target them). Construct bodies run in the
 **enclosing frame** (the resolver already models this — only callable/block
@@ -214,6 +231,10 @@ point (`Seq` boundary, call entry, return). Limits: non-tail **stack
 depth**, **heap** (`bytes_allocated` threshold), **step budget** →
 `Faulted(LimitExceeded(kind))`. GC-trigger + heap-limit checks fire **only**
 at statement-level safe points (observation-mode-independent, E§7.7).
+**Pin the statement-boundary register semantics (carried from M2a.2):** `reg`
+currently retains the prior statement's value between statements, so a safe-point
+observer would read it — decide whether a `Seq` boundary clears `reg` to Void
+(likely) and implement it with the safe point.
 *Accept:* **exit criteria 2 + 3** (deep non-tail recursion → stack fault;
 unbounded alloc → heap fault at a deterministic step).
 

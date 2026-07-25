@@ -421,6 +421,10 @@ PauseReason = Step | Breakpoint(id) | RaiseTrap | HostPause
 EngineFault = LimitExceeded(kind) | Cancelled | Internal
 ```
 
+The `value` on **Completed** is present exactly when the driven unit is a returning
+`fn` — a reentrant callable return (§7.6). A **top-level module drive completes with
+no value (Void)**: a module runs for effect, and statements yield no value (L§6.11).
+
 ### 7.3 Driving and resolving
 
 The host advances an instance with two conceptual operations (their exact factoring
@@ -782,6 +786,11 @@ provides the complete set plus the interactive facilities of §7–§11.
   serialization API are deferred.
 - **Foreign values are opaque and do not dispatch protocols (§4.5).** Polymorphism over
   host objects is expressed on a wrapping record.
+- **Top-level completion is Void (§7.2).** A top-level module drive's `Completed`
+  carries no value; the `value` is present only for a returning `fn`. A module runs
+  for effect (L§6.11). Resolves the M0.3 provisional (which returned the last
+  expression's value so the M0 acceptance could observe it); landed with the M2a.2
+  machine skeleton that replaced that placeholder.
 
 ### B.2 Open issues, including cross-spec implications
 
