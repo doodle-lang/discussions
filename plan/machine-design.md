@@ -122,8 +122,13 @@ enum Value {
   mathematical values (integer-vs-float comparison done exactly, not via
   lossy widening); numeric hashing hashes the *mathematical value* (an
   integral float in range hashes as its integer; otherwise a canonical
-  float form). The precise S-28 semantics (NaN, −0.0) land with that
-  delta.
+  float form). **S-28 is resolved (App C, 2026-07-28):** `-0.0 == 0.0 ==
+  0` — the integral-float hash path already hashes `-0.0` as the integer
+  `0`, no special case; NaN is a **single canonical value** (bit pattern
+  `0x7FF8_0000_0000_0000`, canonicalized at `make_float` and at every
+  NaN-producing op, E§4.3) that equals itself and hashes as one fixed
+  constant; ordering with a NaN operand raises (L§6.6); dicts retain the
+  first-inserted of `==`-equal keys (L§4.8).
 - `Void` (the L§6.11 procedure-result sentinel) is **not** a `Value`
   variant: the machine's result register is `Option<Value>` with `None` =
   Void, so a Void can never be stored into a data structure by
@@ -571,7 +576,8 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 - Exact `Cont` variant list (categories pinned in §8).
 - Small-int/`BigInt` promotion helper API; float formatting entry point
-  (Ryū); the S-28 NaN/−0.0 decisions.
+  (Ryū — constrained by resolved S-28: exactly one NaN spelling, and
+  `-0.0` formats with its sign).
 - Dict tombstone/compaction policy (must preserve insertion order and
   determinism; otherwise free).
 - `FusedCounter` re-arm bookkeeping when events arm/disarm mid-run.
@@ -598,6 +604,12 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 ## 21. Change log
 
+- **v0.2.2 (2026-07-28):** §3's S-28 placeholder replaced by the ruling
+  (user-ratified, App C): one canonical NaN (`0x7FF8…`, canonicalized at
+  `make_float` + every NaN-producing op), `-0.0 == 0.0 == 0` with hashing
+  via the integral-float path, NaN ordering raises, first-inserted key
+  retained; §19's formatting note constrained (one NaN spelling, `-0.0`
+  keeps its sign). No mechanism changes.
 - **v0.2.1 (2026-07-18):** §11 amended per S-55 (user-ratified):
   procedure bodies have tail positions, and frame reuse requires the
   callee's kind to match the frame's original callable kind (Block frames

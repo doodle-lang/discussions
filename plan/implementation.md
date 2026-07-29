@@ -1200,6 +1200,19 @@ time. **[spec resolved — L§8.7 + App D.1 + machine-design §11 (v0.2.1)
 landed with this entry; code follow-up: the M2a reuse kind-check +
 mixed-kind parity conformance tests (to-tail-fn value discarded;
 fn-tail-to falls-off at the fn's own completion)]** ·
+S-56 (L§4.2; filed at the S-28 ruling, 2026-07-28) Float overflow and
+nonfinite arithmetic results are unspecified: `1e308 * 10.0`,
+`2.0 ** 4096`, the literal `1e999` — IEEE says ±∞ (after which `∞ - ∞`
+and kin yield NaN); L§4.2 is silent. Candidates: (a) IEEE-propagate —
+nonfinite values flow, S-28's one-NaN rule covers the NaN cases; (b)
+**raise on any nonfinite arithmetic result** ("the numbers got too big"
+/ "this has no numeric answer") — the uniform extension of L§4.2's
+twice-made raise-over-IEEE choice for the division family (`1/0` → ∞
+and `0/0` → NaN both already raise); arithmetic then never produces
+NaN/∞, which stay reachable only via host injection (E§4.3). (b) is the
+lean stated at the S-28 ruling. Also owns the overflowing float
+*literal*. The S-28 equality/hash semantics stand unchanged either way.
+Ruling due at **M2a.3**, batched with S-12's `**` corners. ·
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
 loop control from a `with` body is impossible — almost certainly
 unintended; fix the interaction (and specify the `try`-body case). ·
@@ -1237,7 +1250,39 @@ analog?) and resource behavior for huge exponents (ties to R8's interior
 poll points). (Int ** negative-Int → Float is already settled by L§4.2.) ·
 S-28 (L§4.13) Numeric equality precision: Int/Float comparison beyond 2⁵³
 (compare exactly, not via lossy widening); NaN and −0.0 under total
-structural equality; hash coherence for `1` vs `1.0`. ·
+structural equality; hash coherence for `1` vs `1.0`. **RESOLVED (user,
+2026-07-28): total/reflexive — SameValueZero-style.** Numbers compare by
+**exact mathematical value** across kinds (never lossy widening);
+**`-0.0 == 0.0 == 0`** (all denote zero) and **NaN equals itself** — the
+numeric equivalence classes are exact values plus {NaN}, so `==` stays
+an equivalence relation, L§6.6 totality holds, and dict membership is
+coherent. Companion pins: **exactly one NaN value** — the engine
+canonicalizes NaN bit patterns to `0x7FF8_0000_0000_0000` at
+`make_float` and at every NaN-producing op (E§4.3); required for
+cross-host replay regardless of the `==` choice (x86 and ARM produce
+different NaN payloads for the same operation, E§11), and it makes NaN
+reflexivity literal. Hash coherence `a == b ⇒ hash(a) == hash(b)` (L§15
+hook 2; machine-design §3's integral-float path already hashes `-0.0`
+as integer `0`; NaN gets one fixed constant). **Ordering a NaN raises**
+(L§6.6 — IEEE's every-comparison-false reports an ordering that does
+not exist; `-0.0`/`0.0` order as equal). Dicts retain the
+**first-inserted** of `==`-equal keys (L§4.8 — observable for `1` vs
+`1.0`, `0.0` vs `-0.0`). Formatting (pinned with the Ryū entry point):
+one NaN spelling; `-0.0` keeps its sign. Rejected: IEEE `NaN != NaN`
+(non-reflexive — unfindable dict keys, `[NaN] != [NaN]`, Python's
+containers-vs-`==` mess) and bit-distinct zeros (Java
+`Double.equals`/Julia `isequal` style — contradicts mathematical-value
+equality, breaks `y == 0` after `y = -y` on `0.0`, forces an arbitrary
+which-zero-equals-`Int`-`0` choice; both languages need a *second*
+equality operator to ship it, and Doodle has one `==`). Precedent: JS
+SameValueZero for Map/Set (TC39 shipped −0-distinct drafts and reverted
+before ES2015); Doodle already prefers its principles over IEEE answers
+(L§4.2 raises on division by zero). **[spec landed with this entry:
+L§4.13 + §4.8 (first-key-wins) + §6.6 + §15 hook 2 + App D.1; E§4.3
+(Floats normative) + §11 + App B.1; machine-design §3/§19 (v0.2.2).
+Code: the comparison half at M2a.3, the dict-key hash half at M4. Spun
+off: S-56 — float overflow / nonfinite arithmetic results, the
+remaining arithmetic NaN/∞ producers — due M2a.3 with S-12.]** ·
 S-29 (L§4.8/§15) Mutable records as dict keys: pin the behavior (document
 stale-hash reality vs. restrict default Hashable to immutable content). ·
 S-30 (E§4.3) `make_string` failure mode from the host (error return, not

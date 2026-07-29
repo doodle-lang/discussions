@@ -587,6 +587,13 @@ moves it to the end. This order is deterministic and independent of key hashing
 or allocation — a property the engine relies on for reproducible execution and
 replay (see the engine specification, §11).
 
+**Equal keys are the same key.** Key lookup and update use structural equality
+(§4.13). Where `==`-equal keys are nonetheless distinguishable values (`1` vs
+`1.0`, `0.0` vs `-0.0`), the dict retains the **first-inserted** key: a later
+assignment through an equal key updates the value but changes neither the
+stored key nor its position. (Because §4.13 equality is reflexive, every
+hashable value — NaN included — can be stored under a key and found again.)
+
 ### 4.9 Procedures, functions, and blocks
 
 Procedures (declared with `to`) and functions (declared with `fn`, including
@@ -635,9 +642,19 @@ introduces a protocol value (§10). Type and protocol values are used with the
 The `==` and `!=` operators test **structural equality** and are built into the
 language (not user-overridable):
 
-- Two values are `==` only if they have the same type.
-- Numbers compare by mathematical value **within** a type after int→float
-  widening for mixed comparisons (`1 == 1.0` is `true`); other primitives
+- Two values are `==` only if they have the same type, with one exception: the
+  numeric types compare with each other (below).
+- Numbers compare by **exact mathematical value**, across `Int` and `Float`
+  (`1 == 1.0` is `true`). Mixed comparisons are exact, never by lossy
+  int→float widening: an `Int` and a `Float` are `==` iff they denote the same
+  mathematical value, even beyond 2⁵³. Two IEEE-754 special cases follow the
+  same value principle: **`-0.0 == 0.0` is `true`** (both denote zero, so each
+  also equals the `Int` `0`), and **NaN equals itself** — Doodle has exactly
+  one NaN value (see the engine specification, §4.3), so `==` stays total and
+  reflexive: a NaN can be found as a dict key, and containers holding NaN
+  compare structurally. This deliberately departs from IEEE-754 comparison,
+  whose `NaN != NaN` is not an equivalence relation and cannot serve a
+  structural equality; ordering a NaN raises instead (§6.6). Other primitives
   (booleans, bytes, nil) compare by their contents.
 - Strings compare by **canonical (NFC) equivalence**: two strings are `==` iff
   they are Unicode-canonically equivalent. Because string values are stored in
@@ -941,11 +958,18 @@ undefined (e.g. a string plus a number, or `<` on records) raises an error.
 ### 6.6 Boolean, comparison, and arithmetic semantics
 
 - Equality/inequality (`==`, `!=`) are structural (§4.13) and total (defined for
-  all pairs of values; unequal types compare unequal, never error).
+  all pairs of values; unequal types compare unequal — numbers, which compare
+  across `Int`/`Float` by exact value, are the one exception (§4.13) — and
+  `==` never errors). Totality includes reflexivity: `x == x` is `true` for
+  every value, NaN included (§4.13).
 - Ordering (`<`, `>`, `<=`, `>=`) is defined for numbers and strings; for
   strings it is code-point-lexicographic over the NFC form (§4.4) — not
   locale/dictionary collation, which is a standard-library concern. Applying
-  ordering to values for which it is undefined raises.
+  ordering to values for which it is undefined raises. Ordering is undefined
+  for NaN: a NaN operand to `<`/`<=`/`>`/`>=` raises (IEEE-754's
+  every-comparison-false answer is deliberately not adopted — it reports an
+  ordering that does not exist). `-0.0` and `0.0` are equal (§4.13), so
+  neither is less than the other.
 - Logical `and`/`or`/`not` operate only on Booleans and short-circuit.
 
 ### 6.7 String interpolation
@@ -1812,9 +1836,13 @@ standard library must supply the *behavior*.
 2. **Hashing and dict keys (`hash`).** The built-in `Dict` type (§4.8) requires
    its keys to be hashable. Hashability is expressed by the well-known `Hashable`
    protocol's `hash` member together with the language's structural equality
-   (§4.13). The standard library must define `Hashable`, implement it for the
-   hashable built-in types, and provide a record default. Using a
-   non-hashable value (e.g. a list) as a dict key raises.
+   (§4.13). Hashing must **cohere** with that equality: `a == b` implies
+   `hash(a) == hash(b)` — in particular every representation of the same
+   mathematical value hashes identically (`1` and `1.0`; `0`, `0.0`, and
+   `-0.0`), and NaN has one fixed hash. The standard library must define
+   `Hashable`, implement it for the hashable built-in types, and provide a
+   record default. Using a non-hashable value (e.g. a list) as a dict key
+   raises.
 
 3. **String representation and Unicode data.** The language owns Unicode data —
    NFC normalization, extended-grapheme-cluster segmentation (UAX #29), and
@@ -2173,6 +2201,22 @@ likely to change.
   as ordinary calls (exact behavioral parity); nothing is lost because any
   unbounded mixed-kind cycle contains an `fn`→`to` edge — the
   falls-off-the-end error — so all sound recursive loops are kind-pure.
+- **Numeric equality is total and reflexive; one NaN; `-0.0 == 0.0` (§4.13,
+  §4.8, §6.6, §15; resolves implementation-plan Appendix C S-28).** The draft
+  left NaN and negative zero unaddressed and described mixed Int/Float
+  comparison as int→float widening (lossy beyond 2⁵³). Resolved: numbers
+  compare by exact mathematical value across kinds; `-0.0` equals `0.0` (and
+  `0`); NaN is a single value that equals itself, so `==` remains an
+  equivalence relation, containers holding NaN compare structurally, and dict
+  keys stay coherent (`hash` respects `==`, §15). Ordering a NaN raises;
+  dicts retain the first-inserted of `==`-equal keys. IEEE-754 *comparison*
+  is deliberately not followed — its `NaN != NaN` is not an equivalence
+  relation and cannot serve a structural equality; this is the same
+  precedence of language principle over IEEE answer as §4.2's raise on
+  division by zero. The engine canonicalizes NaN bit patterns, which hardware
+  produces divergently, so NaN payload/sign is never Doodle-observable — a
+  replay-determinism requirement (engine spec §4.3/§11) that makes "one NaN
+  value" literal.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

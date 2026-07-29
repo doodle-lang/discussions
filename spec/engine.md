@@ -246,6 +246,20 @@ operations (NFC, grapheme segmentation, case/property) as internal primitives; i
 exposes their results through value operations and the standard library, not as
 raw tables.
 
+**Floats (normative).** `Float` values are IEEE-754 binary64, with one
+restriction: the engine maintains **exactly one NaN**. `make_float(x)`
+canonicalizes any NaN input to the canonical quiet NaN (bit pattern
+`0x7FF8_0000_0000_0000`), every internal operation that produces a NaN
+produces that canonical NaN, and `as_float` therefore only ever exposes that
+pattern. NaN payload and sign bits are not representable in Doodle and never
+cross the boundary. This is a determinism requirement, not a convenience:
+hardware differs in the NaN bit patterns it produces for the same operation,
+so un-canonicalized NaN bits would be hidden platform state — observable
+through hashing, formatting, or byte views — and would break cross-host
+replay (§11). Negative zero is **not** canonicalized: `-0.0` is a distinct,
+fully deterministic bit pattern (equal to `0.0` under L§4.13) that
+round-trips through the boundary unchanged.
+
 ### 4.4 Structural inspection
 
 The engine provides **pure, side-effect-free** structural inspection of any value:
@@ -686,7 +700,11 @@ and shareable replay artifacts.
 capability-request identities (§7.5) and must have no hidden nondeterminism (§2):
 value identity, GC, and hashing must not leak observable order into Doodle; in
 particular **dict iteration order must be deterministic** (see Appendix B — this is a
-constraint that feeds back into L§4.8).
+constraint that feeds back into L§4.8). Likewise **NaN bit patterns must be
+canonicalized** (§4.3): hardware produces differing NaN payloads for the same
+operation, so an un-canonicalized NaN would be hidden platform state — observable
+through hashing, formatting, or byte views — and recordings would not replay across
+hosts.
 
 **Deferred.** Efficient *reverse* stepping needs periodic heap **snapshots** plus replay
 between them; the snapshot format, the replay/serialization API, and shareable-artifact
@@ -791,6 +809,13 @@ provides the complete set plus the interactive facilities of §7–§11.
   for effect (L§6.11). Resolves the M0.3 provisional (which returned the last
   expression's value so the M0 acceptance could observe it); landed with the M2a.2
   machine skeleton that replaced that placeholder.
+- **One canonical NaN; `-0.0` preserved (§4.3, §11).** `make_float` and every
+  NaN-producing operation canonicalize to the single quiet-NaN bit pattern
+  `0x7FF8_0000_0000_0000`; NaN payload/sign never crosses the boundary. Required
+  for cross-host replay (hardware NaN bit patterns differ) and the ground for
+  L§4.13's single, self-equal NaN value (the engine side of implementation-plan
+  Appendix C S-28). Negative zero is a distinct, deterministic bit pattern,
+  preserved through the boundary, equal to `0.0` under L§4.13.
 
 ### B.2 Open issues, including cross-spec implications
 

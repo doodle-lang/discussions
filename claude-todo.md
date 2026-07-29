@@ -138,9 +138,10 @@ tracked in the spec-delta queue below). **M2a.2 landed** (machine skeleton:
 `drive` walk replaced; literals + statement sequencing + module-top-level
 Void return; E§7.2 top-level completion resolved to `Completed(None)`). **Next:
 M2a.3** (expressions: operators, numeric tower + bignum promotion, strict
-booleans, Void enforcement). Spec-delta obligations due in M2a are listed in
-`plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests,
-S-41; plus S-10/S-12/S-28 rulings that surface mid-milestone).
+booleans, Void enforcement; implements the resolved S-28 comparisons). Spec-delta
+obligations due in M2a are listed in `plan-m2a.md` (E§7.2 top-level completion,
+S-9 L§7.10, S-55 reuse tests, S-41; plus S-10/S-12/S-56 rulings that surface
+mid-milestone — **S-28 is RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -471,7 +472,7 @@ first.)
 
 ## Spec-delta queue (near-term)
 
-Full backlog: `plan/implementation.md` Appendix C (S-1…S-49; the
+Full backlog: `plan/implementation.md` Appendix C (S-1…S-56; the
 appendix is the tracker of record until GitHub issues open). Due with M1
 work items (resolve in spec *before/with* the implementing item —
 pairings in `plan-m1.md`): S-1 (M1.2, done), S-2 (M1.3, done), **S-3
@@ -489,6 +490,19 @@ resolutions discussed with and agreed by the user 2026-07-10)**. Later:
 S-41 by M2a; **S-9** (machine-design §12 carries the proposed
 resolution) by M2a; **S-46** (non-local exits through native consumers)
 by M2b.
+
+**S-28 RESOLVED (user, 2026-07-28): total/reflexive numeric `==`
+(SameValueZero-style).** `-0.0 == 0.0 == 0`; exactly one NaN, equal to
+itself — the engine canonicalizes NaN bits (`0x7FF8…`) at `make_float`
+and at every NaN-producing op (cross-host replay requirement, E§11); NaN
+ordering raises; dicts keep the first-inserted of `==`-equal keys; hash
+coherence pinned (`-0.0` hashes as integer `0` via the integral-float
+path; NaN one fixed constant). Spec landed with the ruling:
+L§4.13/§4.8/§6.6/§15-hook-2 + App D.1; E§4.3 (Floats normative) + §11 +
+App B.1; machine-design §3/§19 (v0.2.2); App C S-28 (full rationale).
+Code follow-ups: **M2a.3** (comparisons), **M4** (dict-key hash).
+**S-56 filed** (float overflow / nonfinite arithmetic results — raise vs
+IEEE-propagate; raise is the stated lean), due **M2a.3** with S-12.
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only
@@ -637,6 +651,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-28 — **S-28 resolved + spec landed: total/reflexive numeric `==`.**
+  Full ruling in the spec-delta queue entry above. One discussions commit:
+  L§4.13 (exact-value equality across kinds, `-0.0 == 0.0`, single
+  self-equal NaN), §4.8 (first-inserted key retained), §6.6 (reflexivity
+  note; NaN ordering raises), §15 hook 2 (hash-coherence law), App D.1;
+  E§4.3 (**Floats normative** — one canonical NaN `0x7FF8…`, `-0.0`
+  preserved), §11 (NaN canonicalization as a replay requirement), App B.1;
+  machine-design §3/§19 + change log (v0.2.2); App C S-28 (full rationale +
+  rejected alternatives) + new **S-56** (nonfinite arithmetic results, due
+  M2a.3 with S-12).
 - 2026-07-15 — **M1.9b: call-site block arguments (L§6.4/§8.5) + S-4 header
   enforcement; extract `parse/literal.rs`.** `Node::Call` gained `block:
   Option<BlockArg>` (params + body); `postfix.rs` `call()` parses a trailing
