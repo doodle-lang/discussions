@@ -24,7 +24,7 @@ governs.
 top-level completion — all pinned by the accepted machine-design) are
 pre-approved: landing the spec edit that implements exactly the stated
 resolution needs no further sign-off. The **open** rulings flagged below
-(S-10, S-12, S-41, S-56) each need a fresh ask when reached
+(S-10, S-12's huge-exponent half, S-41) each need a fresh ask when reached
 (CLAUDE.md: never change semantics without asking).
 
 ---
@@ -90,15 +90,18 @@ silently deferred (CLAUDE.md).
 
 **Surfacing during M2a, may need a ruling when reached (flag, don't
 guess):** S-10 (break-with-value where the consumer has no value slot —
-discard vs error; **M2a.6**), S-12 (`**` corners: `0 ** negative`, huge
-exponents; **M2a.3**), S-56 (float overflow / nonfinite arithmetic
-results — raise vs IEEE-propagate; **M2a.3**, batched with S-12).
+discard vs error; **M2a.6**), S-12's remaining half (huge-exponent
+resource behavior of bignum `Int ** Int`; **M2a.3**).
 **S-28 is RESOLVED (user, 2026-07-28; App C + spec landed):**
 exact-value `==` across kinds, `-0.0 == 0.0 == 0`, one canonical
 self-equal NaN (E§4.3 canonicalization), NaN ordering raises,
 first-inserted key retained, hash coherence — the comparison half is
 *implemented per the ruling* at **M2a.3**; the dict-key **hash** half
-at M4.
+at M4. **S-56 is RESOLVED (user, 2026-07-28; App C + spec landed):
+raise on any nonfinite float-arithmetic result** (underflow fine;
+result-based; int→float widening included; overflowing literal =
+front-end static error) — closes S-12's `0 ** negative` corner by
+subsumption; **M2a.3** implements the finiteness check.
 
 ---
 
@@ -155,10 +158,13 @@ lifecycle states (E§3.3) transition; integration test.
 Expression-plumbing conts (`BinRhs`/`BinApply`/`UnaryApply`, MD §8). Numeric
 tower: `i64` fast path with **overflow → bignum promotion** and
 **demote-on-fit** (the canonical-int invariant, MD §3); `/` → float; `//`,
-`%`, `**` (S-12 corners — **ruling**, batched with the **S-56 ruling**
-on nonfinite results); comparisons per resolved S-28 (exact cross-kind;
-`-0.0 == 0.0`; single canonical self-equal NaN, canonicalized at every
-NaN-producing op; NaN ordering raises). Strict booleans: `and`/`or`/`not`
+`%`, `**` (S-12's huge-exponent resource half — **ruling**; `0 **
+negative` raises per resolved S-56); the S-56 finite-result rule (any
+float op whose IEEE result is nonfinite raises — underflow fine,
+int→float widening included); comparisons per resolved S-28 (exact
+cross-kind; `-0.0 == 0.0`; single canonical self-equal NaN,
+canonicalized at every NaN-producing op; NaN ordering raises). Strict
+booleans: `and`/`or`/`not`
 and every condition position **raise a runtime type error** on a non-bool
 (no truthiness, L§4.1). **Void enforcement** (L§6.11): a cont that uses
 `reg` as a value errors if it is `None` (belt-and-suspenders behind the

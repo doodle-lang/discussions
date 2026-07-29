@@ -1212,7 +1212,38 @@ and `0/0` → NaN both already raise); arithmetic then never produces
 NaN/∞, which stay reachable only via host injection (E§4.3). (b) is the
 lean stated at the S-28 ruling. Also owns the overflowing float
 *literal*. The S-28 equality/hash semantics stand unchanged either way.
-Ruling due at **M2a.3**, batched with S-12's `**` corners. ·
+Ruling due at **M2a.3**, batched with S-12's `**` corners. **RESOLVED
+(user, 2026-07-28): (b) — raise.** A float arithmetic operation raises
+iff its IEEE-754 result (round-to-nearest, after gradual underflow) is
+not finite; underflow to subnormal/±0.0 is not an error. Result-based,
+uniformly: finite-from-nonfinite is allowed (`1.0 / ∞` is `0.0`);
+int→float widening that would round to ∞ (a bignum beyond Float range
+in mixed arithmetic) raises under the same rule (comparisons
+unaffected — exact, never widening, S-28); `%` with finite operands
+can't trigger (|result| < |divisor|); `//` is covered
+(`1e308 // 1e-308` raises). The overflowing float *literal* (`1e999`)
+is a **static error** (L§3.6.2); underflowing literals are legal.
+Invariant: every machine-produced Float is finite — nonfinite Floats
+enter only via host `make_float` (E§4.3) and are inert data (storable,
+comparable per S-28, valid dict keys), with arithmetic on them raising
+iff the result would be nonfinite, so comparison-only sentinel-∞
+idioms survive if the stdlib exposes a constant; stdlib numeric
+functions are expected to follow the same rule (`sqrt(-1.0)` raises —
+stdlib spec, later). One semantic rule; diagnostics may distinguish
+"too big" (overflow) from "no numeric answer" (NaN forms) —
+message-rubric work. Same catchable error family as division by zero
+(L§12). Rejected: IEEE-propagate (the Scratch failure mode — infinite
+coordinates, vanished sprite, no error at the cause; inconsistent with
+`1/0` raising; NaN-as-missing is redundant with `nil`) and a
+raise-NaN/propagate-∞ hybrid (∞ still leaks, and `∞ - ∞` raises far
+from its cause). Closes S-12's `0 ** negative` corner by subsumption:
+`**` yields Float there (L§4.2) and IEEE answers ∞, so it raises — the
+division-by-zero analog confirmed; S-12's huge-exponent resource half
+stays open. **[spec landed with this entry: L§4.2 (finite-result rule
++ inert injected values) + §3.6.2 (literal) + App D.1; E§4.3 note;
+machine-design §3 invariant (v0.2.3); S-12 entry updated. Code: the
+M2a.3 arithmetic finiteness check (+ conformance fixtures); the
+literal diagnostic in the front end (next front-end session).]** ·
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
 loop control from a `with` body is impossible — almost certainly
 unintended; fix the interaction (and specify the `try`-body case). ·
@@ -1247,7 +1278,12 @@ behavior already implemented (capture representation B) and pinned in
 machine-design §7.]** ·
 S-12 (L§4.2) `**` open corners: `0 ** negative` (division-by-zero
 analog?) and resource behavior for huge exponents (ties to R8's interior
-poll points). (Int ** negative-Int → Float is already settled by L§4.2.) ·
+poll points). (Int ** negative-Int → Float is already settled by L§4.2.)
+**[`0 ** negative` closed by S-56 (2026-07-28): `**` yields Float there
+and IEEE answers ∞, so it raises under the finite-result rule — the
+division-by-zero analog confirmed. Remaining (still open): the
+huge-exponent resource half (bignum `Int ** Int` size/fuel; R8 interior
+poll points).]** ·
 S-28 (L§4.13) Numeric equality precision: Int/Float comparison beyond 2⁵³
 (compare exactly, not via lossy widening); NaN and −0.0 under total
 structural equality; hash coherence for `1` vs `1.0`. **RESOLVED (user,

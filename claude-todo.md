@@ -138,10 +138,11 @@ tracked in the spec-delta queue below). **M2a.2 landed** (machine skeleton:
 `drive` walk replaced; literals + statement sequencing + module-top-level
 Void return; E§7.2 top-level completion resolved to `Completed(None)`). **Next:
 M2a.3** (expressions: operators, numeric tower + bignum promotion, strict
-booleans, Void enforcement; implements the resolved S-28 comparisons). Spec-delta
-obligations due in M2a are listed in `plan-m2a.md` (E§7.2 top-level completion,
-S-9 L§7.10, S-55 reuse tests, S-41; plus S-10/S-12/S-56 rulings that surface
-mid-milestone — **S-28 is RESOLVED**, see the spec-delta queue).
+booleans, Void enforcement; implements the resolved S-28 comparisons + the S-56
+finite-result rule). Spec-delta obligations due in M2a are listed in
+`plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests, S-41;
+plus the S-10 ruling and S-12's huge-exponent half that surface mid-milestone —
+**S-28 and S-56 are RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -502,7 +503,26 @@ L§4.13/§4.8/§6.6/§15-hook-2 + App D.1; E§4.3 (Floats normative) + §11 +
 App B.1; machine-design §3/§19 (v0.2.2); App C S-28 (full rationale).
 Code follow-ups: **M2a.3** (comparisons), **M4** (dict-key hash).
 **S-56 filed** (float overflow / nonfinite arithmetic results — raise vs
-IEEE-propagate; raise is the stated lean), due **M2a.3** with S-12.
+IEEE-propagate; raise is the stated lean), due **M2a.3** with S-12 —
+**resolved 2026-07-28, next entry**.
+
+**S-56 RESOLVED (user, 2026-07-28): float arithmetic raises on any
+nonfinite IEEE result** — overflow to ±∞ and NaN-yielding indeterminate
+forms; underflow to subnormal/±0.0 stays fine. Result-based: finite-
+from-nonfinite allowed (`1.0 / ∞` is `0.0`); int→float widening
+included (a bignum beyond Float range in mixed arithmetic raises;
+comparisons unaffected — exact, S-28); `%` with finite operands can't
+trigger; the overflowing float *literal* (`1e999`) is a **static
+error**. Invariant: every machine-produced Float is finite;
+host-injected nonfinites (E§4.3) are inert data — storable, comparable
+per S-28, valid dict keys — with arithmetic on them raising iff the
+result would be nonfinite. Closes S-12's `0 ** negative` corner by
+subsumption (`0.0 ** -1` → IEEE ∞ → raises); S-12's huge-exponent
+resource half stays open. Spec landed: L§4.2 + §3.6.2 + App D.1; E§4.3
+note; machine-design §3 finite-float invariant (v0.2.3); App C S-56 +
+S-12 update. Code: M2a.3 arithmetic finiteness check (+ conformance
+fixtures); the literal diagnostic in the front end (next front-end
+session).
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only
@@ -651,6 +671,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-28 — **S-56 resolved + spec landed: float arithmetic raises on
+  nonfinite results.** Ruling in the spec-delta queue entry above. One
+  discussions commit: L§4.2 (**finite-result rule** — raise iff the IEEE
+  result isn't finite; widening included; injected nonfinites inert),
+  §3.6.2 (overflowing literal = static error), App D.1; E§4.3 note
+  (machine arithmetic never reaches the NaN canonicalization);
+  machine-design §3 finite-float invariant + change log (v0.2.3); App C
+  S-56 resolution + S-12's `0 ** negative` corner closed by subsumption.
+  Code follow-ups: M2a.3 (finiteness check + fixtures), front-end
+  literal diagnostic.
 - 2026-07-28 — **S-28 resolved + spec landed: total/reflexive numeric `==`.**
   Full ruling in the spec-delta queue entry above. One discussions commit:
   L§4.13 (exact-value equality across kinds, `-0.0 == 0.0`, single

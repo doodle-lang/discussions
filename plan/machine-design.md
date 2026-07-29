@@ -129,6 +129,13 @@ enum Value {
   NaN-producing op, E§4.3) that equals itself and hashes as one fixed
   constant; ordering with a NaN operand raises (L§6.6); dicts retain the
   first-inserted of `==`-equal keys (L§4.8).
+- **Finite-float invariant (S-56, App C):** every Float the machine's
+  arithmetic produces is finite — an operation whose IEEE-754 result would
+  be ±∞/NaN raises instead (L§4.2), and an overflowing float literal is a
+  front-end static error (L§3.6.2). Nonfinite Floats exist only as
+  host-injected values (E§4.3), inert data. M2a.3's arithmetic conts
+  therefore carry a result-finiteness check on the float path (including
+  the int→float widening step).
 - `Void` (the L§6.11 procedure-result sentinel) is **not** a `Value`
   variant: the machine's result register is `Option<Value>` with `None` =
   Void, so a Void can never be stored into a data structure by
@@ -604,6 +611,10 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 ## 21. Change log
 
+- **v0.2.3 (2026-07-28):** §3 gains the finite-float invariant per
+  resolved S-56: float arithmetic raises on a nonfinite IEEE result
+  (widening included), overflowing literals are front-end static errors,
+  host-injected nonfinites are inert. No mechanism changes.
 - **v0.2.2 (2026-07-28):** §3's S-28 placeholder replaced by the ruling
   (user-ratified, App C): one canonical NaN (`0x7FF8…`, canonicalized at
   `make_float` + every NaN-producing op), `-0.0 == 0.0 == 0` with hashing

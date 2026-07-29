@@ -274,7 +274,10 @@ Examples: `3.14`, `2.0`, `1e6`, `1.5e-3`, `3.141_592`. A float has both an
 integer and fractional part around the point (there is no `.5` or `2.` form); a
 digit is required on each side of `.`. An exponent requires at least one digit
 (`1e` and `1e+` are static errors), and the between-digits underscore rule of
-§3.6.1 applies. Floats are IEEE-754 binary64.
+§3.6.1 applies. Floats are IEEE-754 binary64. A float literal whose value
+rounds to ∞ (e.g. `1e999`) is a **static error** — the finite-result rule of
+§4.2 applied at the earliest, loudest point; a literal that underflows (e.g.
+`1e-999`, rounding to a subnormal or to `0.0`) is legal.
 
 #### 3.6.3 String literals
 
@@ -486,6 +489,20 @@ floored semantics. Exponentiation `**` yields a `Float` unless both operands are
 Division or modulo by zero (`/`, `//`, `%`) raises an error. Narrowing a `Float`
 to an `Int` never happens implicitly; the standard library provides explicit
 conversions.
+
+**Float results are always finite.** A float arithmetic operation raises an
+error iff its IEEE-754 result (round-to-nearest, after gradual underflow) is
+not finite — overflow to ±∞ (`1e308 * 10.0`) or an indeterminate form's NaN
+(`(-2.0) ** 0.5`). Underflow to a subnormal or to ±0.0 is finite and is not
+an error. The check is on the *result*: int→float widening that would itself
+round to ∞ (an `Int` beyond `Float` range in mixed arithmetic) raises under
+the same rule, while a finite result computed from nonfinite operands is
+allowed. Consequently arithmetic never produces ±∞ or NaN; a nonfinite
+`Float` can enter a program only as a host-constructed value (see the engine
+specification, §4.3) and is inert data — storable, comparable (§4.13, §6.6),
+usable as a dict key — while arithmetic involving it raises exactly when the
+result would be nonfinite. These raises are ordinary catchable errors (§12),
+the same family as division by zero.
 
 ### 4.3 Boolean
 
@@ -2217,6 +2234,23 @@ likely to change.
   produces divergently, so NaN payload/sign is never Doodle-observable — a
   replay-determinism requirement (engine spec §4.3/§11) that makes "one NaN
   value" literal.
+- **Float arithmetic raises instead of producing ±∞/NaN (§4.2, §3.6.2;
+  resolves implementation-plan Appendix C S-56).** IEEE-754 answers overflow
+  with ±∞ and indeterminate forms with NaN; the draft was silent. Resolved: a
+  float operation whose IEEE result is not finite raises (underflow stays
+  fine), an overflowing float literal is a static error, and int→float
+  widening obeys the same rule. This completes the line §4.2 had already
+  drawn twice at division by zero (where IEEE answers ∞ and NaN, Doodle
+  raises): the error is the nonfinite *result*, not the particular operator.
+  Every machine-produced Float is therefore finite, giving the language one
+  numeric story — `Int` never overflows (arbitrary precision) and `Float`
+  never goes non-real: every Doodle number is a real number, or a loud error
+  at the operation that failed. Host-injected nonfinite values (engine spec
+  §4.3) remain legal inert data. The silent alternative is the Scratch
+  failure mode (an infinite coordinate, a vanished sprite, no error at the
+  cause), and NaN-as-missing-data is redundant with `nil`. Subsumes the
+  `0 ** negative` corner of S-12 (`0.0 ** -1` is IEEE ∞ → raises — the
+  division-by-zero analog).
 
 ### D.2 Genuinely open (deferred by the discussion)
 

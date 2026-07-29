@@ -258,7 +258,11 @@ so un-canonicalized NaN bits would be hidden platform state — observable
 through hashing, formatting, or byte views — and would break cross-host
 replay (§11). Negative zero is **not** canonicalized: `-0.0` is a distinct,
 fully deterministic bit pattern (equal to `0.0` under L§4.13) that
-round-trips through the boundary unchanged.
+round-trips through the boundary unchanged. (Under L§4.2's finite-result
+rule, the language's own arithmetic never produces a nonfinite value — it
+raises instead — so the canonicalization above governs the boundary and
+native/host-computed floats; host-injected ±∞ and canonical NaN are legal,
+inert data.)
 
 ### 4.4 Structural inspection
 
