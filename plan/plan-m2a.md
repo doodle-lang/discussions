@@ -219,15 +219,18 @@ runtime const check; `CellKind` deferred until parameters/dispatch need it.
 by a 3-lens adversarial workflow cross-checking the machine vs. the resolver's
 output — 0 findings.)*
 
-**M2a.4b — `if`/`while`/`loop` — NEXT.** `IfChoose`/`WhileCheck`/`LoopReloop`
-conts (carry `NodeId` so M2a.6 exits can target them); a strict-`Bool` condition
-check (raise on a non-bool, L§4.3); construct bodies run in the **enclosing
-frame** (the resolver models this — only callable/block bodies open a frame), so
-construct-body locals are the first exercise of `Frame::locals`. `if` in
-expression position produces; as a statement, value discarded. (`break`/`continue`
-are M2a.6, so a `loop` is unbounded until then — tested by stepping it a bounded
-number of times, not by running it to a halt.) *Accept:* counter `while` loops,
-nested `if`, `loop` that a later `break` can leave; integration tests.
+**M2a.4b — `if`/`while`/`loop` — DONE.** *(doodle-rust:
+`IfChoose`/`WhileCheck`/`LoopReloop` conts carrying the construct `NodeId` (so
+M2a.6 exits can target them); strict-`Bool` conditions (non-bool → `TypeMismatch`);
+`else if` = the resolver's flattened arms; `if`-expression leaves the branch
+value in the register (void-check guarantees producing branches + `else`);
+`while`/`loop` yield Void; construct bodies run in the enclosing frame — a `let`
+inside a loop is the first real use of `Frame::locals`. Read-only review: no
+defects above NIT. **Forward note (M2a.6):** loop-body local slots aren't reset
+per iteration — safe today (the resolver binds references in source order and
+there is no `break`/`continue`/closure yet, so a `let` always runs before any
+read resolving to it), but re-verify when non-linear intra-body control flow
+lands.)*
 
 ### M2a.5 — Calls: `to`/`fn`/anonymous `fn`, args, `Callable` frames, `is`/type values
 `EvalArgs`/`Apply` conts; argument binding per L§8.3 at `Apply` (positional

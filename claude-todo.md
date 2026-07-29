@@ -148,9 +148,13 @@ workflow, 0 findings). **M2a.4a landed** (module binding cells + `let`/`const`/
 assignment; the carried module-cell-for-globals + forward-reference question is
 **resolved** as the user-approved **TDZ** model — cells uninitialized at load,
 filled in order, read-before-defined raises; verified by a 3-lens adversarial
-workflow vs. the resolver, 0 findings). **Next: M2a.4b** (`if`/`while`/`loop`
-intra-frame control flow — the first exercise of `Frame::locals` for construct-
-body locals; strict-`Bool` conditions). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
+workflow vs. the resolver, 0 findings). **M2a.4b landed** (`if`/`while`/`loop`
+intra-frame control flow — strict-`Bool` conditions, construct-body locals via
+`Frame::locals`, `if`-expression value discipline; review clean above NIT, one
+forward note tracked for M2a.6 re: loop-body slot reset). **M2a.4 is complete.
+Next: M2a.5** (calls: `to`/`fn`/anon-`fn`, keyword args + defaults, `Callable`
+frames + `ReturnBarrier`, `is`/built-in type values; non-tail only — reuse is
+M2a.7). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
 top-level completion **[done]**, S-9 L§7.10, S-55 reuse tests, S-41; plus the
 S-10 ruling and S-12's huge-exponent half that surface mid-milestone — **S-28
 and S-56 are RESOLVED**, see the spec-delta queue).
