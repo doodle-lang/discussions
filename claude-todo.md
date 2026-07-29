@@ -136,10 +136,17 @@ folded by dropping an untracked-growth accessor; the payload-count gap is
 tracked in the spec-delta queue below). **M2a.2 landed** (machine skeleton:
 `Machine`/`Frame`/`Cont`/`step()` over `ResolvedModule`; the M0 `Instance`/
 `drive` walk replaced; literals + statement sequencing + module-top-level
-Void return; E§7.2 top-level completion resolved to `Completed(None)`). **Next:
-M2a.3** (expressions: operators, numeric tower + bignum promotion, strict
-booleans, Void enforcement; implements the resolved S-28 comparisons + the S-56
-finite-result rule). Spec-delta obligations due in M2a are listed in
+Void return; E§7.2 top-level completion resolved to `Completed(None)`).
+**M2a.3a landed** (arithmetic + numeric tower — bignum promotion/demote-on-fit,
+floored `//`/`%`, S-56 finite-result rule; the raise path — `step` returns
+`Result`, uncaught → `Outcome::Raised`; Void enforcement. Review-clean after
+minor folds; `num-bigint` added; the S-56 overflowing-**literal** diagnostic has
+an `#[ignore]`d tripwire, deferred to a front-end session per the user). **Next:
+M2a.3b** (comparisons `< > <= >=`, `==`/`!=` per resolved S-28, `and`/`or`/`not`
+strict booleans + condition type-checks). Spec-delta obligations due in M2a are
+listed in `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse
+tests, S-41; plus the S-10 ruling and S-12's huge-exponent half that surface
+mid-milestone — **S-28 and S-56 are RESOLVED**, see the spec-delta queue).
 `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests, S-41;
 plus the S-10 ruling and S-12's huge-exponent half that surface mid-milestone —
 **S-28 and S-56 are RESOLVED**, see the spec-delta queue).
@@ -523,6 +530,17 @@ note; machine-design §3 finite-float invariant (v0.2.3); App C S-56 +
 S-12 update. Code: M2a.3 arithmetic finiteness check (+ conformance
 fixtures); the literal diagnostic in the front end (next front-end
 session).
+
+Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
+**instance state after an uncaught raise.** E§3.3 lists ready/running/
+suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
+holds that a Doodle exception (`Raised`) is *distinct* from an engine
+`Faulted`. The M2a.3a drive provisionally sets the instance to **`Faulted`**
+after an uncaught `Raised` (the outcome carries the real result; the state is
+secondary). Pin the intended post-`Raised` state in E§3.3 (add a `raised`
+state, or state that `Raised` leaves the instance `completed`/terminal, or
+confirm `faulted`) — batch with the M2b drive-layer work where outcomes and
+lifecycle are fully wired.
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only

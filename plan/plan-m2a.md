@@ -155,6 +155,30 @@ top-level drive completes `Completed(None)` (Void). *Accept:* a literal /
 lifecycle states (E§3.3) transition; integration test.
 
 ### M2a.3 — Expressions: operators, numeric tower, strict booleans, Void enforcement
+**Split into 3a (arithmetic + raise) and 3b (comparison + boolean).**
+
+**M2a.3a — arithmetic + numeric tower + the raise path — DONE.** *(doodle-rust:
+`machine/arith.rs` — `+ - * / // % **` + unary `- +` over the exact integer tower
+(bignum promotion + demote-on-fit, canonical-int invariant) and floats (S-56
+finite-result rule on every float path, incl. the int→float widening; div/mod by
+zero raises; floored `//`/`%` via `num_integer` for ints and `fmod`-adjust for
+floats). The **raise path**: `machine/error.rs` (`Exception`/`ExceptionKind`/
+`Trace`/`Raise`); `step` returns `Result`, a failing op propagates uncaught →
+`Outcome::Raised` (handlers/§12 unwind are M4/M2a.6). Void enforcement via
+`take_value`. Read-only review clean bar minor folds: unary-`+` finiteness gate,
+robust float `%`, coverage tests, a re-drive guard. S-12's `0 ** negative` closed
+by S-56 subsumption; the huge-exponent resource half is provisional
+(`ExponentTooLarge`) until the M2a.9 limits. The deferred S-56 overflowing-float-
+**literal** diagnostic (L§3.6.2) has an `#[ignore]`d tripwire test; discovered
+delta: post-`Raised` instance state — provisionally `Faulted`, pin in E§3.3.)*
+
+**M2a.3b — comparison + equality (S-28) + strict booleans — NEXT.** Comparison
+ops (`< > <= >=`, exact cross-kind; NaN ordering raises, §6.6); `== !=` per
+resolved S-28 (exact value, `-0.0 == 0.0`, single self-equal canonical NaN); the
+logical `and`/`or` short-circuit + strict-bool `not`; every condition position
+raising a runtime type error on a non-bool. *(NaN can't yet be constructed at
+M2a.3, so the NaN paths are unit-tested at the helper level.)*
+
 Expression-plumbing conts (`BinRhs`/`BinApply`/`UnaryApply`, MD §8). Numeric
 tower: `i64` fast path with **overflow → bignum promotion** and
 **demote-on-fit** (the canonical-int invariant, MD §3); `/` → float; `//`,
