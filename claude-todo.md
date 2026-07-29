@@ -141,12 +141,16 @@ Void return; E§7.2 top-level completion resolved to `Completed(None)`).
 floored `//`/`%`, S-56 finite-result rule; the raise path — `step` returns
 `Result`, uncaught → `Outcome::Raised`; Void enforcement. Review-clean after
 minor folds; `num-bigint` added; the S-56 overflowing-**literal** diagnostic has
-an `#[ignore]`d tripwire, deferred to a front-end session per the user). **Next:
-M2a.3b** (comparisons `< > <= >=`, `==`/`!=` per resolved S-28, `and`/`or`/`not`
-strict booleans + condition type-checks). Spec-delta obligations due in M2a are
-listed in `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse
-tests, S-41; plus the S-10 ruling and S-12's huge-exponent half that surface
-mid-milestone — **S-28 and S-56 are RESOLVED**, see the spec-delta queue).
+an `#[ignore]`d tripwire, deferred to a front-end session per the user).
+**M2a.3b landed** (comparison + equality per S-28 + strict booleans; the exact
+int↔float comparison verified via a 1.2M-pair cross-check + a 6-lens adversarial
+workflow, 0 findings). **M2a.3 is complete. Next: M2a.4** (statements + intra-
+frame control: `let`/`const`/assign, `if`/`while`/`loop`; and — carried from
+M2a.2 — module-cell creation for globals + the forward-reference/hoisting
+question). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
+top-level completion **[done]**, S-9 L§7.10, S-55 reuse tests, S-41; plus the
+S-10 ruling and S-12's huge-exponent half that surface mid-milestone — **S-28
+and S-56 are RESOLVED**, see the spec-delta queue).
 `plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests, S-41;
 plus the S-10 ruling and S-12's huge-exponent half that surface mid-milestone —
 **S-28 and S-56 are RESOLVED**, see the spec-delta queue).

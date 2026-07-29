@@ -172,12 +172,18 @@ by S-56 subsumption; the huge-exponent resource half is provisional
 **literal** diagnostic (L§3.6.2) has an `#[ignore]`d tripwire test; discovered
 delta: post-`Raised` instance state — provisionally `Faulted`, pin in E§3.3.)*
 
-**M2a.3b — comparison + equality (S-28) + strict booleans — NEXT.** Comparison
-ops (`< > <= >=`, exact cross-kind; NaN ordering raises, §6.6); `== !=` per
-resolved S-28 (exact value, `-0.0 == 0.0`, single self-equal canonical NaN); the
-logical `and`/`or` short-circuit + strict-bool `not`; every condition position
-raising a runtime type error on a non-bool. *(NaN can't yet be constructed at
-M2a.3, so the NaN paths are unit-tested at the helper level.)*
+**M2a.3b — comparison + equality (S-28) + strict booleans — DONE.** *(doodle-rust:
+`machine/compare.rs` — `< > <= >=`, `== !=`, and boolean `not`; `and`/`or`
+short-circuit via new `AndRhs`/`OrRhs`/`AssertBool` conts in `step`. Equality is
+total/reflexive/never-raising; numbers compare by **exact** value across kinds —
+the int↔float comparison decomposes the `f64` into `mantissa·2^exp` and scales the
+integer side in `BigInt`, so it is exact beyond 2⁵³ (S-28). `-0.0 == 0.0 == 0`;
+one self-equal canonical NaN; NaN ordering raises; ordering defined for numbers
+and strings only, else raises. Verified three ways: an independent 1.2M-pair
+cross-check of the exact int↔float comparison vs exact rationals (0 mismatches);
+a 6-lens adversarial verification workflow (0 findings); 60 lib + 9 integration
+tests. NaN/`-0.0` aren't source-constructible at M2a.3, so those paths are
+helper-tested.)*
 
 Expression-plumbing conts (`BinRhs`/`BinApply`/`UnaryApply`, MD §8). Numeric
 tower: `i64` fast path with **overflow → bignum promotion** and
