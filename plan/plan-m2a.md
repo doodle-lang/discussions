@@ -203,19 +203,31 @@ resolver's static S-6 check — covers the dynamic cases). Runtime errors →
 raises; comparison/`==` per the ruling; raise-only conformance fixtures.
 
 ### M2a.4 — Statements & intra-frame control: `let`/`const`/assign, `if`, `while`, `loop`
-**Module cells for globals (carried from M2a.2):** `load` must create the
-module-binding cells for `globals` (MD §6; `GlobalKind` → `CellKind`) — decide
-create-at-load vs. lazy-at-decl-execution, and settle the **forward-reference /
-hoisting** question (module globals are whole-scope per the resolver, so a body
-may reference a global declared textually later; the cell must exist before that
-body runs). Then: `BindSlot`/`BindCell` conts (place chains are M4; simple
-targets now); assignment to a local slot, a cell-boxed slot, or a module cell.
-`IfElse`; `WhileReloop{node,cond,body}`/`LoopReloop{node,body}` (carry
-`NodeId` so M2a.6 exits can target them). Construct bodies run in the
-**enclosing frame** (the resolver already models this — only callable/block
-bodies open a frame). `if` in expression position produces; as a statement,
-value discarded. *Accept:* counter loops, nested `if`, `loop` that a later
-`break` (M2a.6) can leave; integration tests.
+**Split into 4a (bindings) and 4b (control flow).**
+
+**M2a.4a — module cells + `let`/`const`/assign — DONE.** *(doodle-rust: a `cells`
+slab + `CellObj { value: Option<Value> }`; `Instance::load` allocates one
+uninitialized cell per module global and builds the name→cell namespace;
+`BindLet`/`AssignTo` conts; `read_ref`/`bind_let`/`assign_to` in `machine/
+control.rs` dispatch on the resolver's decision — a module decl has no resolution
+→ a cell, a nested decl → `LocalSlot`. **Forward-reference/hoisting resolved
+(user-approved TDZ model):** cells created at load, `let`/`const` fill them in
+execution order, a read before then raises `UsedBeforeDefined`; a name with no
+binding raises `NameNotDefined`. Assignability stays static (S-6 rule 2a), so no
+runtime const check; `CellKind` deferred until parameters/dispatch need it.
+`Frame` gains `locals` (empty at top level with no constructs) for 4b. Verified
+by a 3-lens adversarial workflow cross-checking the machine vs. the resolver's
+output — 0 findings.)*
+
+**M2a.4b — `if`/`while`/`loop` — NEXT.** `IfChoose`/`WhileCheck`/`LoopReloop`
+conts (carry `NodeId` so M2a.6 exits can target them); a strict-`Bool` condition
+check (raise on a non-bool, L§4.3); construct bodies run in the **enclosing
+frame** (the resolver models this — only callable/block bodies open a frame), so
+construct-body locals are the first exercise of `Frame::locals`. `if` in
+expression position produces; as a statement, value discarded. (`break`/`continue`
+are M2a.6, so a `loop` is unbounded until then — tested by stepping it a bounded
+number of times, not by running it to a halt.) *Accept:* counter `while` loops,
+nested `if`, `loop` that a later `break` can leave; integration tests.
 
 ### M2a.5 — Calls: `to`/`fn`/anonymous `fn`, args, `Callable` frames, `is`/type values
 `EvalArgs`/`Apply` conts; argument binding per L§8.3 at `Apply` (positional

@@ -144,10 +144,13 @@ minor folds; `num-bigint` added; the S-56 overflowing-**literal** diagnostic has
 an `#[ignore]`d tripwire, deferred to a front-end session per the user).
 **M2a.3b landed** (comparison + equality per S-28 + strict booleans; the exact
 int↔float comparison verified via a 1.2M-pair cross-check + a 6-lens adversarial
-workflow, 0 findings). **M2a.3 is complete. Next: M2a.4** (statements + intra-
-frame control: `let`/`const`/assign, `if`/`while`/`loop`; and — carried from
-M2a.2 — module-cell creation for globals + the forward-reference/hoisting
-question). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
+workflow, 0 findings). **M2a.4a landed** (module binding cells + `let`/`const`/
+assignment; the carried module-cell-for-globals + forward-reference question is
+**resolved** as the user-approved **TDZ** model — cells uninitialized at load,
+filled in order, read-before-defined raises; verified by a 3-lens adversarial
+workflow vs. the resolver, 0 findings). **Next: M2a.4b** (`if`/`while`/`loop`
+intra-frame control flow — the first exercise of `Frame::locals` for construct-
+body locals; strict-`Bool` conditions). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
 top-level completion **[done]**, S-9 L§7.10, S-55 reuse tests, S-41; plus the
 S-10 ruling and S-12's huge-exponent half that surface mid-milestone — **S-28
 and S-56 are RESOLVED**, see the spec-delta queue).
