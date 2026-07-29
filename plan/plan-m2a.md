@@ -232,7 +232,28 @@ there is no `break`/`continue`/closure yet, so a `let` always runs before any
 read resolving to it), but re-verify when non-linear intra-body control flow
 lands.)*
 
-### M2a.5 — Calls: `to`/`fn`/anonymous `fn`, args, `Callable` frames, `is`/type values
+### M2a.5 — Calls: `to`/`fn`/anonymous `fn`, args, `Callable` frames, `is`/type values — **DONE**
+*(doodle-rust: `machine/call.rs` — a call evaluates callee then args left-to-right
+(`CallGotCallee`/`CallGotArg` conts), then `apply` binds per L§8.3 (positional +
+keyword + defaults **evaluated in the callee activation**, `BindDefault` conts) and
+pushes a `Callable` frame (`FrameKind::Callable { cal }`) whose bottom cont is a
+`ReturnBarrier`; `return_from_callable` delivers a `fn`'s value / Void for a `to`
+(L§8.4). One canonical `CalObj` per module `to`/`fn`, interned when its declaration
+statement runs (`DefineCallable`); anon `fn` interns its own per evaluation
+(captures → M2a.8, asserted empty). `machine/types.rs` — a `types` slab + built-in
+type values + `is` (L§6.5: `Int` matches promoted `BigInt`, `Number` any numeric,
+`Procedure` any callable; non-type RHS raises). Arg errors (`NotCallable`,
+`ArgumentError`) raise. **Non-tail only.** Verified by a 7-lens adversarial
+workflow: 0 confirmed defects (the one finding — a `fn` dynamically falling off the
+end returning Void silently — is the fn-tail-`to` case, correctly deferred to
+**M2a.7** with the apply-time kind gate; `#[ignore]`d tripwire added). Two
+provisionals filed (see claude-todo spec-delta queue): **(a)** `to`/`fn` follow
+the same execution-order **TDZ** as `let`/`const` (the user-approved M2a.4a model,
+consistent with L§11.3 "in order, defining its members") — calling a top-level
+callable before its declaration runs raises `UsedBeforeDefined`; **(b)** a
+**provisional built-in type-value prelude** injected at load, a stand-in for the
+not-yet-written stdlib prelude (L§11.4/§15).)*
+
 `EvalArgs`/`Apply` conts; argument binding per L§8.3 at `Apply` (positional
 + **keyword args** + **defaults**, defaults evaluated in the callee
 activation per L§8.2). Push a `Callable` frame with a `ReturnBarrier` cont +

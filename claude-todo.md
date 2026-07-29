@@ -151,10 +151,19 @@ filled in order, read-before-defined raises; verified by a 3-lens adversarial
 workflow vs. the resolver, 0 findings). **M2a.4b landed** (`if`/`while`/`loop`
 intra-frame control flow — strict-`Bool` conditions, construct-body locals via
 `Frame::locals`, `if`-expression value discipline; review clean above NIT, one
-forward note tracked for M2a.6 re: loop-body slot reset). **M2a.4 is complete.
-Next: M2a.5** (calls: `to`/`fn`/anon-`fn`, keyword args + defaults, `Callable`
-frames + `ReturnBarrier`, `is`/built-in type values; non-tail only — reuse is
-M2a.7). Spec-delta obligations due in M2a are listed in `plan-m2a.md` (E§7.2
+forward note tracked for M2a.6 re: loop-body slot reset). **M2a.4 is complete.**
+**M2a.5 landed** (calls: `to`/`fn`/anon-`fn` non-tail, positional + keyword args
++ defaults evaluated in the callee activation, `Callable` frames + `ReturnBarrier`,
+one canonical `CalObj` per module `to`/`fn` interned at declaration-execution,
+`is` + a provisional built-in type-value prelude; `NotCallable`/`ArgumentError`
+raises. 7-lens adversarial workflow: 0 confirmed defects — the one finding, a `fn`
+dynamically falling off the end returning Void silently, is the fn-tail-`to` case
+correctly deferred to **M2a.7** (apply-time kind gate), tracked below with an
+`#[ignore]`d tripwire. Two provisionals filed in the spec-delta queue: `to`/`fn`
+TDZ, and the built-in type-value prelude). **Next: M2a.6** (blocks + three-tier
+exits `continue`/`break`/`return` + the §12 unwind mechanism — the hardest item;
+land S-9, the S-10 ruling). Spec-delta obligations due in M2a are listed in
+`plan-m2a.md` (E§7.2
 top-level completion **[done]**, S-9 L§7.10, S-55 reuse tests, S-41; plus the
 S-10 ruling and S-12's huge-exponent half that surface mid-milestone — **S-28
 and S-56 are RESOLVED**, see the spec-delta queue).
@@ -552,6 +561,50 @@ secondary). Pin the intended post-`Raised` state in E§3.3 (add a `raised`
 state, or state that `Raised` leaves the instance `completed`/terminal, or
 confirm `faulted`) — batch with the M2b drive-layer work where outcomes and
 lifecycle are fully wired.
+
+M2a.5 provisional (flag for the user; resolve in the spec **by M2a**):
+**`to`/`fn` declarations follow the same execution-order temporal dead zone
+as `let`/`const`.** A module-level `to`/`fn` binds its cell when its
+declaration *statement* runs (not at load), so calling a top-level callable
+**before** its declaration executes raises `UsedBeforeDefined` — there is no
+hoisting. This is the direct consequence of the user-approved M2a.4a TDZ
+model (module cells fill in execution order) applied to callable bindings,
+and is consistent with L§11.3 ("top-level code runs, in order, defining its
+members") and Doodle's no-magic stance; Python behaves the same. Mutual
+recursion is unaffected (bodies run at call time, after both declarations
+have executed). One canonical `CalObj` per declaration is still interned
+(the declaration runs once — MD §8 identity holds). **Alternative if
+rejected:** hoist `to`/`fn` cells at load (fill in `Instance::load`). Pin the
+rule explicitly in L (§5/§8.1/§11.3) — a one-line statement that a callable
+binding, like any binding, is unavailable until its declaration executes.
+
+M2a.5 provisional (implementation stand-in; resolve when the stdlib prelude
+lands, L§11.4/§15 / E§13): **built-in type-value prelude injected at load.**
+L§11.4 builds no names into the language — type-value names (`Int`, `Float`,
+`Number`, `Bool`, `String`, `Bytes`, `Nil`, `List`, `Dict`, `Procedure`) are
+ordinary prelude names supplied by the standard library, which does not exist
+yet. So `is` could not be exercised without them; `Instance::load` seeds a
+small built-in type-value prelude (`machine/types.rs` `BUILTINS`) as cells in
+the namespace (appended after module globals, so a user global of the same
+name wins the linear scan). Not a semantic change (the spec says these type
+values exist and `is` uses them); remove the seeding when the real prelude
+mechanism ships. The provisional spellings match L Appendix D (`Number`,
+`Procedure` included; `Procedure` matches any callable — the proc/fn split is
+still open in App D).
+
+M2a.5-discovered, **due M2a.7** (surfaced by the adversarial verification
+workflow; already in the plan as the S-55 follow-up): **a `fn` that
+dynamically falls off the end returning Void is not raised.** L§8.4/§8.7
+require a `fn` reaching its completion without a value to raise **at its own
+completion**, regardless of whether the caller uses the value. Today
+`return_from_callable` leaves a `fn`'s register unchanged, so the fn-tail-`to`
+case (a tail call to a runtime-indeterminate callee that turns out to be a
+`to`) completes Void silently when the result is unconsumed; when the result
+*is* consumed, the `take_value` backstop already raises. Every clean-loading
+instance is a tail-position call, and enforcement wants the apply-time kind
+knowledge, so it lands with the **M2a.7** kind gate (plan-m2a.md §"Spec-delta
+obligations", S-55 follow-up). Tracked by the `#[ignore]`d tripwire
+`a_function_that_falls_off_the_end_raises` in `tests/drive_smoke.rs`.
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only
