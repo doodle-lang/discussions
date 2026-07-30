@@ -162,14 +162,12 @@ correctly deferred to **M2a.7** (apply-time kind gate), tracked below with an
 `#[ignore]`d tripwire. Two provisionals filed in the spec-delta queue: `to`/`fn`
 TDZ, and the built-in type-value prelude). **Next: M2a.6** (blocks + three-tier
 exits `continue`/`break`/`return` + the §12 unwind mechanism — the hardest item;
-land S-9, the S-10 ruling). Spec-delta obligations due in M2a are listed in
-`plan-m2a.md` (E§7.2
-top-level completion **[done]**, S-9 L§7.10, S-55 reuse tests, S-41; plus the
-S-10 ruling and S-12's huge-exponent half that surface mid-milestone — **S-28
-and S-56 are RESOLVED**, see the spec-delta queue).
-`plan-m2a.md` (E§7.2 top-level completion, S-9 L§7.10, S-55 reuse tests, S-41;
-plus the S-10 ruling and S-12's huge-exponent half that surface mid-milestone —
-**S-28 and S-56 are RESOLVED**, see the spec-delta queue).
+implement S-9 punch-through per the landed spec; S-10's `to`-consumer half needs
+its fresh ask when reached). Spec-delta obligations due in M2a are listed in
+`plan-m2a.md` (E§7.2 top-level completion **[done]**, S-9 L§7.10 **[spec landed
+2026-07-29]**, S-55 reuse tests, S-41; plus S-10's `to`-consumer half and
+S-12's huge-exponent half that surface mid-milestone — **S-28, S-56, S-9, and
+S-10's loop half are RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -515,9 +513,9 @@ S-27 (M1.8, user decision), S-45 (M1.11), **S-47/S-48/S-49 (M1.4:
 interpolations never contain line terminators in any string form; empty
 `{}` is a lex error; closed escape set + `\xHH` = U+00HH in strings —
 resolutions discussed with and agreed by the user 2026-07-10)**. Later:
-S-41 by M2a; **S-9** (machine-design §12 carries the proposed
-resolution) by M2a; **S-46** (non-local exits through native consumers)
-by M2b.
+S-41 by M2a; **S-9 — spec LANDED 2026-07-29** (punch-through with
+restoration, per the pre-approved MD §12 resolution; see below);
+**S-46** (non-local exits through native consumers) by M2b.
 
 **S-28 RESOLVED (user, 2026-07-28): total/reflexive numeric `==`
 (SameValueZero-style).** `-0.0 == 0.0 == 0`; exactly one NaN, equal to
@@ -550,6 +548,33 @@ note; machine-design §3 finite-float invariant (v0.2.3); App C S-56 +
 S-12 update. Code: M2a.3 arithmetic finiteness check (+ conformance
 fixtures); the literal diagnostic in the front end (next front-end
 session).
+
+**S-10 loop half RESOLVED (user, 2026-07-29) + S-9 LANDED: valued exits
+and `with`/`try` punch-through (one L§7.10 edit).** A valued
+`break`/`continue` targeting a `while`/`loop` is a **static error**
+(loops yield Void — no destination), condition-blind, misplaced-exit
+family, with an intent-offering diagnostic (assign before exiting /
+`return expr` / use a block-consuming call); `return expr` in a `to` is
+now likewise *stated* as a static error (the spec had pinned the rule;
+no battery check enforced it). S-9 landed per the pre-approved MD §12
+resolution (plan-m2a's ratification note): a `with`/`try` body is not
+an exit destination — exits resolve through them to their lexical
+target, each crossed `with`'s binding restored during the unwind,
+`rescue` never catching a non-local exit; corollary: `break`/`continue`
+in a `with` body with no enclosing loop/block is misplaced-exit (was:
+"exits the body" — matches the shipped resolver, which pushes no Ctrl
+tier for `with`). The `with` case of the S-10 ruling discussion is
+thereby mooted (the rule sees through to the loop or block). Spec
+landed: L§7.10 rewrite + §7.8/§7.9 cross-notes + App D.1 ×2; App C S-9
+RESOLVED + S-10 PART-RESOLVED; MD §20.4; plan-m2a. **Still open:
+S-10's `to`-consumer half** (a valued `break` reaching a consuming call
+whose callee is a `to` — S-6-style split expected; fresh ask at M2a.6).
+**Code follow-up (next front-end session):** the
+valued-exit×destination-kind resolver check (valued
+`break`/`continue`→ThisLoop; valued `return` in a `to`) + battery tests
++ conformance fixtures + a pinning test that break-in-`with`-in-loop
+targets the loop; reserve the diagnostic slug. M2a.6 may `debug_assert`
+the loop case (no runtime path needed).
 
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
@@ -753,6 +778,17 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-07-29 — **S-10 (loop half) resolved + S-9 landed: valued exits need
+  a receiving destination; exits punch through `with`/`try`.** One
+  discussions commit; full ruling in the spec-delta queue entry above.
+  L§7.10 rewritten (the "where applicable" vagueness gone; the valued-exit
+  static rule; the pass-through paragraph; bullets tightened), §7.8/§7.9
+  cross-notes, App D.1 ×2; App C S-9 RESOLVED + S-10 PART-RESOLVED
+  (`to`-consumer half open, fresh ask at M2a.6); MD §20.4 status; plan-m2a
+  obligations updated (also fixed a duplicated stale fragment in this
+  file's Next-up narrative). Code follow-up queued (next front-end
+  session): valued-exit resolver check + battery/conformance tests +
+  punch-through pinning test.
 - 2026-07-28 — **S-56 resolved + spec landed: float arithmetic raises on
   nonfinite results.** Ruling in the spec-delta queue entry above. One
   discussions commit: L§4.2 (**finite-result rule** — raise iff the IEEE

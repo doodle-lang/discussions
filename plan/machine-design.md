@@ -602,8 +602,10 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 3. **S-46 (new, from v0.2 review):** non-local-exit-through-native-
    consumer protocol — `NonLocalExit` outcome + host obligations (§12);
    needs an App C entry, resolve by M2b.
-4. **S-9:** §12's punch-through-with-restoration is the proposed
-   resolution; the L§7.10 edit lands by M2a.
+4. **S-9:** §12's punch-through-with-restoration is the resolution; the
+   L§7.10 edit **landed 2026-07-29** (with the S-10 loop-half ruling; App
+   C S-9). The unwinder side (`WithRestore` during unwind) is M2a.6 work
+   as planned.
 5. Upvalue cells and module binding cells share one `cells` slab (§6/§7).
 6. Free-name cell caches are per-instance, not in `ResolvedModule` (§2).
 7. Grapheme-memo allocations are excluded from `bytes_allocated` (§5);

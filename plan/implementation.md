@@ -1246,9 +1246,57 @@ M2a.3 arithmetic finiteness check (+ conformance fixtures); the
 literal diagnostic in the front end (next front-end session).]** ·
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
 loop control from a `with` body is impossible — almost certainly
-unintended; fix the interaction (and specify the `try`-body case). ·
+unintended; fix the interaction (and specify the `try`-body case).
+**RESOLVED (landed 2026-07-29, per the pre-approved machine-design §12
+resolution — plan-m2a's ratification note authorizes landing it without
+a fresh ask): punch-through with restoration.** A `with`/`try` body is
+not an exit destination: `break`/`continue` resolve to the nearest
+enclosing loop or block through any `with`/`try` bodies in between,
+`return` to the enclosing callable; each crossed `with`'s binding is
+restored during the unwind (L§5.5's "by any means" now matched by
+L§7.10); a crossed `try` does not intervene — `rescue` handles raised
+errors only (the `try`-body case specified). Corollary: a
+`break`/`continue` inside a `with` body with *no* enclosing loop/block
+is a static misplaced-exit (was: legal, exited the body) — which is
+what the shipped M1.10b resolver already does (`with` pushes no Ctrl
+tier; targeting is lexical through it). **[spec landed: L§7.10 (exits
+pass through `with`/`try`) + §7.8/§7.9 cross-notes + App D.1. Runtime:
+the M2a.6 unwinder executes `WithRestore` during unwind (no-op path
+until `with` lands at M4), per MD §12. Follow-up (next front-end
+session): a pinning test that break-in-`with`-in-loop targets the
+loop.]** ·
 S-10 (L§7.10) `break`-with-value where the consumer has no value slot
-(plain `while`/`loop`, `to` consumers): specify (discard vs error). ·
+(plain `while`/`loop`, `to` consumers): specify (discard vs error).
+**PART-RESOLVED (user, 2026-07-29): the loop half — static error.** A
+valued `break`/`continue` whose lexical target is a `while`/`loop` is a
+**static error** (a loop yields Void; there is no destination),
+condition-blind, in the misplaced-exit family with its own slug and an
+intent-offering diagnostic (assign before exiting / `return expr` / use
+a block-consuming call). Grounds: the destination is lexically
+determined (the ratified MD §12 exit-target model; M1.10b annotates
+ThisLoop/ThisBlock/ConsumerCall), so the check is exactly decidable —
+the S-5/S-6 static-where-lexical, condition-blind pattern; and L§7.10
+already decides `return` the same way ("in a procedure it takes none" —
+now stated as a static error, closing an enforcement gap: no battery
+check had covered valued-`return`-in-`to`). Rejected: runtime error (no
+dynamism to wait for; ships the bug in untested branches) and silent
+discard (drops a written value invisibly — anti-loud-failure). Rust
+E0571 precedent; its "use `loop`" hint doesn't transfer (Doodle's
+loop-with-break is value-less by ratified S-5). The `with`-body case
+from the ruling discussion is **mooted by S-9**: a `with` body is not
+an exit target, so the rule sees through it to the loop (error) or
+block (legal — the value punches through with the binding restored).
+**Still open (the `to`-consumer half; fresh ask at M2a.6):** a valued
+`break` unwinding to a consuming call whose callee is a `to` — must not
+leak a value past a Void completion (S-55's principle); expected shape
+is the S-6 split (static error for the lexically-known
+module-level-`to` callee subset; runtime error otherwise). **[spec
+landed with this entry: L§7.10 (valued-exit rule; return-in-procedure
+stated static) + App D.1. Code follow-up (next front-end session): the
+valued-exit×destination-kind resolver check — valued `break`/`continue`
+→ ThisLoop and valued `return` in a `to` — + battery tests +
+conformance fixtures; reserve the diagnostic slug. M2a.6 may
+`debug_assert` the loop case (no runtime path needed).]** ·
 S-11 (L§6.10/§8.5) Whether `fn` closures may *mutate* captured bindings.
 **RESOLVED (user, 2026-07-17): yes — aligned with blocks.** Capture is
 **by reference to the binding**, at closure creation: closures may read

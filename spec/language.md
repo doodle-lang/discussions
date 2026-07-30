@@ -1220,11 +1220,14 @@ end
 
 ### 7.8 `with`
 
-See §5.5.
+See §5.5. A `with` body is not an exit destination: `break`, `continue`, and
+`return` pass through it to their lexical targets, restoring the dynamic
+binding on the way (§7.10).
 
 ### 7.9 `try` / `rescue` / `raise`
 
-See §12.
+See §12. A non-local exit (`return`/`break`/`continue`) passes through a `try`
+body without entering `rescue` — `rescue` handles raised errors only (§7.10).
 
 ### 7.10 `return` / `break` / `continue`
 
@@ -1237,20 +1240,40 @@ continue-stmt = 'continue' expression?
 ```
 
 - `return` exits the lexically enclosing procedure or function, unwinding
-  through any intervening blocks. In a **function** it takes a value (`return
-  expr`); in a **procedure** it takes none (`return`).
-- `break` exits the nearest enclosing block-consuming call — a loop
-  (`while`/`loop`), or a call that received the current block. An optional value
-  becomes that call's value where applicable.
-- `continue` ends the current block invocation. The block-consuming callee may
-  invoke the block again (the next loop iteration, the next element, …). An
-  optional value is the value this invocation yields to the callee (e.g. the
-  mapped result in a mapping function).
+  through any intervening blocks, `with` bodies, and `try` bodies. In a
+  **function** it takes a value (`return expr`); in a **procedure** it takes
+  none (`return`).
+- `break` exits the nearest enclosing loop (`while`/`loop`) or block-consuming
+  call, whichever is lexically nearer. Exiting a consuming call, an optional
+  value becomes that call's result (§8.5). A loop yields no value, so a valued
+  `break` targeting a `while`/`loop` is a static error (below).
+- `continue` ends the current iteration or block invocation: in a loop, the
+  next iteration's condition is evaluated; in a block, the consuming callee
+  may invoke the block again (the next element, …). An optional value is the
+  value this invocation yields to the callee (e.g. the mapped result in a
+  mapping function); a loop iteration yields no value, so a valued `continue`
+  targeting a `while`/`loop` is likewise a static error (below).
 
 Using `return` outside a procedure/function body, or `break`/`continue` outside
-a block, is a static error. `with` bodies are single-invocation, so `continue`
-and `break` within a `with` body both simply exit the body (undoing the dynamic
-binding, §5.5).
+any loop or block, is a static error.
+
+**Exits pass through `with` and `try` bodies.** A `with` or `try` body is not
+an exit destination: `break`/`continue` resolve to the nearest enclosing loop
+or block *through* any `with`/`try` bodies in between, and `return` likewise
+crosses them on its way to the enclosing callable. Unwinding restores each
+crossed `with`'s dynamic binding (§5.5 — restoration "by any means"), and a
+crossed `try` does not intervene: `rescue` handles raised errors only, never a
+non-local exit.
+
+**A valued exit requires a value-receiving destination.** Blocks receive:
+`break expr` becomes the consuming call's result and `continue expr` this
+invocation's yield (§8.5). A `while`/`loop` yields no value and can receive
+none — `break expr`/`continue expr` targeting one is a **static error**, as is
+`return expr` inside a procedure (the rule above). Every exit's destination is
+lexically determined, so the check is condition-blind (syntactic position, not
+path feasibility); the diagnostic offers the real intents: assign the value to
+a variable before exiting, `return expr` if the enclosing function should
+yield it, or a block-consuming call (§8.5) if a value-yielding loop was meant.
 
 ---
 
@@ -2251,6 +2274,35 @@ likely to change.
   cause), and NaN-as-missing-data is redundant with `nil`. Subsumes the
   `0 ** negative` corner of S-12 (`0.0 ** -1` is IEEE ∞ → raises — the
   division-by-zero analog).
+- **Non-local exits pass through `with` and `try` bodies (§7.10, §7.8, §7.9;
+  resolves implementation-plan Appendix C S-9).** The draft made a `with` body
+  its own `break`/`continue` destination ("simply exit the body"), which made
+  loop control from inside a `with` impossible — almost certainly unintended,
+  and in tension with §5.5's restore-on-any-exit framing. Resolved per the
+  accepted machine model (punch-through with restoration): a `with`/`try`
+  body is not an exit destination; `break`/`continue` resolve to the nearest
+  enclosing loop or block through them, `return` to the enclosing callable,
+  with each crossed `with`'s dynamic binding restored during the unwind and a
+  crossed `try` not intervening (`rescue` handles raised errors only). A
+  `break`/`continue` inside a `with` body with no enclosing loop or block is
+  now a static error (previously it exited the body).
+- **Valued exits require a value-receiving destination — statically (§7.10;
+  resolves the loop half of implementation-plan Appendix C S-10).** The draft
+  said a `break` value "becomes that call's value where applicable" without
+  saying what happens where it isn't. Resolved: blocks receive exit values
+  (`break` → the consuming call's result, `continue` → the invocation's
+  yield); a `while`/`loop` yields no value, so a valued `break`/`continue`
+  targeting one is a static error — completing the rule §7.10 already applied
+  to `return` (a procedure's `return` takes no value; now likewise stated as
+  a static error). The check is condition-blind; the destination is lexically
+  determined, so there is nothing to defer to runtime. Rejected: runtime
+  error (ships the bug in untested branches for no gain) and silent discard
+  (invisibly dropping a written value is the antithesis of the loud-failure
+  stance). Rust draws the same line (E0571), though its "use `loop`" hint
+  does not transfer — Doodle's `loop`-with-`break` is value-less by design; a
+  value-yielding search belongs to a block-consuming call. The dynamic half
+  of S-10 (a valued `break` reaching a consuming call whose callee is a
+  procedure) remains open.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

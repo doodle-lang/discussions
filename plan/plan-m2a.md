@@ -24,7 +24,8 @@ governs.
 top-level completion — all pinned by the accepted machine-design) are
 pre-approved: landing the spec edit that implements exactly the stated
 resolution needs no further sign-off. The **open** rulings flagged below
-(S-10, S-12's huge-exponent half, S-41) each need a fresh ask when reached
+(S-10's `to`-consumer half, S-12's huge-exponent half, S-41) each need
+a fresh ask when reached
 (CLAUDE.md: never change semantics without asking).
 
 ---
@@ -75,10 +76,11 @@ silently deferred (CLAUDE.md).
   **Void (`None`)**. Pin in E§7.2 with **M2a.2** (when the real drive
   replaces the placeholder). *(Already-agreed direction; landing the edit.)*
 - **S-9 (L§7.10) — `break`/`continue` punch through `with`.** MD §12's
-  punch-through-with-restoration **is** the proposed resolution; land the
-  L§7.10 edit **by M2a** (with **M2a.6**, the unwinder — even though `with`
-  itself is M4, the mechanism and its spec statement are fixed now).
-  *(Already-agreed direction via the accepted MD §12.)*
+  punch-through-with-restoration **is** the resolution; the L§7.10 edit
+  **LANDED 2026-07-29** (with the S-10 loop-half ruling — App C S-9; incl.
+  the `try`-body case and §7.8/§7.9 cross-notes). **M2a.6** implements the
+  unwinder side (`WithRestore` executes during unwind — a no-op path until
+  `with` lands at M4).
 - **S-55 follow-up — reuse kind-check + mixed-kind parity tests.** Land with
   **M2a.7** (PTC): the apply-time kind gate + conformance tests (to-tail-fn
   value discarded; fn-tail-to falls off at the fn's own completion).
@@ -89,9 +91,10 @@ silently deferred (CLAUDE.md).
   or the instance-config item). **Needs a ruling** (two candidate shapes).
 
 **Surfacing during M2a, may need a ruling when reached (flag, don't
-guess):** S-10 (break-with-value where the consumer has no value slot —
-discard vs error; **M2a.6**), S-12's remaining half (huge-exponent
-resource behavior of bignum `Int ** Int`; **M2a.3**).
+guess):** S-10's `to`-consumer half (a valued `break` reaching a
+consuming call whose callee is a `to` — S-6-style split expected;
+**M2a.6**), S-12's remaining half (huge-exponent resource behavior of
+bignum `Int ** Int`; provisional `ExponentTooLarge` until **M2a.9**).
 **S-28 is RESOLVED (user, 2026-07-28; App C + spec landed):**
 exact-value `==` across kinds, `-0.0 == 0.0 == 0`, one canonical
 self-equal NaN (E§4.3 canonicalization), NaN ordering raises,
@@ -101,7 +104,13 @@ at M4. **S-56 is RESOLVED (user, 2026-07-28; App C + spec landed):
 raise on any nonfinite float-arithmetic result** (underflow fine;
 result-based; int→float widening included; overflowing literal =
 front-end static error) — closes S-12's `0 ** negative` corner by
-subsumption; **M2a.3** implements the finiteness check.
+subsumption; **M2a.3** implements the finiteness check. **S-10's loop
+half is RESOLVED (user, 2026-07-29; App C + spec landed): a valued
+`break`/`continue` targeting a `while`/`loop` is a static error**
+(valued-exit×destination check; valued `return` in a `to` now stated
+static too — the front-end follow-up implements both; M2a.6 may
+`debug_assert`). **S-9 is LANDED** (exits punch through `with`/`try`
+per the pre-approved MD §12 resolution; M2a.6 implements the unwinder).
 
 ---
 
@@ -275,8 +284,13 @@ engine raises). The unwinder pops conts/frames, executing **only**
 (`ExitTarget`): `return`→`HomeCallable` (chase defining chain to the home
 callable — *not* the block's consumer), `break`/`continue`→`ThisLoop(node)`
 / `ThisBlock` / `ConsumerCall` (consult the `Block` frame's `Consumer`).
-**Punch-through** through intervening block/consumer frames. **Land S-9**
-(L§7.10 edit). **S-10 ruling** (break-with-value into a slot-less consumer).
+**Punch-through** through intervening block/consumer frames. **S-9 spec
+LANDED 2026-07-29** — implement per L§7.10 as revised. **S-10:** the loop
+half is resolved (a valued exit targeting `ThisLoop` is a *static* error —
+front-end follow-up; the machine may `debug_assert` it); the
+**`to`-consumer half needs its fresh ask** when this item reaches it (a
+valued `break` delivering to a `Consumer` whose callee is a `to` — must
+not leak a value past a Void completion; S-6-style split expected).
 *Accept:* `each`-style block over a list with `break`/`continue`/`return`
 reaching the correct target across nesting; `return` from inside a block
 exits the *writing* function, not `each`.
