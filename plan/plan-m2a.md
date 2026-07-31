@@ -273,7 +273,32 @@ non-protocol). **Non-tail only here** (reuse is M2a.7). *Accept:* a
 non-recursive `fn`/`to` call tree; keyword+default binding; `x is Int`;
 `to` completes Void.
 
-### M2a.6 — Blocks + three-tier exits + the unwind mechanism (§12)
+### M2a.6 — Blocks + three-tier exits + the unwind mechanism (§12) — **DONE**
+*(doodle-rust: `machine/block.rs` — passing/binding a `do … end` block, invoking a
+block parameter (`body(args)`, incl. **from inside a nested block** via a
+`BlockOuter` callee — the block-composition case), and normal block completion (a
+block yields its last expression's value to its invoker). `machine/frame.rs` —
+`FrameKind::Block { defining, defining_serial, consumer }`, `Consumer`,
+`BlockDescriptor`, frame `serial`/`block_param`. `machine/control.rs` — `BlockOuter`
+static-link reads **and** writes via `outer_frame` (chase the defining chain).
+`machine/unwind.rs` — one `Unwind` record + the unwinder dispatching on the
+resolver's `ExitTarget`: `return`→home callable (punch-through to the **writing**
+function), `break`→loop / block-consuming call, `continue`→loop next-iteration /
+block-invocation end. **S-9 landed** (exits pass through `with`/`try` — no such
+frames exist yet, so the unwinder pops frames inertly; the `WithRestore` execution
+during unwind is M4). **S-10 loop half** enforced statically (`valued-exit-in-loop`
+resolver error). Verified by a 7-lens adversarial workflow — 4 confirmed bugs, all
+folded: a stale-register leak on a value-less-tailed / empty block or a loop exited
+by `break` (fixed by clearing `reg` at each statement boundary — resolves the
+carried M2a.2/M2a.9 statement-boundary-register question for the cases blocks make
+observable); nested block-param invocation (fixed, with the MD §10 **consumer =
+the receiving call** refinement, user-approved, v0.2.4); a valued `return` in a `to`
+(**C**, now a `valued-return-in-procedure` static error); a block parameter used as
+a value (**D**, now a `block-used-as-value` static error). The open **S-10
+to-consumer half** (a valued `break` exiting a `to` consumer) raises provisionally
+(`NoValueDestination`) — filed for a ruling. **Non-tail only** (block frame reuse is
+M2a.7).)*
+
 The hardest item. `Block` frames (`defining`/`defining_serial`/`consumer`,
 MD §8); block descriptors in `block_param`; **static links** (`BlockOuter`
 → chase the defining chain `hops` times). The single `Unwind` record

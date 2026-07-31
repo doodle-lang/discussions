@@ -160,14 +160,24 @@ raises. 7-lens adversarial workflow: 0 confirmed defects — the one finding, a 
 dynamically falling off the end returning Void silently, is the fn-tail-`to` case
 correctly deferred to **M2a.7** (apply-time kind gate), tracked below with an
 `#[ignore]`d tripwire. Two provisionals filed in the spec-delta queue: `to`/`fn`
-TDZ, and the built-in type-value prelude). **Next: M2a.6** (blocks + three-tier
-exits `continue`/`break`/`return` + the §12 unwind mechanism — the hardest item;
-implement S-9 punch-through per the landed spec; S-10's `to`-consumer half needs
-its fresh ask when reached). Spec-delta obligations due in M2a are listed in
-`plan-m2a.md` (E§7.2 top-level completion **[done]**, S-9 L§7.10 **[spec landed
-2026-07-29]**, S-55 reuse tests, S-41; plus S-10's `to`-consumer half and
-S-12's huge-exponent half that surface mid-milestone — **S-28, S-56, S-9, and
-S-10's loop half are RESOLVED**, see the spec-delta queue).
+TDZ, and the built-in type-value prelude). **M2a.6 landed** (blocks + three-tier
+exits + the §12 unwind mechanism — the hardest item: block passing/invocation
+(incl. **nested** block-param invocation, block composition), `BlockOuter` static
+links, one `Unwind` record dispatching on the resolver's `ExitTarget` with
+punch-through; S-9 landed, S-10 loop-half enforced statically. A 7-lens adversarial
+workflow found 4 bugs, **all folded**: stale-register leak on value-less-tailed /
+empty blocks and break-exited loops (fixed by clearing `reg` at statement
+boundaries — resolves the carried statement-boundary-register question); nested
+block-param invocation (fixed, MD §10 **consumer = the receiving call** refinement,
+user-approved v0.2.4); valued `return` in a `to` (**C** — new
+`valued-return-in-procedure` static error); block-param used as a value (**D** —
+new `block-used-as-value` static error). Open **S-10 to-consumer half** raises
+provisionally, see the queue). **Next: M2a.7** (PTC: tail-call frame reuse + ring
+buffer + tail counters + the S-55 kind gate; lands the fn-tail-`to` falls-off
+enforcement — the `#[ignore]`d tripwire below). Spec-delta obligations in M2a are
+listed in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**, S-55 reuse tests
+**[M2a.7]**, S-41; plus S-10's `to`-consumer half and S-12's huge-exponent half —
+**S-28, S-56, S-9, and S-10's loop half are RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -630,6 +640,41 @@ instance is a tail-position call, and enforcement wants the apply-time kind
 knowledge, so it lands with the **M2a.7** kind gate (plan-m2a.md §"Spec-delta
 obligations", S-55 follow-up). Tracked by the `#[ignore]`d tripwire
 `a_function_that_falls_off_the_end_raises` in `tests/drive_smoke.rs`.
+
+**S-10 to-consumer half — OPEN (flag for the user; surfaced at M2a.6):** a
+**valued** `break` that exits a block-consuming call whose callee is a
+**procedure** (`to`) has no value destination — a `to` yields Void. The loop
+half (a valued exit targeting a `while`/`loop`) was resolved as a **static
+error** (user, 2026-07-29). The to-consumer half was left open ("S-6-style
+split expected" — static where the consumer's kind is lexically known, runtime
+otherwise). **M2a.6 provisional:** the machine raises `NoValueDestination`
+(rather than silently discard the value — the loud-failure stance the loop-half
+ruling took). A valued `break` into an **fn** consumer is well-defined (the
+value becomes the call's result). Resolve in the spec: is a valued `break` into
+a *known* `to` consumer a static error (like the loop half / valued-return-in-a-
+`to`), with a runtime `NoValueDestination` backstop for a dynamically-typed
+consumer? Tracked by `a_valued_break_into_a_procedure_consumer_raises_provisionally`
+in `tests/drive_smoke.rs`.
+
+**RESOLVED (M2a.6): statement-boundary register semantics** (was carried from
+M2a.2/M2a.9). The machine now clears the result register to Void at each `Seq`
+statement boundary (before running each statement; the final past-the-last step
+does not clear, preserving a `fn` body's / block's value). This makes a body's
+value the value of its *last* statement — Void when that statement is value-less
+or the body is empty. M2a.6 forced this: a block's yield is observable, so a
+value-less-tailed or empty block would otherwise leak the prior statement's
+transient value; a `break`-exited loop likewise. No safe-point observer concern
+remains for the register between statements. (E§8 observation of the register at
+a safe point now reads Void between statements — pin in E§8 if/when the
+observation surface is spec'd, M2a.9.)
+
+**Forward note (M4), from M2a.6:** the unwinder (`machine/unwind.rs`
+`block_break`/`do_return`) currently pops punched-through frames **wholesale**,
+discarding their continuations — correct at M2a.6 because no `WithRestore`/
+`TryHandler` conts exist yet. When `with`/`try` land (M4), the unwinder must pop
+those frames **continuation by continuation**, executing each `WithRestore`
+(restore the dynamic binding) and, for a raise, `TryHandler` (§12). The
+loop/block-continue paths already pop conts individually.
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only

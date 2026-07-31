@@ -347,12 +347,23 @@ cannot move a collection or a limit fault (E§7.7).
   a Doodle value): `(defining FrameIx, defining serial, CallableId)`.
   It is bound into the callee frame's `block_param`. Invoking it pushes a
   `Block` frame whose `defining`/`defining_serial` come from the
-  descriptor and whose `consumer` records **who invoked it**: the
-  invoking Doodle frame (`DoodleCall`), `TailReused` when the consumer
-  tail-invoked it (§11), or `Native{drive_depth}` when a foreign function
-  invoked it through a reentrant drive (§14). Outer-local access uses the
-  §7 static links. The descriptor's serial check at the drive-layer
-  boundary (native consumers hand back an invocation token) is
+  descriptor and whose `consumer` records **the frame that received the
+  block** — the frame that owns the invoked `block_param`. That owner is
+  the invoking frame for a *direct* invocation (`body(…)` in the receiving
+  callable's own body), but for an invocation from **inside a nested
+  block** (`helper() do body() end`, where `body` reaches the receiving
+  callable's `block_param` through the §7 defining chain, a `BlockOuter`
+  callee) the owner is that enclosing callable — **not** the frame that
+  physically executed the invocation. This is required by L§7.10: a `break`
+  in the invoked block exits "the call that received the current block,"
+  and only the owner is that call. (v0.2 said "the invoking Doodle frame,"
+  which coincides with the owner only for direct invocation; the nested
+  case, exercised at M2a.6, forced the refinement — App C, M2a.6-review.)
+  The consumer kind is `DoodleCall{owner frame, serial}`, `TailReused`
+  when the owner tail-invoked it (§11), or `Native{drive_depth}` when a
+  foreign function invoked it through a reentrant drive (§14). Outer-local
+  access uses the §7 static links. The descriptor's serial check at the
+  drive-layer boundary (native consumers hand back an invocation token) is
   **always-on**, not debug-only — the host is untrusted input.
 - **Closures (`fn` values)**: `CalObj` holds the capture cell list;
   entering the closure splices those cells into the new frame. `return`
@@ -613,6 +624,13 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 ## 21. Change log
 
+- **v0.2.4 (2026-07-30):** §10 refined (user-approved during the M2a.6
+  review): a block frame's `consumer` is the frame that **received** the
+  block (owns the invoked `block_param`), not "the invoking Doodle frame."
+  The two coincide for a direct invocation but differ when a received block
+  is invoked from inside a nested block (a `BlockOuter` callee reaching the
+  owner via the defining chain) — only the owner is "the call that received
+  the block" that a `break` must exit (L§7.10). No other mechanism changes.
 - **v0.2.3 (2026-07-28):** §3 gains the finite-float invariant per
   resolved S-56: float arithmetic raises on a nonfinite IEEE result
   (widening included), overflowing literals are front-end static errors,
