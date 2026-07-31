@@ -320,7 +320,27 @@ not leak a value past a Void completion; S-6-style split expected).
 reaching the correct target across nesting; `return` from inside a block
 exits the *writing* function, not `each`.
 
-### M2a.7 — PTC: tail-call frame reuse + ring buffer + tail counters (S-55)
+### M2a.7 — PTC: tail-call frame reuse + ring buffer + tail counters (S-55) — **DONE**
+*(doodle-rust: `machine/call.rs` — the **apply-time kind gate** (`reuses_current_frame`,
+S-55): a marked-tail call reuses the current callable frame iff the callee's kind
+matches (`Frame::reuse_as_callable` overwrites kind/locals/block_param/conts,
+**preserves** `serial` + stack slot, `tail_count += 1`, evicts the old occupant to
+`machine/ring.rs`); a mismatch (or non-tail call) pushes an ordinary frame — exact
+non-tail parity. **fn-falls-off enforcement** at **both** return paths — the
+`ReturnBarrier` (`return_from_callable`) and the `return`-statement unwind
+(`unwind::do_return`): a `fn` delivering no value raises `FunctionFellOffEnd`
+(L§8.4), covering fn-tail-`to` **and** a bare non-tail `return` in a `fn`. Verified
+by a 6-lens adversarial workflow (1 confirmed bug — the bare-`return` path bypassing
+the barrier check — folded) plus edge-case probes (accumulator-passing, mutual
+even/odd, chained fn returns, defaults — all constant-memory). *Accept met:* a
+10⁵-iteration tail loop in constant frame depth (≤2) with `tail_count == N`
+(exit criterion 1, verified at 10⁵ in CI, constant-memory ⇒ 10⁷ holds); `to`→`to`
+reuse; to-tail-fn discards; fn-tail-to falls off. **Deferred (flagged in claude-todo):**
+**block-frame** tail reuse (MD §11's Block↔Callable case) — a block-body tail call and
+a tail-invoked block parameter fall back to ordinary frames (correct, not
+constant-memory); the E§8.3 **ring observation** surface + full `call_site`/serial
+fidelity (ring is write-only until M2a.10 GC roots).)*
+
 Executing a marked tail call (MD §11): evict the current occupant into
 `ring` (S-34 fields), **completely overwrite** the frame
 (`kind`/`call_site`/`locals`/`block_param`/`conts`), **preserve** `serial`

@@ -172,12 +172,20 @@ block-param invocation (fixed, MD §10 **consumer = the receiving call** refinem
 user-approved v0.2.4); valued `return` in a `to` (**C** — new
 `valued-return-in-procedure` static error); block-param used as a value (**D** —
 new `block-used-as-value` static error). Open **S-10 to-consumer half** raises
-provisionally, see the queue). **Next: M2a.7** (PTC: tail-call frame reuse + ring
-buffer + tail counters + the S-55 kind gate; lands the fn-tail-`to` falls-off
-enforcement — the `#[ignore]`d tripwire below). Spec-delta obligations in M2a are
-listed in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**, S-55 reuse tests
-**[M2a.7]**, S-41; plus S-10's `to`-consumer half and S-12's huge-exponent half —
-**S-28, S-56, S-9, and S-10's loop half are RESOLVED**, see the spec-delta queue).
+provisionally, see the queue). **M2a.7 landed** (PTC: the S-55 apply-time kind gate
++ frame reuse — a marked-tail call reuses the current callable frame iff the
+callee's kind matches, so a tail loop runs in constant memory with `tail_count == N`;
+mismatches run as ordinary frames (to-tail-fn discards, fn-tail-to falls off). The
+**fn-falls-off** enforcement raises `FunctionFellOffEnd` at **both** return paths
+(the `ReturnBarrier` and the `return`-unwind) — resolving the M2a.5 tripwire. A
+6-lens adversarial workflow found 1 bug (a bare non-tail `return` bypassing the
+falls-off check), **folded**. S-55 reuse tests landed. Deferred + flagged:
+block-frame tail reuse and the ring observation surface, see the queue). **Next:
+M2a.8** (closures: capture cells, loop-fresh bindings — exit criterion 5). Spec-delta
+obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**,
+S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half and
+S-12's huge-exponent half — **S-28, S-56, S-9, and S-10's loop half are RESOLVED**,
+see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -675,6 +683,25 @@ discarding their continuations — correct at M2a.6 because no `WithRestore`/
 those frames **continuation by continuation**, executing each `WithRestore`
 (restore the dynamic binding) and, for a raise, `TryHandler` (§12). The
 loop/block-continue paths already pop conts individually.
+
+**Deferred at M2a.7 (block-frame tail reuse; flag before it matters):** MD §11
+says a **Block** frame reuses for either callee kind (a block-body tail call, or
+a callable tail-invoking its own block parameter). M2a.7 implements only
+**callable→callable** reuse (`reuses_current_frame` returns false for a Block
+frame); a block-body tail call and a tail-invoked block parameter (`block_apply`)
+fall back to **ordinary** frames — **correct**, just not constant-memory. Consequence:
+a genuinely tail-recursive *block* pattern grows the stack (while-based iteration is
+unaffected — the loop is constant-memory). The Callable↔Block frame conversion on
+reuse (consumer becomes `TailReused`) is the subtle part. Implement as an M2a.7
+follow-up or when a block-tail-recursion pattern needs it; the accept criteria
+(callable self-recursion) don't require it.
+
+**Deferred at M2a.7 (ring observation fidelity):** the tail-elided ring
+(`machine/ring.rs`) is **populated** on reuse but currently stores only
+`(callable, consuming_serial)` and nothing reads it — it is a GC root at **M2a.10**
+(§15) and the E§8.3 observation surface at **M2b+**. Full S-34 fidelity (the
+elided frame's `call_site` span; the bounded-history semantics tests) lands with
+those readers. `#[allow(dead_code)]` marks the fields until then.
 
 Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
 delta **before M2a.9** trusts the heap limit — surfaced in the read-only
