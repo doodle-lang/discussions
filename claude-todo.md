@@ -226,8 +226,16 @@ validates the requested version against the build-pinned `unicode::UNICODE_VERSI
 updated E§3.1 + Appendix C S-41 RESOLVED. 4-lens review: 1 folded (minor) — a compile-time
 cross-check now fails the build if `unicode-ident` (identifier lexing) ever skews UCD from
 `unicode-normalization`; handle/GC/determinism lenses clean. Deferred: debug cross-instance handle
-id → M5, typed host readers → M2b). **Next: M2a.12** (determinism harness + conformance run-arm +
-stage gate → Run + M2a exit review — the last M2a chunk). Spec-delta obligations in M2a are listed
+id → M5, typed host readers → M2b). **M2a.12 landed — MILESTONE M2a (MACHINE CORE) COMPLETE**
+(GC-stress determinism harness [broad corpus driven normal vs GC-every-safe-point, bit-identical
+terminals — exit criterion 4]; conformance **run executor arm** [`matcher::run_dynamic` matches
+`expect-raise` message+position; `main::needed_capability` skips run tests needing `print`];
+stage gate bumped `Full → Run` atomically; three raise fixtures — suite 65/0/1. A 4-lens M2a exit
+review walked all five criteria: run-arm/stage/criteria-1–3 clean, two minor harness-coverage gaps
+folded [bignum content now folded to exact-compared scalars, incl. one carried through a `break`
+unwind]. All five exit criteria met). **Next: M2b** (the host/embedding layer — foreign-function
+registration, `print` and capabilities, the drive-state machine for resume/suspend, reentrant
+drives; then `expect-out` conformance run-tests execute). Spec-delta obligations in M2a are listed
 in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**, S-55 reuse tests **[done]**, **S-41 [done]**;
 plus S-10's `to`-consumer half and S-12's huge-exponent half — **S-28, S-56, S-9, S-10's loop half,
 the M2a.1 heap object-count gap, and S-41 are RESOLVED**, see the spec-delta queue).

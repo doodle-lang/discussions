@@ -488,7 +488,31 @@ create/config surface (E§3.1) — **resolve S-41** (Unicode-version field vs
 the build-time pin). *Accept:* a retained handle survives GC; a stale
 generation is caught at the boundary; `create` behaves per the S-41 ruling.
 
-### M2a.12 — Determinism harness + conformance run-arm + stage gate → Run + M2a exit review
+### M2a.12 — Determinism harness + conformance run-arm + stage gate → Run + M2a exit review — **DONE (M2a COMPLETE)**
+*(doodle-rust: **GC-stress determinism harness** (a doodle-core test mode) —
+`gc_stress_determinism_gate_over_the_corpus` + `_over_limit_faults` drive a broad
+corpus (arithmetic/numeric tower, comparison/booleans, control flow, calls+defaults,
+closures [shared cell, letrec, loop-fresh, nested capture], blocks, valued
+break/continue/return, bignum content folded to scalars, every clean-loading raise
+kind, and the three limit faults) **twice** — normal vs a collection forced at every
+safe point — and assert a bit-identical terminal outcome (**exit criterion 4**).
+**Conformance run-arm** (`tools/conformance-runner`): `matcher::run_dynamic` loads +
+drives a `mode: run` fixture and matches `expect-raise` (message substring + source
+position) against the uncaught exception; `main::needed_capability` skips a run test
+needing `print` (any `expect-out`) regardless of the stage gate. **Stage gate →
+Run**: `stage::implemented_through()` bumped `Full → Run` atomically with the run
+executor. Three raise fixtures added (`div`/`typerr`/`notcallable`); suite 65 pass /
+0 fail / 1 skip (`arith-001` needs `print`). A 4-lens adversarial **M2a exit review**
+walked all five criteria: run-arm / stage-atomicity / criteria 1–3 clean; two minor
+harness-coverage gaps **folded** (bignum content was compared by kind only, and no
+exit carried a heap value — the corpus now folds bignums to exact-compared scalars,
+including one carried through a `break` unwind). **All five M2a exit criteria met**
+(1: 10⁷ tail loop constant-memory — verified at 10⁵, constant-memory ⇒ 10⁷, M2a.7;
+2: non-tail → StackDepth, M2a.9; 3: reachable unbounded alloc → Heap at a
+deterministic step, M2a.9/10; 4: GC-stress gate; 5: loop-fresh closures, M2a.8).
+**Milestone M2a (Machine Core) is complete** — the machine runs the demo subset,
+deterministically, under limits, with GC and host handles.)*
+
 The **GC-stress determinism harness** (a conformance-runner flag / a
 doodle-core test mode): run twice, once with GC forced at every safe point,
 diff the observable trace. Wire the conformance **`run` executor arm**
