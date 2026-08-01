@@ -163,13 +163,21 @@ struct Heap {
     cells:   Slab<CellObj>,    // boxed upvalues (§7) AND module binding cells (§6)
     types:   Slab<TypeObj>,
     foreigns: Slab<ForeignObj>, // type_tag, host data, finalizer — own segment (AD3)
-    bytes_allocated: u64,       // program-driven payload bytes (AD3; NOT caches, §5)
+    bytes_allocated: u64,       // accounted heap bytes: payload + per-object overhead (§4.1)
     alloc_serial: u64,          // monotonic; stamped on every allocation
 }
 ```
 
 - **Variable-size payloads** (string bytes, list/dict backings) are the
   objects' own Rust allocations, counted in `bytes_allocated` (plan AD3).
+- **Per-object overhead (§4.1).** Every allocation also charges a fixed
+  per-object overhead, so `bytes_allocated = Σ (payload + OVERHEAD)`. Without
+  it, a flood of empty/tiny objects (each ~0 payload but a real slab slot)
+  would grow real memory while `bytes_allocated` stayed flat — the heap limit
+  (§15) and GC trigger (§9) would never fire (OOM instead of a clean fault).
+  The overhead is a **flat, documented constant** (not `size_of` of a slot),
+  so the charge is identical across targets (determinism). Pure caches (the
+  grapheme memo, §5) remain excluded.
 - **Identity** for reference-typed values is the slab index. This is
   sound even with host handles in play: a handle is a GC root, so an
   object the host still references is never swept and its index never
@@ -542,8 +550,15 @@ the S-15 question; the mechanism supports both candidate resolutions.
 - **Sweep:** each slab in **index order**, rebuilding its free list in
   index order (plan AD3). Foreign finalizers queue during sweep and run
   host-side after collection completes (never Doodle-observable).
-- **Heap limit:** checked against `bytes_allocated` (which excludes pure
-  caches, §5) after a failed collect → `Faulted(LimitExceeded(heap))`.
+- **Heap limit:** checked against `bytes_allocated` (payload + per-object
+  overhead, §4; excludes pure caches, §5) after a failed collect →
+  `Faulted(LimitExceeded(heap))`. The check is at **safe points** (§9), so a
+  single transition may **overshoot** the limit by whatever it allocates before
+  the next safe point — the limit is soft at safe-point granularity. The notable
+  case is `Int ** Int`, whose one transition can build a bignum sized by the
+  *exponent value* (bounded by the `u32`-exponent `ExponentTooLarge` guard); a
+  tight *pre-allocation* size estimate for `**` (fault before building) is a
+  possible refinement, tracked in claude-todo.
 
 ## 16. Handles
 
@@ -624,6 +639,13 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 
 ## 21. Change log
 
+- **v0.2.5 (2026-07-31):** §4 gains a **fixed per-object overhead** in
+  `bytes_allocated` (user-approved during the M2a.9 heap-limit work, resolving
+  the M2a.1 object-count gap): `bytes_allocated = Σ (payload + OVERHEAD)`, a flat
+  cross-target constant, so a flood of empty/tiny objects trips the heap limit and
+  (M2a.10) the GC trigger instead of growing memory unaccounted. §15's heap-limit
+  bullet notes the safe-point granularity (a single transition may overshoot by
+  its own allocation — the `**` case). No other mechanism changes.
 - **v0.2.4 (2026-07-30):** §10 refined (user-approved during the M2a.6
   review): a block frame's `consumer` is the frame that **received** the
   block (owns the invoked `block_param`), not "the invoking Doodle frame."

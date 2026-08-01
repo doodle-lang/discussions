@@ -381,7 +381,33 @@ criterion 5** (loop-fresh capture); `make_counter` mutates shared state
 across calls (S-11); two closures sharing one binding see each other's
 writes.
 
-### M2a.9 — Safe points + fused counter + limits
+### M2a.9 — Safe points + fused counter + limits — **DONE**
+*(doodle-rust: statement-level **safe points** (E§7.4) evaluated in `machine/step.rs`
+around an extracted `dispatch()` — `step()` now returns `Result<(), Halt>` where
+`Halt = Raise | Fault(EngineFault)` (new `machine/error.rs::Halt`, `From` both ways);
+`drive::run` maps the arms to `Outcome::Raised` / `Outcome::Faulted`. New
+`machine/limits.rs`: `FusedCounter` (the MD §9 decrement-and-branch — at M2a.9 its sole
+contributor is the step budget; slice fuel + event distance fuse in later) and
+`Machine::{safe_point, check_stack_depth}`. Safe points: `Seq` boundary + return
+(`ReturnBarrier`/module-drain `None`) via a `stmt_safe_point` match; **call/block entry**
+detected by the frame stack growing (`frames.len() > depth_before`) — which is also the
+only place non-tail depth grows, so tail-call reuse is naturally exempt (L§8.7). Limits
+(E§10.2) → `Faulted(LimitExceeded(kind))`: **step budget** (fused counter), **heap**
+(`bytes_allocated`), non-tail **stack depth**; new `pub struct drive::Limits` (the config
+subset — full `create(config)` is M2a.11) with provisional generous defaults, plus
+`Instance::load_with_limits`. **Heap-model delta (user-approved Option A, machine-design
+v0.2.5):** the M2a.1 object-count hole — `bytes_allocated` charged payload only, so a
+flood of empty/tiny objects never tripped the limit — is closed by a **fixed per-object
+overhead** (`heap.rs` `OBJECT_OVERHEAD`, centralized in `charge_object`; MD §4/§15
+revised). 6-lens read-only adversarial review: 0 confirmed (2 findings refuted — a
+tail-entry non-safe-point that still faults correctly via body `Seq` points, and the
+`**` single-transition heap overshoot, now documented as MD §15 safe-point granularity +
+tracked). *Accept met:* exit criteria 2 + 3 — deep non-tail recursion → `StackDepth`
+fault; unbounded alloc (incl. empty-object flood) → `Heap` fault at a deterministic step;
+plus an infinite loop → `StepBudget` and a tail loop exempt from the stack limit
+(`tests/limits.rs`). **Statement-boundary register semantics: already resolved at M2a.6**
+(the `Seq`-boundary `reg` clear); no safe-point observer concern remains.)*
+
 `FusedCounter` (MD §9) = min(slice fuel, step budget, distance-to-next-
 armed-event); one decrement-and-branch at each **statement-level** safe
 point (`Seq` boundary, call entry, return). Limits: non-tail **stack

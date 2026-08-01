@@ -193,13 +193,25 @@ self-call derefs a stale uninitialized cell → spurious `UsedBeforeDefined`; **
 regression test (recursive `fn` `fact(5)=120` + recursive `to` mutating a captured counter).
 Exit criterion 5 met — `make_counter`/S-11, shared bindings, loop-fresh, block-capture hops>1,
 nested closures all verified. **Cells become GC roots at M2a.10** (a cell-boxed body local
-allocates a throwaway entry cell its first `let` replaces — harmless until GC)). **Next:
-M2a.9** (safe points + fused counter + limits — exit criteria 2 + 3; also **pins the
-statement-boundary register semantics**, now largely resolved by the M2a.6 `Seq`-boundary
-`reg` clear). Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
+allocates a throwaway entry cell its first `let` replaces — harmless until GC)). **M2a.9
+landed** (safe points + fused counter + limits — statement-level safe points (`Seq`/call
+entry/return) evaluated in `machine/step.rs` around an extracted `dispatch()`; `step()` now
+returns `Result<(), Halt>` (`Halt = Raise | Fault`), `drive::run` maps to `Raised`/`Faulted`.
+New `machine/limits.rs`: `FusedCounter` (MD §9 decrement-and-branch; step budget the sole
+contributor now) + `safe_point`/`check_stack_depth`. Call entry = frame-stack growth, so
+tail-call reuse is exempt (L§8.7). Limits (E§10.2): step budget, heap (`bytes_allocated`),
+non-tail stack depth → `Faulted(LimitExceeded(kind))`; new `drive::Limits` config subset +
+`Instance::load_with_limits`. **Heap object-count hole closed (user Option A, machine-design
+v0.2.5):** a fixed per-object overhead in `bytes_allocated` (`heap.rs` `charge_object`), so an
+empty-object flood faults instead of OOM. 6-lens read-only review: 0 confirmed (2 refuted;
+`**` single-transition overshoot documented + tracked). Exit criteria 2 + 3 met; the
+statement-boundary register pin was already resolved at M2a.6. `tests/limits.rs`). **Next:
+M2a.10** (GC v0: precise non-moving mark-sweep, index-order — cells/ring/frames become roots;
+*Accept:* alloc loop reclaims, before/after a forced GC results identical, M2a corpus unchanged
+with GC on). Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
 S-9 **[done]**, S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half
-and S-12's huge-exponent half — **S-28, S-56, S-9, and S-10's loop half are RESOLVED**, see the
-spec-delta queue).
+and S-12's huge-exponent half — **S-28, S-56, S-9, S-10's loop half, and the M2a.1 heap
+object-count gap are RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
@@ -717,25 +729,38 @@ follow-up or when a block-tail-recursion pattern needs it; the accept criteria
 elided frame's `call_site` span; the bounded-history semantics tests) lands with
 those readers. `#[allow(dead_code)]` marks the fields until then.
 
-Discovered at M2a.1 (heap foundation; needs a ruling + machine-design
-delta **before M2a.9** trusts the heap limit — surfaced in the read-only
-review): **`bytes_allocated` counts payload only, so object *count* is
-unbounded.** MD §4 charges "program-driven payload bytes," i.e. a string's
-byte length / a list's element-width — an *empty* or tiny object charges
-~0. An unbounded loop allocating small/empty objects (each a fresh `Slot`
-in a slab `Vec`) grows real memory while `bytes_allocated` stays flat, so
-the GC trigger never fires and `Faulted(LimitExceeded(heap))` never trips —
-an OOM-instead-of-clean-fault hole, and it breaks exit criterion 3's
-"deterministic step" for that class. **Not fixed in code** (a per-object
-minimum charge is a *mechanism* change to MD §4/§15, which must be revised
-first — spec is source of truth). Options: a fixed per-object byte charge
-so count contributes; or a separate object-count limit alongside the byte
-limit. Resolve with the M2a.9 heap-limit item. The M2a.1 code implements MD
-§4 faithfully as written; nothing wrong ships, but the *model* has this
-gap. (The related in-place-growth accounting hole — a growing list not
-re-charging — is already closed structurally: the heap exposes no raw
-mutable payload accessor, so growth must route through accounting-aware
-methods when they land.)
+**RESOLVED (M2a.9; user, 2026-07-31 — Option A): `bytes_allocated` now
+charges a fixed per-object overhead**, so object *count* contributes.
+(Discovered at M2a.1: MD §4 charged payload only — a string's byte length /
+a list's element-width — so an *empty*/tiny object charged ~0. An unbounded
+loop allocating small/empty objects grew real memory while `bytes_allocated`
+stayed flat, so the GC trigger never fired and `Faulted(LimitExceeded(heap))`
+never tripped — an OOM-instead-of-clean-fault hole that broke exit criterion
+3's "deterministic step" for that class.) The user chose a **fixed per-object
+byte charge** (over a separate object-count limit): `bytes_allocated =
+Σ (payload + OVERHEAD)`, a flat cross-target constant (`heap.rs`
+`OBJECT_OVERHEAD = 32`, routed through `charge_object`). MD §4/§15 revised
+(machine-design v0.2.5); the heap `charge_object` centralization means no
+future `alloc_*` can forget the charge. Regression test
+`a_flood_of_empty_objects_still_hits_the_heap_limit` (`tests/limits.rs`,
+`loop do b"" end`). The related in-place-growth accounting hole — a growing
+list not re-charging — is already closed structurally: the heap exposes no
+raw mutable payload accessor, so growth must route through accounting-aware
+methods when they land.
+
+**Minor, tracked (M2a.9 review, 2026-07-31): single-transition heap overshoot
+/ tight `**` bound.** The heap limit is checked at **safe points** (MD §15/§9),
+so a single transition may overshoot the limit by whatever it allocates before
+the next safe point — the limit is *soft* at safe-point granularity (an accepted
+property of the model, now documented in MD §15). The notable case is
+`Int ** Int`: one `arith::power` transition builds a bignum sized by the
+**exponent value** (`crates/doodle-core/src/machine/arith.rs`), bounded only by
+the `ExponentTooLarge` `u32`-exponent guard (~512 MB worst case), so a tight heap
+limit still admits a large one-shot spike before the fault. A refinement —
+estimate the result bit-size (`exp * base.bits()`) and fault/raise **before**
+allocating — would bound `**` to the configured limit; it needs the heap limit
+threaded into `arith` (currently only `machine/limits.rs` holds it). Not a
+blocker (deterministic; bounded); implement if a tight-sandbox use case needs it.
 
 **RESOLVED (M2a.2): top-level `Completed` value is Void.** (Was: discovered
 at M0.3 — E§7.2 pinned the `Completed(value?)` payload only for a returning
