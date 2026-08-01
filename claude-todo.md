@@ -180,12 +180,26 @@ mismatches run as ordinary frames (to-tail-fn discards, fn-tail-to falls off). T
 (the `ReturnBarrier` and the `return`-unwind) — resolving the M2a.5 tripwire. A
 6-lens adversarial workflow found 1 bug (a bare non-tail `return` bypassing the
 falls-off check), **folded**. S-55 reuse tests landed. Deferred + flagged:
-block-frame tail reuse and the ring observation surface, see the queue). **Next:
-M2a.8** (closures: capture cells, loop-fresh bindings — exit criterion 5). Spec-delta
-obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**,
-S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half and
-S-12's huge-exponent half — **S-28, S-56, S-9, and S-10's loop half are RESOLVED**,
-see the spec-delta queue).
+block-frame tail reuse and the ring observation surface, see the queue). **M2a.8 landed**
+(closures — representation B: a resolver-`cell_boxed` local lives in a heap `CellObj`
+shared by the closure and its creating frame. New `machine/local.rs` (`Local::{Direct,Boxed}`,
+`read`/`write`/`rebind`/`build`): assignment mutates the cell (captures observe it), a `let`
+mints a **fresh** cell (loop-fresh, L§5.4), frame entry cell-boxes marked slots and splices
+the closure's captured cells; `make_callable` reads each `CaptureSource` from the creating
+env into `CalObj.captures`. A 6-lens adversarial workflow found 1 MAJOR — **letrec**: a
+self-recursive nested `fn`/`to` captures its own cell-boxed slot, so `define_callable` must
+allocate the binding's fresh cell **before** `make_callable` reads it, then fill it, else the
+self-call derefs a stale uninitialized cell → spurious `UsedBeforeDefined`; **folded** with a
+regression test (recursive `fn` `fact(5)=120` + recursive `to` mutating a captured counter).
+Exit criterion 5 met — `make_counter`/S-11, shared bindings, loop-fresh, block-capture hops>1,
+nested closures all verified. **Cells become GC roots at M2a.10** (a cell-boxed body local
+allocates a throwaway entry cell its first `let` replaces — harmless until GC)). **Next:
+M2a.9** (safe points + fused counter + limits — exit criteria 2 + 3; also **pins the
+statement-boundary register semantics**, now largely resolved by the M2a.6 `Seq`-boundary
+`reg` clear). Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
+S-9 **[done]**, S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half
+and S-12's huge-exponent half — **S-28, S-56, S-9, and S-10's loop half are RESOLVED**, see the
+spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site

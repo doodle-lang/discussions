@@ -352,7 +352,25 @@ parity). `debug_assert!(dyn_stack.len() == frame.dyn_depth)` at reuse.
 criterion 1** (10⁷ tail loop, constant memory, counter = 10⁷); to-tail-fn
 discards the value; fn-tail-to falls off at the fn's own completion.
 
-### M2a.8 — Closures: capture cells, loop-fresh bindings
+### M2a.8 — Closures: capture cells, loop-fresh bindings — **DONE**
+*(doodle-rust: representation B (MD §7/§10) — a resolver-`cell_boxed` local lives in a
+heap `CellObj` so the closure and the creating frame share one mutable binding. New
+`machine/local.rs` centralizes slot handling: `Local::{Direct(Option<Value>),Boxed(CellIdx)}`;
+`read`/`write` (assignment mutates the cell — captures observe it), `rebind` (a `let`/`const`
+mints a **fresh** cell → loop-fresh, L§5.4), `build` (frame entry: cell-box captured/marked
+slots, **splice** the closure's captured cells). `make_callable` reads each `CaptureSource`
+from the creating environment (`control::outer_frame(hops)` → source slot's `cell_of`) into
+`CalObj.captures`; `apply`/`block_apply` splice them at invocation. **Letrec fix
+(`define_callable`):** a self-recursive nested `fn`/`to` references its own name → a capture
+of its own cell-boxed slot, so the binding must reuse the cell the closure captures — allocate
+the fresh cell **before** `make_callable` reads it, then fill it (else the self-call derefs a
+stale uninitialized cell → spurious `UsedBeforeDefined`). Verified by a 6-lens adversarial
+workflow (1 confirmed MAJOR — the letrec ordering — folded) + tests: `make_counter`/S-11,
+independent counters, shared bump/peek, captured+defaulted params, block-capture hops>1,
+nested closures, shared-outer-vs-loop-fresh distinction, and self-recursive `fn`/`to`.
+**Deferred to M2a.10:** cells become GC roots then (a cell-boxed body local intentionally
+allocates a throwaway entry cell that its first `let` replaces — harmless until GC).)*
+
 `CalObj` holds the capture cell list; at closure **creation** read each
 `CaptureSource` from the enclosing environment (static link from the
 creating frame) into the closure's capture slots; at **invocation** splice
