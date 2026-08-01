@@ -205,10 +205,20 @@ non-tail stack depth → `Faulted(LimitExceeded(kind))`; new `drive::Limits` con
 v0.2.5):** a fixed per-object overhead in `bytes_allocated` (`heap.rs` `charge_object`), so an
 empty-object flood faults instead of OOM. 6-lens read-only review: 0 confirmed (2 refuted;
 `**` single-transition overshoot documented + tracked). Exit criteria 2 + 3 met; the
-statement-boundary register pin was already resolved at M2a.6. `tests/limits.rs`). **Next:
-M2a.10** (GC v0: precise non-moving mark-sweep, index-order — cells/ring/frames become roots;
-*Accept:* alloc loop reclaims, before/after a forced GC results identical, M2a corpus unchanged
-with GC on). Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
+statement-boundary register pin was already resolved at M2a.6. `tests/limits.rs`). **M2a.10
+landed** (GC v0: precise non-moving mark-sweep — `heap/slab.rs` mark bit + index-order sweep;
+`heap/gc.rs` work-stack tracer + per-slab sweep with alloc/sweep-shared payload accounting;
+`machine/gc.rs` root enumeration (frame callables + locals + conts via `Cont::each_value`
+[exhaustive], `reg`, `unwind`, ring callables, namespace cells); trigger in `safe_point` at
+`min(gc_threshold, heap_bytes)` — GC threshold floor 1 MiB / `live×2` re-arm, **or** the heap
+limit as the MD §15 last-ditch collect, then fault only if still over. 5-lens read-only review:
+1 confirmed major (missing last-ditch collect → spurious `Heap` fault under a limit below the GC
+floor), **folded** + regression test; roots/determinism/accounting/precision lenses clean. Cells
+and ring callables are now GC roots (closes the M2a.7/M2a.8 forward notes). *Accept met:*
+forced-GC-every-step never changes results, garbage reclaims to baseline, garbage loop bounded
+under normal and below-floor heap limits. Handle roots → M2a.11; `dyn_stack` → M4; the full
+GC-stress corpus run → M2a.12). **Next: M2a.11** (handles + instance config, resolve S-41).
+Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
 S-9 **[done]**, S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half
 and S-12's huge-exponent half — **S-28, S-56, S-9, S-10's loop half, and the M2a.1 heap
 object-count gap are RESOLVED**, see the spec-delta queue).
@@ -722,12 +732,12 @@ reuse (consumer becomes `TailReused`) is the subtle part. Implement as an M2a.7
 follow-up or when a block-tail-recursion pattern needs it; the accept criteria
 (callable self-recursion) don't require it.
 
-**Deferred at M2a.7 (ring observation fidelity):** the tail-elided ring
-(`machine/ring.rs`) is **populated** on reuse but currently stores only
-`(callable, consuming_serial)` and nothing reads it — it is a GC root at **M2a.10**
-(§15) and the E§8.3 observation surface at **M2b+**. Full S-34 fidelity (the
-elided frame's `call_site` span; the bounded-history semantics tests) lands with
-those readers. `#[allow(dead_code)]` marks the fields until then.
+**Deferred at M2a.7 (ring observation fidelity) — GC-root half DONE at M2a.10:**
+the tail-elided ring (`machine/ring.rs`) is **populated** on reuse; its `callable`
+refs are now **GC roots** (`RingBuffer::callables`, read by `machine/gc.rs`, §15).
+**Still deferred to M2b+:** the E§8.3 observation surface reading the ring, full
+S-34 fidelity (the elided frame's `call_site` span; the bounded-history semantics
+tests). `consuming_serial` keeps `#[allow(dead_code)]` until that reader lands.
 
 **RESOLVED (M2a.9; user, 2026-07-31 — Option A): `bytes_allocated` now
 charges a fixed per-object overhead**, so object *count* contributes.

@@ -421,7 +421,34 @@ observer would read it — decide whether a `Seq` boundary clears `reg` to Void
 *Accept:* **exit criteria 2 + 3** (deep non-tail recursion → stack fault;
 unbounded alloc → heap fault at a deterministic step).
 
-### M2a.10 — GC v0: precise non-moving mark-sweep, index-order
+### M2a.10 — GC v0: precise non-moving mark-sweep, index-order — **DONE**
+*(doodle-rust: a **precise, non-moving mark-sweep** collector. `heap/slab.rs` — each
+`Slot::Occupied` gains a `mark` bit; `Slab::mark` (newly-marked?) + `Slab::sweep` (free
+unmarked, clear survivors' marks, rebuild the free list in **index order** — a determinism
+gate, high→low walk + prepend). `heap/gc.rs` (new) — the collector: a `Tracer` explicit
+**work-stack** (cycles legal, no recursion), leaves marked in place while aggregates
+(list/callable) are grayed for child-scanning, cells reached via `enqueue_cell`; per-slab
+index-order sweep subtracting each freed object's exact charge, with per-object payload
+helpers **shared** between `alloc`'s `charge_object` and the sweep so accounting cannot
+drift. `machine/gc.rs` (new) — **root enumeration**: every frame's `FrameKind::Callable`
+value + `locals` (direct values / boxed cells) + `conts` (`Cont::each_value`, an
+**exhaustive** match so a future value-carrying variant fails to compile rather than
+silently leak), plus `reg`, `unwind` (`Unwind::gc_value`), `ring` callables, and namespace
+cells. Trigger (`machine/limits.rs`): `safe_point` collects when `bytes_allocated` crosses
+`min(gc_threshold, heap_bytes)` — the GC threshold (floor `GC_MIN_BYTES` = 1 MiB, re-armed to
+`max(floor, live×2)`) **or** the heap limit (the last-ditch collect MD §15 requires) — then
+faults only if still over. A 5-lens read-only adversarial review found the missing last-ditch
+collect (a garbage loop under a heap limit below the GC floor spuriously `Heap`-faulted);
+**folded** with a regression test; root-completeness/determinism/accounting/precision lenses
+were clean. *Accept met:* forced-collect-every-step never changes results (closures, letrec
+recursion, nested capture, blocks); garbage reclaims to baseline; the auto-trigger bounds a
+garbage loop under both a normal and a below-floor heap limit. **Behavior change (folded):** a
+loop allocating and **dropping** garbage no longer `Heap`-faults — GC reclaims it — so two M2a.9
+`tests/limits.rs` cases were updated to test *reachable* unbounded growth (`x = x * x` → `Heap`)
+and garbage-is-reclaimed (`b""` loop → `StepBudget`) instead of the pre-GC dropped-garbage fault.
+**Deferred to their milestones:** handle-table roots (M2a.11), `dyn_stack` roots (M4),
+`pending`/drive-stack roots (M2b), and the full GC-stress determinism-harness corpus run (M2a.12).)*
+
 Trigger only at statement safe points, only by `bytes_allocated` crossing a
 threshold (MD §15). Roots: handles (M2a.11), every frame's `locals`/
 `block_param`/`conts`, `reg`, `unwind`, `dyn_stack`, module namespaces
