@@ -155,9 +155,19 @@ destroy(instance)
 ```
 
 `config` carries, at least: resource limits (§10), the initial drive granularity
-and observation mode (§7, §8), the target Unicode version (L§4.4, whose grapheme
-and normalization behavior the engine pins), the **module resolver** hook (§6),
-and an opaque host-data value passed back to foreign functions.
+and observation mode (§7, §8), the **optional** target Unicode version (see below),
+the **module resolver** hook (§6), and an opaque host-data value passed back to
+foreign functions.
+
+**Target Unicode version (resolves S-41).** The engine pins a single Unicode/UCD
+version at build time — its grapheme and normalization behavior (L§4.4) — and
+reports that version in its identity. The config's target-version field is
+**optional**: `create` accepts a config that omits it (using the pinned version) or
+names exactly the pinned version, and **fails** (a config error) on any other
+requested version. The engine thus supports exactly its pinned version; a host — or
+a replay driver checking a recording — asserts the expected version at create time
+and gets a loud failure rather than a silent grapheme/normalization divergence
+(§11; plan AD4).
 
 `destroy` releases the instance's heap, invoking the finalizer of every live
 foreign value (§4.5). After `destroy`, all handles into that instance are invalid.

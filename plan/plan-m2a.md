@@ -459,7 +459,29 @@ lists in index order (determinism). *Accept:* the alloc loop reclaims;
 before/after a forced GC, results identical; the M2a corpus unchanged with
 GC on.
 
-### M2a.11 — Handles + instance config (S-41)
+### M2a.11 — Handles + instance config (S-41) — **DONE**
+*(doodle-rust: `machine/handle.rs` (new) — the `HandleTable` (MD §16): generational
+`(index, gen)` `u64` handles with a free list; `intern`/`retain`/`release`/`resolve`,
+each doing the boundary generation check (`live_index`) so a released-then-reused slot's
+bumped generation makes a stale handle an error, never a wrong value. Live handles'
+values are **GC roots** (`root_values`, rooted in `machine/gc.rs`), so a retained value
+survives collection and is reclaimed on release. `Instance::{create, unicode_version,
+retain_result, retain, release}`. **S-41 resolved (user, Option A):** `drive::Config {
+limits, unicode_version: Option<UnicodeVersion> }`; `create` validates the requested
+version against the engine's build-pinned one (`unicode::UNICODE_VERSION`, read straight
+from the `unicode-normalization` crate pin = **Unicode 17.0.0**) — `None` uses the pin,
+a mismatch fails with `ConfigError::UnsupportedUnicodeVersion`. Spec updated: E§3.1
+(optional validated field) + Appendix C S-41 RESOLVED. A 4-lens read-only review found the
+identity surface reported only normalization's UCD while `unicode-ident` (identifier
+lexing) is versioned independently — **folded** with a compile-time cross-check
+(`const _: () = assert!(unicode_ident::UNICODE_VERSION == unicode_normalization::…)`) that
+fails the build on a UCD skew (AD4's per-crate pin, compile-time half; the XID behavioral
+vector stays M4); handle-soundness / GC-rooting / determinism lenses were clean. *Accept
+met:* a retained handle survives GC and is reclaimed after release; a stale/reused-slot
+handle is caught at the boundary (`handle.rs` tests); `create` validates the version
+(`tests/config.rs`). **Deferred:** the debug-only cross-instance handle id (MD §16) →
+multi-instance (M5); typed host value readers (`as_int`, `kind_of`, …) → M2b.)*
+
 `HandleTable` (MD §16): generational `u64` handles, `retain`/`release`,
 GC roots, generation check **at the host boundary only**. Instance
 create/config surface (E§3.1) — **resolve S-41** (Unicode-version field vs

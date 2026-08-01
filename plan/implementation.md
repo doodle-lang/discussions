@@ -1379,10 +1379,13 @@ Stringable dispatcher directly (immune to lexical shadowing of the name
 S-38 (L§5.3/§4.14) Lvalue place chains: assignment targets evaluate as
 places (no intermediate value-record copies), so `a.inner.x = 5` mutates
 `a`; copies happen on binding, not place navigation. Resolve by M4. ·
-S-41 (E§3.1) Reconcile the `create(config)` "target Unicode version" field
-with the build-time pin: engine reports its pinned version; `create` fails
-on an unsupported request (or the field is dropped for the identity
-report). Resolve by M2a. ·
+S-41 (E§3.1) **RESOLVED (M2a.11, user, 2026-08-01):** the `create(config)`
+target-Unicode-version field is **optional and validated** — the engine
+reports its build-pinned version and `create` fails on any other requested
+version (`None` uses the pin). Chosen over dropping the field because it lets
+a replay assert its recording's version at create time (loud failure, not a
+silent grapheme/normalization divergence). Spec: E§3.1; code: `Instance::create`
++ `unicode::UNICODE_VERSION` (read from the `unicode-normalization` crate pin). ·
 S-43 (E§5.5/L§11.4) Provisional pre-module native-intrinsic registration
 (global-scope foreign bindings) so core names exist before the module
 system; superseded by the prelude star-import at M5 — specify the

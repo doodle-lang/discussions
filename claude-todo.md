@@ -217,11 +217,20 @@ floor), **folded** + regression test; roots/determinism/accounting/precision len
 and ring callables are now GC roots (closes the M2a.7/M2a.8 forward notes). *Accept met:*
 forced-GC-every-step never changes results, garbage reclaims to baseline, garbage loop bounded
 under normal and below-floor heap limits. Handle roots → M2a.11; `dyn_stack` → M4; the full
-GC-stress corpus run → M2a.12). **Next: M2a.11** (handles + instance config, resolve S-41).
-Spec-delta obligations in M2a are listed in `plan-m2a.md` (E§7.2 **[done]**,
-S-9 **[done]**, S-55 reuse tests **[done]**, S-41 **[M2a.11]**; plus S-10's `to`-consumer half
-and S-12's huge-exponent half — **S-28, S-56, S-9, S-10's loop half, and the M2a.1 heap
-object-count gap are RESOLVED**, see the spec-delta queue).
+GC-stress corpus run → M2a.12). **M2a.11 landed** (handles + instance config: `machine/handle.rs`
+`HandleTable` — generational `(index,gen)` u64 handles, `intern`/`retain`/`release`/`resolve`
+with the boundary generation check; live handles' values are GC roots. **S-41 resolved (user,
+Option A):** `drive::Config{limits, unicode_version: Option<UnicodeVersion>}`; `Instance::create`
+validates the requested version against the build-pinned `unicode::UNICODE_VERSION` (read from
+`unicode-normalization` = Unicode 17.0.0), failing loud on a mismatch; `None` uses the pin. Spec
+updated E§3.1 + Appendix C S-41 RESOLVED. 4-lens review: 1 folded (minor) — a compile-time
+cross-check now fails the build if `unicode-ident` (identifier lexing) ever skews UCD from
+`unicode-normalization`; handle/GC/determinism lenses clean. Deferred: debug cross-instance handle
+id → M5, typed host readers → M2b). **Next: M2a.12** (determinism harness + conformance run-arm +
+stage gate → Run + M2a exit review — the last M2a chunk). Spec-delta obligations in M2a are listed
+in `plan-m2a.md` (E§7.2 **[done]**, S-9 **[done]**, S-55 reuse tests **[done]**, **S-41 [done]**;
+plus S-10's `to`-consumer half and S-12's huge-exponent half — **S-28, S-56, S-9, S-10's loop half,
+the M2a.1 heap object-count gap, and S-41 are RESOLVED**, see the spec-delta queue).
 
 - [x] **M1.8 — declarations + docstrings — COMPLETE** (a/b/c1/c2 + the S-52 flip
       + the S-53 lexer arm; all in the Done log). (Boundary: `import`, call-site
