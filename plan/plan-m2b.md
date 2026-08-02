@@ -67,9 +67,14 @@ none is silently deferred (CLAUDE.md). The starred ones need a **fresh
 user ask** when reached (semantics/mechanism not yet ratified).
 
 - **S-43 (E§5.5/L§11.4) — provisional pre-module native-intrinsic
-  registration.**\* Global-scope foreign bindings so core names (`print`)
-  exist before modules; specify the mechanism *and its M5 retirement* in E.
-  Lands with **M2b.2**.
+  registration. RESOLVED (user, 2026-08-01; App C + spec landed):
+  namespace-seed, shadowable.** Intrinsics register before the first
+  `load` (late/duplicate = loud host-API error; order = replay-identity
+  input) and seed as read-only global cells behind module globals — a
+  user's own declaration shadows them; assignment is already a static
+  error (S-39/M1.10b). Folds the M2a.5 type-value BUILTINS seeding under
+  the same mechanism; the M5 star-import retires it with no
+  program-observable change. **M2b.2** implements.
 - **Post-`Raised`/`Faulted` instance state (E§3.3).** The M2a.3a drive
   provisionally sets `Faulted` after an uncaught `Raised`; E§3.3 lists no
   distinct "raised" state. Pin the intended terminal state (add `raised`,

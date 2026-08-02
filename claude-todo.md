@@ -115,10 +115,10 @@ M2b lands the drive-state-machine plumbing + a *basic* `Step`/`Continue`
 depth); breakpoints / tail-aware stepping / raise-trap-pause /
 per-subexpression / inspection panels stay **M6**. (2) **S-40** bounded-run
 fuel + `Paused(SliceEnd)` is **deferred to M3** (not M2b). Starred M2b
-spec-deltas needing a fresh ask when reached: **S-43** (native-intrinsic
-registration mechanism + its M5 retirement, at M2b.2) and **S-46**
-(non-local exits crossing a native block-consuming callee, at M2b.5); the
-post-`Raised`/`Faulted` E§3.3 state pins at M2b.3.
+spec-deltas needing a fresh ask when reached: **S-46** (non-local exits
+crossing a native block-consuming callee, at M2b.5); the post-`Raised`/
+`Faulted` E§3.3 state pins at M2b.3. (**S-43 is RESOLVED** — 2026-08-01,
+namespace-seed shadowable; see the spec-delta queue.)
 
 - [x] **M2b.1 — boundary value model** (constructors + typed readers +
       `Kind`, E§4.3/§4.4). **DONE** (doodle-rust `1020795`) — `machine/
@@ -133,6 +133,11 @@ post-`Raised`/`Faulted` E§3.3 state pins at M2b.3.
       14 unit tests.
 - [~] **M2b.2 — foreign-function registry + synchronous foreign fns +
       `print` (S-43):** next. Unblocks the SKIP'd `expect-out` run-tests.
+      **S-43 RESOLVED + spec landed (2026-08-01)** — implement per App C
+      S-43: register before the first `load` (late/duplicate = loud
+      host-API error; order = replay-identity input), seed as read-only
+      cells behind module globals (a user's own declaration shadows),
+      fold the type-value BUILTINS seeding under the same mechanism.
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
@@ -672,6 +677,25 @@ valued-exit×destination-kind resolver check (valued
 targets the loop; reserve the diagnostic slug. M2a.6 may `debug_assert`
 the loop case (no runtime path needed).
 
+**S-43 RESOLVED (user, 2026-08-01): namespace-seed, shadowable — the
+provisional pre-module intrinsic mechanism.** Host-registered intrinsic
+foreign functions (`print`, …) seed as **read-only** global cells
+appended after module globals: a user's own declaration shadows an
+intrinsic (matching S-39 import semantics and the M5 star-import
+end-state; assignment is already a static error via the
+visible-mutable-`let` rule). Registration completes **before the first
+`load`**; late/duplicate registration (vs prior registrations or the
+type-value BUILTINS) is a loud host-API error; **registration order is
+replay-identity input**. Namespace order: globals → BUILTINS →
+intrinsics. The M2a.5 type-value provisional folds under this
+mechanism. Retirement criterion: the M5 prelude star-import replaces
+the seeding with **no program-observable change** (the `expect-out`
+fixtures must pass unchanged across the switch). Parked for M5: should
+declaring over a prelude name trigger the L§5.1 shadowing warning?
+Spec landed: E§5.5 provisional block; L§11.4 note; App C S-43;
+plan-m2b obligation. Code: **M2b.2** implements (with S-42-lite +
+S-19, as planned).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -711,7 +735,11 @@ name wins the linear scan). Not a semantic change (the spec says these type
 values exist and `is` uses them); remove the seeding when the real prelude
 mechanism ships. The provisional spellings match L Appendix D (`Number`,
 `Procedure` included; `Procedure` matches any callable — the proc/fn split is
-still open in App D).
+still open in App D). **Folded under S-43 (resolved 2026-08-01):** the
+type-value seeding and the S-43 intrinsic seeding are one mechanism (seed
+after globals, read-only, shadowable; namespace order globals → BUILTINS →
+intrinsics) with one M5 retirement — see App C S-43 and the queue entry
+below.
 
 M2a.5-discovered, **due M2a.7** (surfaced by the adversarial verification
 workflow; already in the plan as the S-55 follow-up): **a `fn` that
@@ -941,6 +969,16 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-08-01 — **S-43 resolved + spec landed: namespace-seed, shadowable
+  intrinsics.** Full ruling in the spec-delta queue entry above. One
+  discussions commit: E§5.5 (provisional pre-module intrinsic
+  registration — before-first-`load`, loud late/duplicate errors,
+  registration order = replay identity, read-only seeding behind module
+  globals, M5 no-observable-change retirement); L§11.4 note (host-injected
+  provisional globals — the language still builds no names in); App C
+  S-43 (full rationale + rejected alternatives + the parked M5
+  shadowing-warning question; folds the M2a.5 type-value provisional
+  under it); plan-m2b obligation + this file. M2b.2 implements.
 - 2026-07-29 — **S-10 (loop half) resolved + S-9 landed: valued exits need
   a receiving destination; exits punch through `with`/`try`.** One
   discussions commit; full ruling in the spec-delta queue entry above.

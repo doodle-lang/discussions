@@ -386,6 +386,23 @@ declares which members are public. `import`ing a native module and accessing its
 members is indistinguishable, to Doodle, from importing a module written in
 Doodle.
 
+**Provisional: pre-module intrinsic registration (retired at the module
+system + prelude).** Until modules and the standard-library prelude exist, a
+host registers individual **intrinsic foreign functions** (e.g. `print`)
+directly with the instance, **before the instance's first `load`**.
+Registering after that point, or registering a name that duplicates a prior
+registration or a built-in type value, is a host-API error. Each intrinsic is
+seeded into the global namespace as a **read-only** binding appended after
+the program's module-level declarations, so a program's own declaration of
+the same name shadows the intrinsic — exactly the relationship a module's own
+declaration will have to the prelude star-import that replaces this mechanism
+(L§11.4); assignment to one is a static error, as for any name that is not a
+visible mutable `let`. Registration order is part of replay identity (§11).
+Retirement: the host-configured prelude star-import replaces this seeding
+with **no program-observable change** — the same names, read-only, shadowed
+the same way — so programs and conformance fixtures written against seeded
+intrinsics run unchanged across the switch.
+
 ---
 
 ## 6. Module resolution
@@ -830,6 +847,13 @@ provides the complete set plus the interactive facilities of §7–§11.
   L§4.13's single, self-equal NaN value (the engine side of implementation-plan
   Appendix C S-28). Negative zero is a distinct, deterministic bit pattern,
   preserved through the boundary, equal to `0.0` under L§4.13.
+- **Provisional pre-module intrinsic registration (§5.5).** Until modules and
+  the prelude exist, hosts register intrinsic foreign functions (e.g. `print`)
+  before the instance's first `load`; they seed as read-only global bindings
+  behind the program's own declarations (shadowable, like the prelude
+  star-import that retires this mechanism with no program-observable change).
+  Late or duplicate registration is a host-API error; registration order is
+  replay-identity input (§11). Resolves implementation-plan Appendix C S-43.
 
 ### B.2 Open issues, including cross-spec implications
 

@@ -1389,7 +1389,45 @@ silent grapheme/normalization divergence). Spec: E§3.1; code: `Instance::create
 S-43 (E§5.5/L§11.4) Provisional pre-module native-intrinsic registration
 (global-scope foreign bindings) so core names exist before the module
 system; superseded by the prelude star-import at M5 — specify the
-mechanism and its retirement. Resolve by M2b. ·
+mechanism and its retirement. Resolve by M2b. **RESOLVED (user,
+2026-08-01): namespace-seed, shadowable.** Host-registered intrinsic
+foreign functions are seeded as **read-only** global namespace cells
+appended after the program's module-level declarations — a user's own
+declaration wins the linear scan (locals win lexically as always) —
+matching the shipped M2a.5 type-value prelude, S-39's imported-name
+semantics (live, read-only, shadowable by own declaration), and the M5
+star-import end-state. Mechanism pins: (1) registration completes
+**before the instance's first `load`** (seeding happens at load;
+tighter than S-32's before-first-drive, whose mid-run deferral is
+unchanged); late or duplicate registration (vs prior registrations or
+the type-value BUILTINS) is a loud host-API error; (2) **registration
+order is replay-identity input** (the machine-design stance for
+native-module registration, applied here); (3) namespace order: module
+globals (declaration order) → type-value BUILTINS (fixed) → intrinsics
+(registration order); (4) assignment to an intrinsic name is already a
+static error via the S-39/M1.10b visible-mutable-`let` rule — no new
+rule; naming the prelude provenance in that diagnostic rides the
+existing M5 wildcard-provenance deferral; (5) the **M2a.5
+type-value-prelude provisional folds under this mechanism** — one
+seeding, one retirement. **Retirement criterion (M5):** the
+host-configured prelude star-import replaces the seeding with **no
+program-observable change**; the `expect-out` conformance fixtures
+written against seeded `print` must pass unchanged across the switch.
+Rejected: reserved names (contradicts L§11.4's "ordinary
+standard-library names," is inexpressible by a Doodle-written stdlib —
+no magic boundaries — and creates a reserved→shadowable semantic cliff
+at M5 while the type-value prelude stays shadowable) and a synthetic
+prelude module now (pulls M5's import/wildcard machinery forward to
+serve one name; observationally identical to the seed for programs).
+**Parked for M5:** should a declaration hiding a prelude name trigger
+the L§5.1 shadowing *warning* (`let print = 5` then `print("hi")`
+raises NotCallable — a kid trap)? Applies to type values and
+intrinsics alike; needs the front end to know the prelude name set —
+natural once the prelude is an import, not worth front-end coupling
+for the stopgap. **[spec landed with this entry: E§5.5
+provisional-registration block + L§11.4 note. Code: M2b.2 implements
+(registration API + seeding; S-42-lite descriptor shape and the S-19
+sync-FF determinism note land there too, as planned).]** ·
 S-45 (L§8.7) A call that passes a block argument is **not** a tail
 position: the block references the caller's frame, so the frame cannot be
 reused (found during machine design — see `machine-design.md` §11). Amend

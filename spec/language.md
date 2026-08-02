@@ -1762,6 +1762,14 @@ implicitly available in every program (the *prelude*), and any additional
 per-project or editor-provided preambles, are defined by the standard library and
 tooling — not by this specification.
 
+Until the standard library and module system exist, an embedding host may
+inject such names directly (a provisional mechanism specified in the engine
+specification, §5.5): they are seeded as ordinary **read-only** global
+bindings behind the program's own declarations, so a program that declares
+its own `print` shadows the host's — the same relationship a prelude
+star-import will have. Nothing about the previous paragraph changes: the
+names remain host/library-supplied, never language built-ins.
+
 ---
 
 ## 12. Errors and exceptions
