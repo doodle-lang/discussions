@@ -85,11 +85,27 @@ user ask** when reached (semantics/mechanism not yet ratified).
   (`InstanceState::Raised` replaces the M2a.3a provisional; tests:
   raised-after-raise, faulted-after-limit).
 - **S-46 (E§7.2/§5.4) — non-local exits crossing a native block-consuming
-  callee.**\* The MD §12 mechanism (`NonLocalExit{kind}` outcome; callback
-  returns promptly; engine resumes the parked unwind at the foreign call's
-  apply site; a host returning a value/raise after `NonLocalExit` faults)
-  is the intended resolution — confirm it and land the E edit with
-  **M2b.5**.
+  callee. DIRECTION CONFIRMED (user, 2026-08-02): the MD §12
+  `NonLocalExit` mechanism** (`NonLocalExit{kind}` outcome; callback
+  returns promptly without a result; engine resumes the parked unwind at
+  the foreign call's apply site — a Break targeting that call completes
+  it per L§7.10, a `return`/outer break keeps unwinding; value/raise
+  after `NonLocalExit` = host-contract fault). **Riders the E edit must
+  pin** (lands with **M2b.5** + App C S-46): (1) `continue` never
+  crosses — it is the block invocation completing normally
+  (`Completed(value?)` to the callback), not a `NonLocalExit`; state the
+  three-way symmetry with `Raised` (E§9) once. (2) Multiple crossed
+  native frames compose — each callback sees `NonLocalExit` innermost
+  outward, unwind resuming at each apply site. (3) **No new drives after
+  `NonLocalExit`**: that callback activation may clean up host-side but
+  may not re-invoke the block or start nested drives (same
+  host-contract-fault family as S-16); Doodle-level cleanup belongs to
+  the engine's unwind segments. (4) **Parity is the acceptance bar**: a
+  native consumer is program-observably identical to a Doodle-written
+  one for every exit kind — and S-46 stays orthogonal to S-10's open
+  `to`-consumer half (transport vs value semantics; don't pre-decide it
+  in the E text). (5) Replay: `NonLocalExit` and the resumption are
+  engine-derived — no new recordable input; one sentence in the edit.
 - **S-16 (E§5.4/§7.6) — abandoned nested drives** (callback returns while
   its nested drive is Suspended/Paused): define as a host-contract fault.
   Lands with **M2b.5**.

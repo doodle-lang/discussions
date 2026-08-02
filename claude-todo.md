@@ -114,12 +114,13 @@ M2b lands the drive-state-machine plumbing + a *basic* `Step`/`Continue`
 (pause at the next statement safe point; `StepInto/Over/Out` by frame
 depth); breakpoints / tail-aware stepping / raise-trap-pause /
 per-subexpression / inspection panels stay **M6**. (2) **S-40** bounded-run
-fuel + `Paused(SliceEnd)` is **deferred to M3** (not M2b). Starred M2b
-spec-deltas needing a fresh ask when reached: **S-46** (non-local exits
-crossing a native block-consuming callee, at M2b.5). (**S-43 is
-RESOLVED** — 2026-08-01, namespace-seed shadowable; the **post-`Raised`
-E§3.3 state is RESOLVED** — 2026-08-02, distinct terminal `raised`
-state, M2b.3 implements; see the spec-delta queue.)
+fuel + `Paused(SliceEnd)` is **deferred to M3** (not M2b). No starred
+M2b fresh-asks remain: **S-43 RESOLVED** (2026-08-01, namespace-seed
+shadowable), the **post-`Raised` E§3.3 state RESOLVED** (2026-08-02,
+distinct terminal `raised` state), and **S-46 DIRECTION CONFIRMED**
+(user, 2026-08-02: the MD §12 `NonLocalExit` mechanism, option 1 — with
+riders recorded on the plan-m2b S-46 obligation; the E§7.2/§5.4 edit +
+App C S-46 ride M2b.5 per the spec-delta process).
 
 - [x] **M2b.1 — boundary value model** (constructors + typed readers +
       `Kind`, E§4.3/§4.4). **DONE** (doodle-rust `1020795`) — `machine/
@@ -178,8 +179,13 @@ state, M2b.3 implements; see the spec-delta queue.)
       12 drive-directive tests.
 - [~] **M2b.5 — reentrant drives + native block-consuming fns + S-46**
       (native `each` invokes a block; S-46 non-local exits through a native
-      consumer): next. **The M2b risk peak** (like M2a.6). **Starred fresh-ask:
-      S-46** (confirm the MD §12 `NonLocalExit` mechanism).
+      consumer): next. **The M2b risk peak** (like M2a.6). **S-46 DIRECTION
+      CONFIRMED (user, 2026-08-02): the MD §12 `NonLocalExit` mechanism** —
+      implement + land the E§7.2/§5.4 edit and App C S-46 with this item,
+      per the riders on the plan-m2b S-46 obligation (continue never
+      crosses; multi-frame composition; no drives after `NonLocalExit`;
+      Doodle↔native parity as the acceptance bar, orthogonal to S-10's
+      open `to`-consumer half; replay note).
 
 **resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
 `resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site
