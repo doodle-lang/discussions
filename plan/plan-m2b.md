@@ -287,7 +287,25 @@ E§7.4; determinism gate holds). 8 drive-directive tests + a StepOut regression.
 - **Depends on.** M2b.2 (something callable to step through) — soft; could
   precede it, but stepping over a `print` is the natural test.
 
-### M2b.4 — Suspending capabilities + `resolve` + capability requests
+### M2b.4 — Suspending capabilities + `resolve` + capability requests — **DONE**
+
+**Landed** (doodle-rust `6905717`). `Intrinsic` gained a
+`ForeignBody::{Sync, Capability}`; a capability call parks a `PendingRequest`
+(capability id = registry index, args) and the drive loop returns
+`Suspended(CapabilityRequest{capability, args as host-owned handles})` — **no
+state torn down** (MD §14). `resolve(Value)` injects the result (or Void for a
+`to` capability) and resumes the drive under the in-force directive;
+`resolve(Raise)` surfaces `Raised` at the call site — **provisional
+(user-ruled): a `HostRaised` kind + rendered message**, the value-carrying
+exception `rescue` binds is M4 (E§9; filed in the spec-delta queue). Parked
+args are GC roots while `Suspended`; capability id is stable (S-43 order) for
+replay (E§11). Scripted `read_line` capability. `Value`/index types split to
+`machine/value.rs` (file length). **6-lens review: 1 MAJOR folded** — a
+`resolve` on a stale handle returned `Faulted` but left the instance
+`Suspended` (resumable half-state, violating E§3.3 outcome↔state); now the
+suspension is cleared and the instance is left terminally `Faulted`. 12
+drive-directive tests (suspend/resolve-value, resolve-raise, request identity,
+stale-handle fault, replay determinism).
 
 - **Goal.** A capability call yields to the host and resumes with the
   host's value — exit criterion 1 (`read_line`).

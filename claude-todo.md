@@ -162,9 +162,34 @@ state, M2b.3 implements; see the spec-delta queue.)
       like the fall-through path — return-via-unwind now ticks a return safe
       point, consistent with E§7.4; determinism gate green). 8 drive-directive
       tests + a StepOut regression.
-- [~] **M2b.4 — suspending capabilities + `resolve` + capability requests**
-      (`read_line` suspends/resolves; S-17): next. **Starred M2b fresh-ask
-      left: S-46** (non-local exits through native consumers, at M2b.5).
+- [x] **M2b.4 — suspending capabilities + `resolve`. DONE** (doodle-rust
+      `<pending>`). `Intrinsic` gained `ForeignBody::{Sync, Capability}`; a
+      capability call parks a `PendingRequest` (id = registry index, args) and
+      the drive loop returns `Suspended(CapabilityRequest{capability, host-owned
+      arg handles})` — no state torn down (MD §14). `resolve(Value)` injects the
+      result (Void for a `to` cap) + resumes under the in-force directive;
+      `resolve(Raise)` → `Raised` at the call site (**provisional `HostRaised`
+      kind + rendered message per the user ruling; value-carrying is M4** — spec
+      delta below). Parked args are GC roots while `Suspended`; capability id is
+      stable (S-43) for replay. `read_line` capability. `Value`/index types →
+      `machine/value.rs` (length). 6-lens review: **1 MAJOR folded** — a
+      stale-handle `resolve` returned `Faulted` but left the instance `Suspended`
+      (resumable half-state, E§3.3 violation); now cleared + terminally `Faulted`.
+      12 drive-directive tests.
+- [~] **M2b.5 — reentrant drives + native block-consuming fns + S-46**
+      (native `each` invokes a block; S-46 non-local exits through a native
+      consumer): next. **The M2b risk peak** (like M2a.6). **Starred fresh-ask:
+      S-46** (confirm the MD §12 `NonLocalExit` mechanism).
+
+**resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
+`resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site
+with a provisional engine exception (`ExceptionKind::HostRaised` + the
+host-raised value **rendered into the message**); the host-provided value is
+**not** carried as an exception value yet (`Exception` has no value slot). The
+value-carrying exception that `rescue` binds arrives with **exceptions-as-values
+at M4** (E§9). Resolve the E§7.5 host-raise representation in the spec no later
+than M4. Tracked by `a_capability_resolved_with_a_raise_surfaces_raised`
+(`tests/drive_directives.rs`).
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
