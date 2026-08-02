@@ -238,7 +238,25 @@ literals (alloc the NFC string). **Interpolation stays M4** (Stringable).
   output-sink determinism.
 - **Depends on.** M2b.1.
 
-### M2b.3 — The drive-state machine: resume, directives, terminal guards
+### M2b.3 — The drive-state machine: resume, directives, terminal guards — **DONE**
+
+**Landed** (doodle-rust `934481b`). `drive::run` is now a resumable loop
+(`Ready`/`Paused` → step → `Completed`/`Raised`/`Faulted`/`Paused`), plus a
+`resolve(Resolution)` entry (phase-guarded; the resume path is M2b.4).
+**Basic `Step*`** (user ruling): `step()` reports statement-level safe-point
+crossings + their frame depth; `should_pause` implements `Step`/`StepInto`
+(next safe point), `StepOver` (`depth ≤ anchor`), `StepOut` (`depth < anchor`);
+`RunToCompletion`/`Continue` never pause (breakpoints/raise-trap → M6). **E§3.3
+outcome↔state correspondence** with the new terminal **`InstanceState::Raised`**
+(user-ratified; distinct from `Faulted`, `is_terminal()`). Host-contract phase
+guards (re-driving a terminal / `resolve`-ing a non-`Suspended` instance →
+debug-assert + `Faulted(Internal)`). **5-lens review: 1 MAJOR folded** — a
+root-caused `StepOut` bug: a frame-popping unwind (`return`/block `break`)
+reported no safe point at the return depth, so `StepOut` overshot into sibling
+calls; now the **settling** unwind transition reports the return safe point and
+runs `limits::safe_point` like the fall-through `ReturnBarrier` (behavior
+change: return-via-unwind now ticks a return safe point too, consistent with
+E§7.4; determinism gate holds). 8 drive-directive tests + a StepOut regression.
 
 - **Goal.** Replace the single-shot `run()` with a real resumable loop over
   `InstanceState`, honoring directives and rejecting mis-phased drives — the

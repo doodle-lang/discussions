@@ -147,11 +147,24 @@ state, M2b.3 implements; see the spec-delta queue.)
       run fixture now checks output is empty). Foreign defaults inline-only
       (heap-backed → S-42/M7). **Discovered + wired: string-literal evaluation**
       (a real M2a `StrLit` gap; non-interpolated only — interpolation is M4).
-- [~] **M2b.3 — drive-state machine** (resume/`resolve`, directives, terminal
-      guards): next. **E§3.3 state RESOLVED + spec landed (2026-08-02)** —
-      implement the distinct terminal `raised` state per the queue entry
-      (`InstanceState::Raised` replaces the M2a.3a provisional; tests:
-      raised-after-raise, faulted-after-limit; outermost-drive-only).
+- [x] **M2b.3 — drive-state machine. DONE** (doodle-rust `934481b`).
+      `drive::run` is a resumable loop (`Ready`/`Paused` → `Completed`/`Raised`/
+      `Faulted`/`Paused`) + a phase-guarded `resolve(Resolution)` (resume path
+      M2b.4). **Basic `Step*`**: `step()` reports statement-level safe-point
+      crossings + depth; `should_pause` = `Step`/`StepInto` (next SP),
+      `StepOver` (`depth ≤ anchor`), `StepOut` (`depth < anchor`);
+      `RunToCompletion`/`Continue` never pause (M6 adds breakpoints).
+      **`InstanceState::Raised`** (E§3.3 outcome↔state; terminal, distinct from
+      `Faulted`); host-contract phase guards. 5-lens review: **1 MAJOR folded**
+      — a root-caused `StepOut` overshoot (a frame-popping `return`/`break`
+      unwind reported no return safe point → StepOut ran into sibling calls;
+      the settling unwind transition now reports it + runs `limits::safe_point`
+      like the fall-through path — return-via-unwind now ticks a return safe
+      point, consistent with E§7.4; determinism gate green). 8 drive-directive
+      tests + a StepOut regression.
+- [~] **M2b.4 — suspending capabilities + `resolve` + capability requests**
+      (`read_line` suspends/resolves; S-17): next. **Starred M2b fresh-ask
+      left: S-46** (non-local exits through native consumers, at M2b.5).
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
