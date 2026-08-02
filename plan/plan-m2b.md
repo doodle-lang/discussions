@@ -133,7 +133,22 @@ Each item: **Goal**, **Lands**, **Design refs**, **Tests**, **Review**,
 **Depends on**. Sizing is one focused session apiece (M2b.5 is the large
 one, like M2a.6 was).
 
-### M2b.1 — Boundary value model: constructors, typed readers, `Kind`
+### M2b.1 — Boundary value model: constructors, typed readers, `Kind` — **DONE**
+
+**Landed** (doodle-rust `1020795`). New `machine/boundary.rs`:
+`make_int/bool/nil/float/string/bytes/list` + `list_append`, and readers
+`kind_of`/`as_int`/`as_bool`/`as_float`/`is_nil`/`string_bytes`/`as_bytes`/
+`list_length`/`list_get`, plus `Kind`/`ValueError`. Determinism honored on the
+construct path: `make_string` validates UTF-8 + NFC-normalizes; `make_float`
+canonicalizes NaN to `0x7FF8…` while passing ±∞/−0.0 through bit-for-bit
+(S-56/S-28). `kind_of` maps `Int`/`BigInt` → `Kind::Int`; `as_int` on a bignum
+→ `IntOutOfRange`. Supporting: accounting-aware `Heap::list_push`;
+`HandleTable::resolve` promoted from test-only. **5-lens read-only review:**
+0 code defects; 2 folded — a MAJOR *test-coverage* gap (the new `list_push`
+byte-accounting had no test; a deleted charge survived the suite → added a
+heap test asserting the exact charge and its sweep-reclamation to baseline)
+and a MINOR doc gap (`list_get` mints a host-owned handle — release
+obligation now documented). 14 unit tests.
 
 - **Goal.** The public host↔value API (E§4.3/§4.4) over the demo-subset
   kinds, so foreign functions and observation can construct and read

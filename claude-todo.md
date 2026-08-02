@@ -120,8 +120,19 @@ registration mechanism + its M5 retirement, at M2b.2) and **S-46**
 (non-local exits crossing a native block-consuming callee, at M2b.5); the
 post-`Raised`/`Faulted` E§3.3 state pins at M2b.3.
 
-- [~] **M2b.1 — boundary value model** (constructors + typed readers +
-      `Kind`, E§4.3/§4.4): the first chunk, in progress.
+- [x] **M2b.1 — boundary value model** (constructors + typed readers +
+      `Kind`, E§4.3/§4.4). **DONE** (doodle-rust `1020795`) — `machine/
+      boundary.rs`: `make_*` (int/bool/nil/float/string/bytes/list +
+      `list_append`) + readers (`kind_of`/`as_int`/`as_bool`/`as_float`/
+      `is_nil`/`string_bytes`/`as_bytes`/`list_length`/`list_get`), all
+      handle-mediated (host-owned GC roots). Determinism on construct:
+      `make_string` UTF-8+NFC, `make_float` NaN-canonicalizes (±∞/−0.0
+      inert). Accounting-aware `Heap::list_push`. 5-lens review: 0 code
+      defects; folded a MAJOR test-gap (`list_push` accounting now tested
+      charge+sweep-reclaim) + a MINOR doc gap (`list_get` handle ownership).
+      14 unit tests.
+- [~] **M2b.2 — foreign-function registry + synchronous foreign fns +
+      `print` (S-43):** next. Unblocks the SKIP'd `expect-out` run-tests.
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
@@ -447,7 +458,7 @@ the M2a.1 heap object-count gap, and S-41 are RESOLVED**, see the spec-delta que
         boundaries; a `return` in a loop body (same frame) IS tail, but a `return`
         crossing a block boundary is not (non-local exit). New `walk/tailmark.rs`;
         annotated-corpus tests in `tests/resolve.rs` (`tails` helper). L§8.7's
-        non-tail list amended for S-45. doodle-rust `<pending>`.
+        non-tail list amended for S-45. doodle-rust `c5a64a9`.
 
       **Capture representation RESOLVED: B** (user 2026-07-17, after adversarial
       review — resolver-design §8). Surfaced building M1.10a: a block nested in a
