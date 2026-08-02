@@ -75,11 +75,15 @@ user ask** when reached (semantics/mechanism not yet ratified).
   error (S-39/M1.10b). Folds the M2a.5 type-value BUILTINS seeding under
   the same mechanism; the M5 star-import retires it with no
   program-observable change. **M2b.2** implements.
-- **Post-`Raised`/`Faulted` instance state (E§3.3).** The M2a.3a drive
-  provisionally sets `Faulted` after an uncaught `Raised`; E§3.3 lists no
-  distinct "raised" state. Pin the intended terminal state (add `raised`,
-  or state `Raised`/`Faulted` leave the instance terminal-and-not-
-  re-drivable-until-S-33). Lands with **M2b.3** (the lifecycle spine).
+- **Post-`Raised`/`Faulted` instance state (E§3.3). RESOLVED (user,
+  2026-08-02; spec landed): a distinct terminal `raised` state.** Each
+  stopping outcome leaves the instance in the same-named state, so
+  `state()` alone preserves E§9's raise-vs-fault line; exception + trace
+  stay observable post-mortem (stack unwound; §8.7 observes pre-unwind);
+  a nested drive's `Raised` changes no state (outermost only);
+  cancellation stays `Faulted(Cancelled)`. **M2b.3** implements
+  (`InstanceState::Raised` replaces the M2a.3a provisional; tests:
+  raised-after-raise, faulted-after-limit).
 - **S-46 (E§7.2/§5.4) — non-local exits crossing a native block-consuming
   callee.**\* The MD §12 mechanism (`NonLocalExit{kind}` outcome; callback
   returns promptly; engine resumes the parked unwind at the foreign call's

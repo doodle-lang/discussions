@@ -116,9 +116,10 @@ depth); breakpoints / tail-aware stepping / raise-trap-pause /
 per-subexpression / inspection panels stay **M6**. (2) **S-40** bounded-run
 fuel + `Paused(SliceEnd)` is **deferred to M3** (not M2b). Starred M2b
 spec-deltas needing a fresh ask when reached: **S-46** (non-local exits
-crossing a native block-consuming callee, at M2b.5); the post-`Raised`/
-`Faulted` E§3.3 state pins at M2b.3. (**S-43 is RESOLVED** — 2026-08-01,
-namespace-seed shadowable; see the spec-delta queue.)
+crossing a native block-consuming callee, at M2b.5). (**S-43 is
+RESOLVED** — 2026-08-01, namespace-seed shadowable; the **post-`Raised`
+E§3.3 state is RESOLVED** — 2026-08-02, distinct terminal `raised`
+state, M2b.3 implements; see the spec-delta queue.)
 
 - [x] **M2b.1 — boundary value model** (constructors + typed readers +
       `Kind`, E§4.3/§4.4). **DONE** (doodle-rust `1020795`) — `machine/
@@ -147,7 +148,10 @@ namespace-seed shadowable; see the spec-delta queue.)
       (heap-backed → S-42/M7). **Discovered + wired: string-literal evaluation**
       (a real M2a `StrLit` gap; non-interpolated only — interpolation is M4).
 - [~] **M2b.3 — drive-state machine** (resume/`resolve`, directives, terminal
-      guards; pin post-`Raised`/`Faulted` E§3.3 state): next.
+      guards): next. **E§3.3 state RESOLVED + spec landed (2026-08-02)** —
+      implement the distinct terminal `raised` state per the queue entry
+      (`InstanceState::Raised` replaces the M2a.3a provisional; tests:
+      raised-after-raise, faulted-after-limit; outermost-drive-only).
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
@@ -716,6 +720,17 @@ secondary). Pin the intended post-`Raised` state in E§3.3 (add a `raised`
 state, or state that `Raised` leaves the instance `completed`/terminal, or
 confirm `faulted`) — batch with the M2b drive-layer work where outcomes and
 lifecycle are fully wired.
+**RESOLVED (user, 2026-08-02): a distinct terminal `raised` state.**
+E§3.3 now lists it and pins the outcome↔state correspondence (each
+stopping outcome → the same-named state, so `state()` alone preserves
+E§9's raise-vs-fault line), the post-mortem surface (exception + trace
+retained and observable; the stack has unwound — §8.7 trap-on-raise
+observes pre-unwind), outermost-drive-only scoping (a nested drive's
+`Raised` re-raises, no state change), and that cancellation stays
+`Faulted(Cancelled)`. Mirrors the module-level `Failed` pattern.
+Landed: E§3.3 + §9 + App B.1; plan-m2b obligation. **M2b.3 implements**
+(`InstanceState::Raised` replaces the provisional; tests
+raised-after-raise / faulted-after-limit).
 
 M2a.5 provisional (flag for the user; resolve in the spec **by M2a**):
 **`to`/`fn` declarations follow the same execution-order temporal dead zone
@@ -979,6 +994,13 @@ resolved (but see the visibility discrepancy above).
 
 ## Done
 
+- 2026-08-02 — **E§3.3 post-raise state resolved + spec landed: a distinct
+  terminal `raised` state.** Full ruling in the M2a.3a discovered-delta
+  entry above (now resolved). One discussions commit: E§3.3 (the `raised`
+  state + the outcome↔state correspondence + the post-mortem observation
+  surface + nested-drive scoping), E§9 (outermost-boundary sentence),
+  E App B.1; plan-m2b obligation + this file. M2b.3 implements
+  (`InstanceState::Raised` replaces the M2a.3a `Faulted` provisional).
 - 2026-08-01 — **S-43 resolved + spec landed: namespace-seed, shadowable
   intrinsics.** Full ruling in the spec-delta queue entry above. One
   discussions commit: E§5.5 (provisional pre-module intrinsic

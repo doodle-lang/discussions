@@ -196,8 +196,21 @@ observable and steppable like any other code.
 An instance is always in one of: **ready** (loaded, not yet started, or between
 top-level statements), **running** (inside a drive call), **suspended** (awaiting
 a capability resolution, §7.5), **paused** (stopped at a safe point for
-observation, §7.4), **completed**, or **faulted** (§9, §10). The drive loop (§7)
-moves between these.
+observation, §7.4), **completed**, **raised** (an uncaught Doodle exception
+reached the outermost drive boundary, §9), or **faulted** (§9, §10). The drive
+loop (§7) moves between these; each stopping outcome leaves the instance in the
+same-named state (`Completed` → completed, `Raised` → raised, `Faulted` →
+faulted, `Suspended` → suspended, `Paused` → paused), so `state()` alone
+distinguishes a program's own error from an engine fault (§9).
+
+**raised** is terminal, like completed and faulted: the instance is not
+re-drivable (until the REPL/session facility defines re-drive semantics). In
+raised, the exception value and its trace remain retained and observable
+(§4.2, §8.4; the trace in §8.3's format) for post-mortem display; the call
+stack itself has unwound — trap-on-raise (§8.7) is the way to observe the
+pre-unwind state. A `Raised` outcome from a *nested* drive (§7.6) is the
+callback's to handle and re-raises into the outer computation; only the
+outermost drive's outcome moves the instance to raised.
 
 ---
 
@@ -661,7 +674,9 @@ inspection. This is deferred (Appendix B).
   L§12.2).
 - An uncaught exception that reaches a drive boundary yields `Raised(exception, trace)`.
   The **trace** is captured at `raise` (L§12.1) and includes the live frames and the
-  bounded tail-elided history (§8.3) as positions and callables.
+  bounded tail-elided history (§8.3) as positions and callables. When the boundary is
+  the outermost drive, the instance enters the terminal **raised** state (§3.3),
+  retaining the exception and trace for post-mortem inspection.
 - **Driving is inherently protected.** Every `run`/`resolve` returns an outcome; a
   Doodle error never propagates as a host-language exception or crash. (This subsumes
   the role of a `pcall`-style protected-call primitive.)
@@ -854,6 +869,14 @@ provides the complete set plus the interactive facilities of §7–§11.
   star-import that retires this mechanism with no program-observable change).
   Late or duplicate registration is a host-API error; registration order is
   replay-identity input (§11). Resolves implementation-plan Appendix C S-43.
+- **An uncaught raise leaves the instance `raised`, not `faulted` (§3.3, §9).** A
+  distinct terminal state mirroring the `Raised` outcome, so `state()` alone
+  preserves §9's raise-vs-fault distinction (post-mortem hosts and IDE panels
+  branch on it); the exception and trace stay observable; the module-level
+  `Failed`-retaining-exception state is the same pattern. Resolves the M2a.3a
+  provisional (which recorded `Faulted`); cancellation stays
+  `Faulted(Cancelled)` (§10.1); a nested drive's `Raised` changes no state
+  (outermost only).
 
 ### B.2 Open issues, including cross-spec implications
 
