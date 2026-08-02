@@ -107,7 +107,21 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
-(none — M1.6 and M1.7 landed; see Done log. Next is M1.8.)
+**Milestone M2b — Drive layer** (`[M]`; working plan
+**`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
+M2b.7**). Two scope-boundary calls **ruled by the user 2026-08-01**: (1)
+M2b lands the drive-state-machine plumbing + a *basic* `Step`/`Continue`
+(pause at the next statement safe point; `StepInto/Over/Out` by frame
+depth); breakpoints / tail-aware stepping / raise-trap-pause /
+per-subexpression / inspection panels stay **M6**. (2) **S-40** bounded-run
+fuel + `Paused(SliceEnd)` is **deferred to M3** (not M2b). Starred M2b
+spec-deltas needing a fresh ask when reached: **S-43** (native-intrinsic
+registration mechanism + its M5 retirement, at M2b.2) and **S-46**
+(non-local exits crossing a native block-consuming callee, at M2b.5); the
+post-`Raised`/`Faulted` E§3.3 state pins at M2b.3.
+
+- [~] **M2b.1 — boundary value model** (constructors + typed readers +
+      `Kind`, E§4.3/§4.4): the first chunk, in progress.
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +
