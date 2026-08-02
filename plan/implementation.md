@@ -1518,14 +1518,17 @@ reason, keeping `HostPause` a genuine host request. Resolve by M3. ·
 S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
 are represented (value handles vs engine-evaluated) and block-parameter
 declaration; conformance-tested through the C ABI. Resolve by M7. ·
-S-46 (E§7.2/§5.4) Non-local exits (`break`/`return`) crossing a **native
-block-consuming callee**: a nested drive returns a distinguished
-`NonLocalExit{kind}` outcome; the foreign callback must return promptly
-without a result; the engine resumes the parked unwind at the foreign
-call's apply site (a Break targeting that call completes it with the
-value; anything else keeps unwinding); a host that returns a value or
-raises after `NonLocalExit` faults. Found by the machine-design review
-(v0.2 §12 — S-16 covers abandoned drives, not this). Resolve by M2b.
+**S-46 (E§7.2/§5.4) RESOLVED (user, 2026-08-02): support non-local exits
+across a native block-consuming callee** via the machine-design §12
+mechanism (chosen over disallowing them, so a native `each`/`repeat`
+behaves like a Doodle block-consumer — no-magic-boundaries). A nested drive
+returns a distinguished `NonLocalExit{kind}` outcome; the foreign callback
+must return promptly without a result; the engine resumes the parked unwind
+at the foreign call's apply site (a `break` targeting that call completes it
+with the value; anything else keeps unwinding); a host that returns a
+value/raises/re-drives after `NonLocalExit` faults. Found by the
+machine-design review (v0.2 §12 — S-16 covers abandoned drives, not this).
+Spec landed E§7.6 + §5.4 + App B.1. **Code: M2b.5 implements.**
 
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent

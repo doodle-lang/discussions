@@ -385,9 +385,12 @@ While handling a synchronous foreign call, the host may invoke a Doodle callable
 (e.g. to call a block argument). This is a **nested drive** on the same instance
 and the same stack: the engine runs the callable to completion (or to a suspend
 or a stop), returning an outcome to the host, which eventually returns from the
-foreign call. Nested drives observe the same instrumentation as top-level drives
-(§8). Reentrancy is single-threaded; the host must not drive the instance from
-another thread meanwhile (§10).
+foreign call. A nested drive may additionally return **`NonLocalExit`** when the
+invoked block exits (a `break`/`return`) to a target outside the host call, which
+the callback must relay by returning promptly (§7.6). Nested
+drives observe the same instrumentation as top-level drives (§8). Reentrancy is
+single-threaded; the host must not drive the instance from another thread
+meanwhile (§10).
 
 ### 5.5 Native modules
 
@@ -537,9 +540,40 @@ and replayed (§11).
 ### 7.6 Reentrant drives
 
 A synchronous foreign function (§5.2) may drive the instance reentrantly by invoking
-a Doodle callable. The nested drive returns its own outcome to the host; a nested
-`Suspended`/`Paused` propagates outward as the host chooses to handle it. Reentrant
-drives share the instance's single heap stack and its instrumentation.
+a Doodle callable — or the **block argument** it received (§5.1, L§8.5). The nested
+drive runs on the instance's single heap stack, shares its instrumentation, and
+returns its own outcome to the caller; a nested `Suspended`/`Paused` propagates
+outward as the host chooses to handle it.
+
+**Non-local exits across a native consumer (resolves App C S-46).** A `do … end`
+block invoked by a native block-consuming function may execute an exit whose target
+lies *outside* the block. There are three cases, mirroring how the three outcomes of
+an ordinary block invocation surface to a Doodle consumer:
+
+- A **`continue`** (and normal fall-off) targets the block itself: the invocation
+  simply **completes** — `Completed(value?)` to the callback — so the callback runs
+  its next iteration. It is never a `NonLocalExit`.
+- A **`break`** targets the call that *received* the block (L§7.10), and a
+  **`return`** targets the enclosing Doodle function — both on the far side of the
+  host call. The nested drive cannot complete these directly, so it returns a
+  distinguished **`NonLocalExit(kind)`** outcome (kind `break`/`return`, carrying a
+  value for a valued exit) — the transport-level analogue of a `Raised` crossing a
+  native frame (§9).
+
+On receiving a `NonLocalExit`, the foreign callback **must return promptly with no
+result** (host-side cleanup only — it may **not** re-invoke the block or start a
+nested drive; Doodle-level cleanup runs in the engine's own unwind, not the host's).
+The engine then resumes the parked exit at the foreign call's apply site: a `break`
+targeting *that* call completes it with the exit's value; a `return` (or a `break`
+aimed at a construct enclosing this one) keeps unwinding past the call toward its
+true target, so several nested native consumers each see the `NonLocalExit` in turn,
+innermost outward, the unwind resuming at each apply site. A host that returns a
+value, raises, or drives again after `NonLocalExit` violates the contract and
+**faults** the instance — the exit's target integrity cannot otherwise be preserved.
+(The distinct abandoned-nested-drive case — a callback returning while a nested
+drive is still `Suspended`/`Paused` — is the S-16 host-contract fault.) `NonLocalExit`
+and its resumption are engine-derived from the running program, not host input, so
+they add nothing to the recordable boundary (§11).
 
 ### 7.7 Determinism of driving
 
@@ -877,6 +911,17 @@ provides the complete set plus the interactive facilities of §7–§11.
   provisional (which recorded `Faulted`); cancellation stays
   `Faulted(Cancelled)` (§10.1); a nested drive's `Raised` changes no state
   (outermost only).
+- **Non-local exits cross a native block-consuming callee via `NonLocalExit`
+  (§7.6, §5.4).** A `break`/`return` whose target lies outside a block invoked by a
+  native function is **supported** (not disallowed): the nested drive returns a
+  `NonLocalExit(kind)` outcome, the callback returns promptly with no result, and
+  the engine resumes the parked exit at the foreign call's apply site (a `break`
+  targeting that call completes it; a `return`/outer break keeps unwinding). A
+  `continue` is not a `NonLocalExit` — it completes the block invocation normally. A
+  host that returns a value/raises/re-drives after `NonLocalExit` faults. Chosen
+  over disallowing such exits so a native `each`/`repeat` behaves like a
+  Doodle-defined block-consumer (no-magic-boundaries, plan §1). Resolves
+  implementation-plan Appendix C S-46 (user-ratified 2026-08-02).
 
 ### B.2 Open issues, including cross-spec implications
 
