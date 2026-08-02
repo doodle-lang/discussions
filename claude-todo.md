@@ -131,13 +131,23 @@ namespace-seed shadowable; see the spec-delta queue.)
       defects; folded a MAJOR test-gap (`list_push` accounting now tested
       charge+sweep-reclaim) + a MINOR doc gap (`list_get` handle ownership).
       14 unit tests.
-- [~] **M2b.2 — foreign-function registry + synchronous foreign fns +
-      `print` (S-43):** next. Unblocks the SKIP'd `expect-out` run-tests.
-      **S-43 RESOLVED + spec landed (2026-08-01)** — implement per App C
-      S-43: register before the first `load` (late/duplicate = loud
-      host-API error; order = replay-identity input), seed as read-only
-      cells behind module globals (a user's own declaration shadows),
-      fold the type-value BUILTINS seeding under the same mechanism.
+- [x] **M2b.2 — foreign-function registry + synchronous foreign fns +
+      `print` (S-43). DONE** (doodle-rust `f0d4f1a`). `machine/intrinsic.rs`:
+      `Registry` (register-before-load; dup/builtin-collision → `HostError`;
+      order = replay identity), `Intrinsic` descriptor, `IntrinsicCtx`, inline
+      synchronous `apply`, `print` + a provisional value renderer (Stringable
+      stand-in → M4/M9a). `CalObj` split `CallableTarget::{Source,Intrinsic}`
+      (apply runs an intrinsic inline, never a frame); object defs → new
+      `heap/objects.rs`. Namespace order `globals → BUILTINS → intrinsics`
+      (user shadows); output sink + `Instance::{load_with_intrinsics,output}`.
+      Runner registers `print`, matches `expect-out`; **conformance 66/0/0**
+      (last SKIP gone). 6-lens review: 0 code-safety defects; folded 2 MINOR
+      (block-on-block-less-intrinsic now raises for call parity; a no-`expect-out`
+      run fixture now checks output is empty). Foreign defaults inline-only
+      (heap-backed → S-42/M7). **Discovered + wired: string-literal evaluation**
+      (a real M2a `StrLit` gap; non-interpolated only — interpolation is M4).
+- [~] **M2b.3 — drive-state machine** (resume/`resolve`, directives, terminal
+      guards; pin post-`Raised`/`Faulted` E§3.3 state): next.
 
 **S-51 RESOLVED (user, 2026-07-11): `(a) = 5` is accepted** — parens are
 transparent around assignment targets (`'(' lvalue ')'` added to L§5.3 +

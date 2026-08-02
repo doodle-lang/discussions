@@ -176,7 +176,30 @@ obligation now documented). 14 unit tests.
   handle-rooting completeness, generation-check coverage.
 - **Depends on.** M2a.11 (`HandleTable`) — done.
 
-### M2b.2 — Foreign-function registry + synchronous foreign functions + `print` (S-43)
+### M2b.2 — Foreign-function registry + synchronous foreign functions + `print` (S-43) — **DONE**
+
+**Landed** (doodle-rust `f0d4f1a`). New `machine/intrinsic.rs`: `Registry`
+(register-before-load; duplicate-name and built-in-type-value collision →
+`HostError`; registration order is replay identity), the `Intrinsic`
+descriptor (kind, params, `fn`-pointer callback), `IntrinsicCtx` (bound args
++ heap + output sink), inline synchronous `apply`, and the `print` intrinsic
++ a **provisional** value renderer (Stringable stand-in → M4/M9a). `CalObj`
+gained a `CallableTarget::{Source,Intrinsic}` split (`call.rs` `apply`
+branches to run an intrinsic inline — never a frame; frame/return sites read
+`source_id()`); object defs moved to `heap/objects.rs` (length). Namespace
+seeding `globals → BUILTINS → intrinsics` (user shadows intrinsic); an output
+sink + `Instance::{load_with_intrinsics, output}`. Conformance runner
+registers `print`, matches `expect-out`; the last SKIP is gone (**66/0/0**).
+Foreign defaults are inline-only (heap-backed → S-42/M7). **6-lens read-only
+review:** 0 code-safety defects (representation-safety/determinism/binding/GC
+lenses clean); 2 folded — a MINOR call-parity gap (a `do…end` passed to a
+block-less intrinsic silently dropped → now raises like a source callee) and
+a MINOR conformance-harness gap (a run fixture with no `expect-out` didn't
+check output → spurious output now FAILs). 9 intrinsic tests.
+
+**Discovered + wired:** the machine never evaluated **string literals**
+(`StrLit`) — a real M2a demo-subset gap; M2b.2 wires non-interpolated string
+literals (alloc the NFC string). **Interpolation stays M4** (Stringable).
 
 - **Goal.** Register host callbacks and call them from Doodle; ship `print`
   as the first native intrinsic, unblocking the `expect-out` conformance
