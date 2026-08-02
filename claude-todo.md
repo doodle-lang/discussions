@@ -164,7 +164,7 @@ App C S-46 ride M2b.5 per the spec-delta process).
       point, consistent with E§7.4; determinism gate green). 8 drive-directive
       tests + a StepOut regression.
 - [x] **M2b.4 — suspending capabilities + `resolve`. DONE** (doodle-rust
-      `<pending>`). `Intrinsic` gained `ForeignBody::{Sync, Capability}`; a
+      `6905717`). `Intrinsic` gained `ForeignBody::{Sync, Capability}`; a
       capability call parks a `PendingRequest` (id = registry index, args) and
       the drive loop returns `Suspended(CapabilityRequest{capability, host-owned
       arg handles})` — no state torn down (MD §14). `resolve(Value)` injects the
@@ -177,15 +177,29 @@ App C S-46 ride M2b.5 per the spec-delta process).
       stale-handle `resolve` returned `Faulted` but left the instance `Suspended`
       (resumable half-state, E§3.3 violation); now cleared + terminally `Faulted`.
       12 drive-directive tests.
-- [~] **M2b.5 — reentrant drives + native block-consuming fns + S-46**
-      (native `each` invokes a block; S-46 non-local exits through a native
-      consumer): next. **The M2b risk peak** (like M2a.6). **S-46 DIRECTION
-      CONFIRMED (user, 2026-08-02): the MD §12 `NonLocalExit` mechanism** —
-      implement + land the E§7.2/§5.4 edit and App C S-46 with this item,
-      per the riders on the plan-m2b S-46 obligation (continue never
-      crosses; multi-frame composition; no drives after `NonLocalExit`;
-      Doodle↔native parity as the acceptance bar, orthogonal to S-10's
-      open `to`-consumer half; replay note).
+**M2b.5 split for size (M2a.6-scale) into 5a (done) + 5b (next).**
+- [x] **M2b.5a — reentrant drives + native `each`. DONE** (doodle-rust
+      `b02b5f8`). `IntrinsicCtx` → a rich mutable step-context with
+      `invoke_block` running a nested drive (block frame at a `Consumer::Native`
+      boundary; complete/`continue`/raise). A limit inside the nested drive
+      parks `Machine.reentry_fault` (the Raise-typed `apply` chain can't carry a
+      `Fault`); `step` surfaces it. Native `each` (fixed-count over the live heap
+      list). `break`/`return` crossing the boundary → `Unsupported` (S-46 → 5b).
+      Wired **list-literal eval** (`Node::List`, a demo-subset gap). 5-lens
+      review: **2 folded** — CRITICAL: recursion *through* a native consumer
+      overflowed the host Rust stack (SIGABRT) → `MAX_REENTRY_DEPTH`=64 (MD §14
+      drive-depth) faults with `StackDepth`; MAJOR: the `foreign_roots` GC-root
+      fix (MD §15, a use-after-free of heap-valued `each` elements) had an
+      ineffective test → a `gc_every_safe_point` knob collects inside the nested
+      drive. Files split (intrinsic→dir, `lifecycle.rs`). 10 tests. *Provisional:*
+      `MAX_REENTRY_DEPTH`=64 flat bound (stack-aware/configurable → M3/M7);
+      `Consumer::Native` unit at 5a, **5b re-adds boundary depth** for resume.
+- [~] **M2b.5b — S-46 non-local exits: next.** The `NonLocalExit` mechanism
+      (E§7.2/§5.4 + App C S-46, spec drafted on discussions `work` d492f7e per
+      the riders). Add the boundary depth to `Consumer::Native`; `break`/`return`
+      crossing → `NonLocalExit`, callback returns promptly, engine resumes the
+      parked unwind at the apply site (a `break` completes the call; else keeps
+      unwinding); `continue` completes normally; host-contract violations fault.
 
 **resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
 `resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site

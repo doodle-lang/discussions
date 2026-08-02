@@ -349,6 +349,40 @@ stale-handle fault, replay determinism).
 
 ### M2b.5 — Reentrant drives + native block-consuming functions + S-46
 
+**Split for size (M2a.6-scale).** **M2b.5a** (reentrant drive + native
+`each`, complete/`continue`/raise) is **DONE**; **M2b.5b** (S-46 non-local
+exits) is next. Both land in M2b — this is sequencing the large item, not
+deferring scope.
+
+#### M2b.5a — reentrant drives + native `each` — **DONE**
+
+**Landed** (doodle-rust `b02b5f8`). `IntrinsicCtx` became a rich mutable
+step-context with `invoke_block(args)`, which runs a **nested drive** on the
+shared heap stack (push the block frame at a `Consumer::Native` boundary, step
+to `frames.len() ≤ boundary`, then `Completed` / a nested raise propagates /
+`continue` = normal completion). A limit inside the nested drive can't flow
+through the Raise-typed `apply` chain, so it parks `Machine.reentry_fault`,
+which `step` surfaces as `Fault`. Native **`each`** (a `to` over a list + block)
+iterates a fixed count over the live heap list. `break`/`return` crossing the
+native boundary raise `Unsupported` (S-46 → 5b). Also wired **list-literal
+evaluation** (`Node::List`, a demo-subset gap like `StrLit`). `namespace`
+threaded through the call path so a reentrant callback can `step`. **5-lens
+review: 2 CRITICAL/MAJOR folded** — (1) a program recursing *through* a native
+consumer overflowed the host **Rust stack** (SIGABRT) rather than faulting; now
+`MAX_REENTRY_DEPTH` (the MD §14 drive-depth I'd dropped) faults it with
+`StackDepth`. (2) the GC-rooting fix (`foreign_roots` roots in-flight foreign
+args, MD §15 — I'd caught a use-after-free of heap-valued `each` elements) had
+an *ineffective* test (collected between top-level steps, missing the nested
+drive); now a `gc_every_safe_point` knob collects inside it. Files split
+(intrinsic→dir, `lifecycle.rs`) for length. 10 `each`/reentrancy tests.
+
+*Provisional filed:* `MAX_REENTRY_DEPTH = 64` is a flat Rust-stack-safety bound;
+a stack-size-aware / host-configured reentrancy limit is future work (M3/M7).
+`Consumer::Native` is a unit variant at 5a; **5b re-adds the boundary depth**
+(MD §14) for the `NonLocalExit` resume.
+
+#### M2b.5b — S-46 non-local exits — next
+
 - **Goal.** A synchronous foreign function drives the instance reentrantly
   (invokes a Doodle callable / its block argument) — exit criterion 4
   (`each`) — and non-local exits crossing that native boundary behave (S-46).
