@@ -350,9 +350,8 @@ stale-handle fault, replay determinism).
 ### M2b.5 — Reentrant drives + native block-consuming functions + S-46
 
 **Split for size (M2a.6-scale).** **M2b.5a** (reentrant drive + native
-`each`, complete/`continue`/raise) is **DONE**; **M2b.5b** (S-46 non-local
-exits) is next. Both land in M2b — this is sequencing the large item, not
-deferring scope.
+`each`, complete/`continue`/raise) and **M2b.5b** (S-46 non-local exits) are
+both **DONE**. The split sequenced the large item — it did not defer scope.
 
 #### M2b.5a — reentrant drives + native `each` — **DONE**
 
@@ -381,42 +380,44 @@ a stack-size-aware / host-configured reentrancy limit is future work (M3/M7).
 `Consumer::Native` is a unit variant at 5a; **5b re-adds the boundary depth**
 (MD §14) for the `NonLocalExit` resume.
 
-#### M2b.5b — S-46 non-local exits — next
+#### M2b.5b — S-46 non-local exits — **DONE**
 
-- **Goal.** A synchronous foreign function drives the instance reentrantly
-  (invokes a Doodle callable / its block argument) — exit criterion 4
-  (`each`) — and non-local exits crossing that native boundary behave (S-46).
-  The large item.
-- **Lands.** The **drive stack**: invoking a Doodle callable from inside a
-  synchronous foreign callback pushes `DriveCtx { boundary, directive,
-  parked }` and a `HostBoundary` cont (MD §14); the nested drive runs to its
-  own outcome and returns it to the callback, which eventually returns from
-  the foreign call. Args passed to the callback are **rooted for its
-  duration** (GC root — MD §15). A native **`each`-like** primitive that
-  invokes a received block reentrantly. **S-46:** when the unwinder reaches
-  a `HostBoundary` (a `break`/`return` crossing the native consumer), park
-  the `Unwind` against the drive-stack entry and return
-  `NonLocalExit{kind}` to the callback, which **must return promptly**
-  without a result; on the callback's return the engine validates the
-  parked token at the foreign call's apply site and resumes the unwind (a
-  `Break` targeting that call completes it with the value; anything else
-  keeps unwinding). A host that returns a value or raises after
-  `NonLocalExit` **faults** (S-46). **S-16:** a callback returning while its
-  nested drive is Suspended/Paused is a host-contract fault. Spec: E§5.4/
-  §7.6 + App C S-46 confirmed + S-16.
-- **Design refs.** MD §12 (park-and-resume across `HostBoundary`), §14
-  (drive stack, nested drives), §10 (block invocation token). E§5.4/§7.6.
-- **Tests.** A native `each` over a list invokes the block per element (the
-  block sees its params + closes over caller locals); a `break` out of the
-  block completes the `each` call with the value (S-46 Break case); a
-  `return` through `each` keeps unwinding to the enclosing `fn`; a
-  `continue` targeting the block resumes the block; the host-contract faults
-  (value-after-`NonLocalExit`, abandoned nested drive) are debug-caught;
-  GC-stress determinism unchanged with a reentrant drive live.
-- **Review.** The park/resume token validation, S-46 kind dispatch at the
-  apply site, arg-rooting across the callback, drive-stack teardown on every
-  exit path, determinism.
-- **Depends on.** M2b.4 (nested Suspended propagation), M2a.6 unwinder.
+**Landed** (doodle-rust `bfc9e6f`; spec E§7.6/§5.4 + App B.1 + App C S-46
+RESOLVED in the same discussions push). A `break`/`return` inside a block
+invoked by a native consumer (`each`) now crosses the host boundary as the
+MD §12 **`NonLocalExit`** mechanism instead of the M2b.5a `Unsupported`
+stub — a native consumer is program-observably identical to a
+Doodle-written block-consumer for every exit kind (S-46 parity).
+
+- **Mechanism.** `Consumer::Native { boundary }` carries the native call's
+  frame depth. An exit crossing it leaves the `Unwind` **parked** at the
+  boundary (`Unwind::NativeBreak`, or a `return`'s existing punch-through);
+  the reentrant nested drive detects it and returns
+  `BlockResult::NonLocalExit`; the callback returns promptly; and
+  `intrinsic::apply` resumes the parked exit at the foreign call's apply
+  site via `unwind::resume_native_boundary` — a `break` targeting *that*
+  call completes it with the value, a `return`/outer break stays parked and
+  unwinds past it in the enclosing drive (nested consumers compose
+  innermost-out). `continue` stays a normal completion (never a
+  `NonLocalExit`). A valued `break` to the procedure `each` raises
+  `NoValueDestination`, matching the Doodle `to`-consumer path (open S-10).
+- **Host-contract faults (S-46 rider 3 / S-16 family).** After a
+  `NonLocalExit` the callback must return promptly with no result; driving
+  the block again (`invoke_block` with an unwind already parked) or
+  returning a value / a raise **faults** (`Faulted(Internal)`) rather than
+  re-running the block or stomping the parked exit's target. Engine-authored
+  intrinsics comply; this backstops a misbehaving host callback (C-ABI, M7).
+- **Hygiene.** Split the demo intrinsics + renderer into
+  `intrinsic/builtins.rs` so `mod.rs` stays within the length limit.
+- **Tests.** break-ends-`each`, return-crosses-`each`, nested-`each` break
+  targets the inner consumer, nested-`each` return unwinds through both,
+  valued-break-to-procedure raises, step/run determinism over the break
+  path, and two host-contract faults (re-drive / value after a
+  `NonLocalExit`, via a test-only misbehaving intrinsic).
+- **Review.** 5-lens read-only adversarial workflow (find→verify): **0
+  confirmed defects**; the one surfaced spec-parity residual — the E§7.6
+  host-contract fault was documented but not enforced — was folded (the
+  fault enforcement above).
 
 ### M2b.6 — Foreign values + finalizers
 

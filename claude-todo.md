@@ -194,12 +194,25 @@ App C S-46 ride M2b.5 per the spec-delta process).
       drive. Files split (intrinsic→dir, `lifecycle.rs`). 10 tests. *Provisional:*
       `MAX_REENTRY_DEPTH`=64 flat bound (stack-aware/configurable → M3/M7);
       `Consumer::Native` unit at 5a, **5b re-adds boundary depth** for resume.
-- [~] **M2b.5b — S-46 non-local exits: next.** The `NonLocalExit` mechanism
-      (E§7.2/§5.4 + App C S-46, spec drafted on discussions `work` d492f7e per
-      the riders). Add the boundary depth to `Consumer::Native`; `break`/`return`
-      crossing → `NonLocalExit`, callback returns promptly, engine resumes the
-      parked unwind at the apply site (a `break` completes the call; else keeps
-      unwinding); `continue` completes normally; host-contract violations fault.
+- [x] **M2b.5b — S-46 non-local exits. DONE** (doodle-rust `bfc9e6f`; spec
+      E§7.6/§5.4 + App B.1 + App C S-46 RESOLVED in the same discussions push).
+      `Consumer::Native { boundary }`; a `break`/`return` crossing the native
+      boundary leaves the `Unwind` **parked** (`Unwind::NativeBreak`, or a
+      `return`'s punch-through), the nested drive returns
+      `BlockResult::NonLocalExit`, the callback returns promptly, and
+      `intrinsic::apply` resumes the parked exit at the apply site
+      (`resume_native_boundary`) — a `break` completes that call, a
+      `return`/outer break keeps unwinding (nested consumers compose
+      innermost-out). `continue` stays a normal completion. A valued `break` to
+      the procedure `each` raises `NoValueDestination` (parity with the Doodle
+      `to`-consumer, open S-10). **Host-contract faults (rider 3 / S-16 family):**
+      driving the block again after a `NonLocalExit`, or returning a value/raise,
+      → `Faulted(Internal)`. Removed the 5a `ExceptionKind::Unsupported` stub.
+      Split demo intrinsics + renderer into `intrinsic/builtins.rs` (length).
+      **5-lens read-only review (find→verify): 0 confirmed defects**; folded the
+      one spec-parity residual (the E§7.6 host-contract fault was documented but
+      not enforced → now enforced + tested). 6 new drive tests + 2 crate-internal
+      host-contract-fault tests.
 
 **resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
 `resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site
