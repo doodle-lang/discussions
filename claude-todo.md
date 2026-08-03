@@ -112,8 +112,26 @@ body rule (discussions `d96cc33`).
 machine, boundary value model, intrinsic foreign functions + suspending
 capabilities, reentrant drives + native block-consumers + S-46 non-local
 exits, foreign values + finalizers, cancellation, and the minimal observation
-surface. **Next: M3** (no working plan yet — write `plan-m3.md` when it
-begins). The per-item detail below stays as the M2b record.
+surface. The per-item detail below stays as the M2b record.
+
+**Milestone M3 — WASM binding + first public demo — IN PROGRESS.** Working
+plan **`plan/plan-m3.md`** written + 5-lens reviewed + landed (2026-08-03;
+decomposed M3.1–M3.9: fuel/SliceEnd, turtle surface + native block-consumer,
+the S-15 nested-drive-suspend prototype, the wasm facade + size gate, the JS
+fuel pump + conformance-through-wasm, turtle rendering + S-23, the demo page,
+deploy, exit review). Ten environment/product decisions surfaced; three
+forks (**#2 S-15 resolution, #6 turtle registration, #7 turtle vocab**) await
+the user.
+- [~] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). CODE LANDED**
+      (doodle-rust `a7b3963`). `run_slice`/`resolve_slice(fuel: Option<u64>)`;
+      a per-call fuel bound fused with the lifetime step budget (whichever
+      hits 0 first stops: budget→fault, fuel→SliceEnd); the slice does not
+      gate execution or perturb GC (E§7.7). 4-lens review: determinism CLEAN,
+      3 findings folded (completion wins the exact-fuel boundary; slice is
+      `Option<u64>`, no sentinel; fuel=0). **★ S-40 E-spec pin
+      (E§7.2/§7.3/§8.8 + App C) awaits the user's ruling** on the surface
+      shape (fuel on `run_slice`/`resolve_slice`; `SliceEnd` a distinct
+      `PauseReason`, not `HostPause`).
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
