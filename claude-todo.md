@@ -122,16 +122,21 @@ fuel pump + conformance-through-wasm, turtle rendering + S-23, the demo page,
 deploy, exit review). Ten environment/product decisions surfaced; three
 forks (**#2 S-15 resolution, #6 turtle registration, #7 turtle vocab**) await
 the user.
-- [~] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). CODE LANDED**
-      (doodle-rust `a7b3963`). `run_slice`/`resolve_slice(fuel: Option<u64>)`;
-      a per-call fuel bound fused with the lifetime step budget (whichever
-      hits 0 first stops: budget→fault, fuel→SliceEnd); the slice does not
-      gate execution or perturb GC (E§7.7). 4-lens review: determinism CLEAN,
-      3 findings folded (completion wins the exact-fuel boundary; slice is
-      `Option<u64>`, no sentinel; fuel=0). **★ S-40 E-spec pin
-      (E§7.2/§7.3/§8.8 + App C) awaits the user's ruling** on the surface
-      shape (fuel on `run_slice`/`resolve_slice`; `SliceEnd` a distinct
-      `PauseReason`, not `HostPause`).
+- [x] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). DONE**
+      (doodle-rust `a7b3963`; **E§7.2/§7.3 + App C S-40 pinned**, user-ruled
+      2026-08-03). `run_slice`/`resolve_slice(fuel: Option<u64>)` variants
+      (chosen over a param on `run`/`resolve` — distinct forms avoid a C-ABI
+      unbounded sentinel and make the outcome contract signature-level); a
+      per-call fuel bound fused with the lifetime step budget (whichever hits
+      0 first stops: budget→terminal `LimitExceeded`, fuel→resumable
+      `SliceEnd`; the fault wins a same-instant race); the slice does not gate
+      execution or perturb GC (E§7.7). Riders pinned: fuel orthogonal to the
+      directive; per-call, never banked (`fuel=0` = immediate SliceEnd); a
+      control signal at a terminal transition defers to the terminal outcome
+      (jointly with the §10.1 cancel pin); program-invisible, outside replay
+      identity. 4-lens review: determinism CLEAN, 3 findings folded
+      (completion wins the exact-fuel boundary; slice `Option<u64>`, no
+      sentinel; fuel=0).
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …

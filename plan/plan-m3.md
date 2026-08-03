@@ -195,7 +195,13 @@ Each item: **Goal**, **Lands**, **Design refs**, **Tests**, **Review**,
 **Depends on**. Sizing is roughly one focused session; the JS/browser items
 (M3.5–M3.7) are larger and will split when reached (called out below).
 
-### M3.1 — S-40: bounded-run fuel + `Paused(SliceEnd)` (engine + spec)
+### M3.1 — S-40: bounded-run fuel + `Paused(SliceEnd)` (engine + spec) — **DONE**
+
+**Landed** (doodle-rust `a7b3963`; E§7.2/§7.3 + App C S-40 pinned, user-ruled
+2026-08-03): `run_slice`/`resolve_slice(fuel: Option<u64>)` variants;
+`PauseReason::SliceEnd`; the fused step-budget/slice-fuel counter (fault vs
+resumable pause; the fault wins a tie); slicing never gates execution or
+perturbs GC (E§7.7). 4-lens review: determinism CLEAN, 3 folded.
 
 - **Goal.** Give the drive a **bounded-run fuel** budget — the primitive the
   pump slices on.

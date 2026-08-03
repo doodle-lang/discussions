@@ -490,7 +490,7 @@ Outcome =
   | Raised(exception, trace)          # an uncaught exception reached the boundary
   | Faulted(fault)                    # a limit, cancellation, or internal fault
 
-PauseReason = Step | Breakpoint(id) | RaiseTrap | HostPause
+PauseReason = Step | Breakpoint(id) | RaiseTrap | HostPause | SliceEnd
 EngineFault = LimitExceeded(kind) | Cancelled | Internal
 ```
 
@@ -498,14 +498,22 @@ The `value` on **Completed** is present exactly when the driven unit is a return
 `fn` — a reentrant callable return (§7.6). A **top-level module drive completes with
 no value (Void)**: a module runs for effect, and statements yield no value (L§6.11).
 
+**SliceEnd** is an ordinary `Paused`: it stops at a safe point with fully inspectable,
+resumable state (§7.4), the host may observe (§8), and any drive call — bounded or
+unbounded — resumes it. It reports that a **bounded-run slice** exhausted its fuel
+(§7.3), a *host-scheduling* boundary distinct from `HostPause`, which is a genuine host
+*request*.
+
 ### 7.3 Driving and resolving
 
 The host advances an instance with two conceptual operations (their exact factoring
 is binding-specific, §12):
 
 ```
-run(instance, directive) -> Outcome      # start, or continue after a Paused
-resolve(instance, resolution) -> Outcome # continue after a Suspended
+run(instance, directive) -> Outcome              # start, or continue after a Paused
+resolve(instance, resolution) -> Outcome         # continue after a Suspended
+run_slice(instance, directive, fuel) -> Outcome  # run, bounded to `fuel` safe points
+resolve_slice(instance, resolution, fuel) -> Outcome   # resolve, bounded
 resolution = Value(handle) | Raise(handle)
 
 directive = RunToCompletion   # stop only on Suspended / Raised / Faulted / Completed
@@ -524,6 +532,32 @@ After a `Suspended`, the host performs the effect and calls `resolve`; execution
 continues under the directive in force. After a `Paused`, the host inspects (§8)
 and calls `run` with a new directive. After `Completed`, `Raised`, or `Faulted`,
 the driven unit is finished.
+
+**Bounded-run fuel (resolves App C S-40).** The `_slice` forms run the same drive under
+the same directive but **bounded to `fuel` statement safe points** (§7.4); when the
+fuel is spent at a safe point they return `Paused(SliceEnd)`. This is the primitive a
+host pumps a jank-free browser main thread with (plan AD6): `run_slice(instance,
+RunToCompletion, n)` is the fast path — a bounded fast run with no debug stops.
+
+- **Fuel is orthogonal to the directive.** *Any* directive may be sliced; fuel is a
+  separate operand, not part of the `directive` enum.
+- **Per drive call, never banked.** Each `_slice` call brings its own fuel; a plain
+  `run`/`resolve` after a `SliceEnd` runs unbounded. `fuel = 0` returns `Paused(SliceEnd)`
+  immediately, running nothing (a legal observe-without-progress poll). This contrasts
+  with the **directive**, which is *sticky* across a `Suspended`/`Paused`; fuel is not.
+- **Same unit as the step budget, different rail.** Fuel counts **statement safe points**
+  — the same unit as the step-budget limit (§10.2) — but the step budget is a **terminal**
+  limit (`Faulted(LimitExceeded)`) and the slice fuel a **resumable scheduling** bound
+  (`Paused(SliceEnd)`). When both would trip at the same safe point, the **fault wins**.
+- **A terminal transition wins the race** (as for cancellation, §10.1): a **control
+  signal observed at a terminal transition defers to it** — if the fuel is spent (or a
+  cancellation observed) at the very transition that completes the program or lands it
+  `Raised`/`Faulted`, the run's own terminal outcome stands; a `SliceEnd` would falsely
+  claim work remains.
+- **Program-invisible, outside replay identity (§11).** A sliced run and an unbounded run
+  produce **identical program-observable execution** — the language has no clock, so
+  `SliceEnd` is undetectable from within Doodle. Slice boundaries are host scheduling,
+  not recorded input.
 
 ### 7.4 Safe points
 
@@ -750,9 +784,11 @@ exception, and returns `Faulted(Cancelled)`: a terminal, non-resumable outcome (
 that Doodle code **cannot** catch.
 
 **Cancellation takes effect only at a safe point where program work remains; otherwise
-the run's own terminal outcome stands.** A request first observed at the instant a
-program completes yields `Completed`, and one first observed as an uncaught exception
-reaches the boundary yields `Raised` — not `Faulted(Cancelled)`. In each of these the
+the run's own terminal outcome stands** — the general rule that a control signal observed
+at a terminal transition defers to it (§7.3, shared with bounded-run `SliceEnd`). A
+request first observed at the instant a program completes yields `Completed`, and one
+first observed as an uncaught exception reaches the boundary yields `Raised` — not
+`Faulted(Cancelled)`. In each of these the
 program has already run to its true end, and reporting `Faulted(Cancelled)` would
 misreport reality — claiming the engine stopped work that in fact all happened, so a
 host could wrongly conclude some effect did not occur. (This is the universal

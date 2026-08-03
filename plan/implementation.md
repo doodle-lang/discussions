@@ -1512,9 +1512,17 @@ S-34 (E§8.3) Ring-buffer scoping (instance-global; snapshot into traces at
 raise-capture; entries tagged with consuming frame serial). ·
 S-35 (E§4.2) Handle `retain` semantics (per-handle count; double-release
 and use-after-destroy are contract violations caught in debug builds). ·
-S-40 (E§7.2/§7.3/§8.8) Bounded-run fuel: a fuel parameter (in statement
-safe points) on the drive operation and a dedicated `Paused(SliceEnd)`
-reason, keeping `HostPause` a genuine host request. Resolve by M3. ·
+**S-40 (E§7.2/§7.3) RESOLVED (user, 2026-08-03; spec + M3.1 code landed):
+bounded-run fuel via `run_slice`/`resolve_slice(fuel)` variants** (not a
+param on `run`/`resolve` — distinct forms avoid a C-ABI unbounded sentinel
+and make the outcome contract signature-level), returning a dedicated
+`Paused(SliceEnd)` reason, distinct from a `HostPause` request. Riders
+pinned in E§7.3: fuel is orthogonal to the directive (any directive may be
+sliced); per-call, never banked (`fuel = 0` = immediate `SliceEnd`); same
+safe-point unit as the step budget but a resumable rail (the terminal
+`LimitExceeded` fault wins a same-instant race); a control signal at a
+terminal transition defers to the terminal outcome (jointly with the §10.1
+cancel pin); program-invisible, outside replay identity (§11). ·
 S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
 are represented (value handles vs engine-evaluated) and block-parameter
 declaration; conformance-tested through the C ABI. Also covers the
