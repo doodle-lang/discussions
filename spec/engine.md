@@ -739,10 +739,30 @@ inspection. This is deferred (Appendix B).
 
 ### 10.1 Cancellation
 
-The host may request **cancellation** of a running or suspended instance. At the next
-safe point the engine unwinds the stack — restoring dynamic-parameter bindings and
-running block-protocol cleanup, as for an exception — and returns `Faulted(Cancelled)`.
-Cancellation is **not** catchable by Doodle code. This is the "stop button."
+The host may request **cancellation** of an instance — the "stop button". Cancellation
+is a request about *future* work, not a verdict on *past* work; the guarantee it makes
+is that **once a cancellation request is observed, no further program work runs.**
+
+The engine polls the request at each safe point (§7.4). Observed at a safe point with
+program work still ahead — the running or suspended case — the engine unwinds the stack,
+restoring dynamic-parameter bindings and running block-protocol cleanup as for an
+exception, and returns `Faulted(Cancelled)`: a terminal, non-resumable outcome (§3.3)
+that Doodle code **cannot** catch.
+
+**Cancellation takes effect only at a safe point where program work remains; otherwise
+the run's own terminal outcome stands.** A request first observed at the instant a
+program completes yields `Completed`, and one first observed as an uncaught exception
+reaches the boundary yields `Raised` — not `Faulted(Cancelled)`. In each of these the
+program has already run to its true end, and reporting `Faulted(Cancelled)` would
+misreport reality — claiming the engine stopped work that in fact all happened, so a
+host could wrongly conclude some effect did not occur. (This is the universal
+convention: cancelling a task after it has finished is a no-op.) Requesting cancellation
+of an already-**terminal** instance is likewise an idempotent no-op.
+
+The **instant** at which a request is first observed is host timing, and so lies outside
+replay identity (§11): after requesting cancellation a host must accept **either**
+`Faulted(Cancelled)` **or** the run's own terminal outcome (`Completed`, `Raised`, or a
+resource `Faulted`). A run for which cancellation is never requested is never affected.
 
 ### 10.2 Limits
 

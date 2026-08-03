@@ -489,13 +489,15 @@ actually exercising the S-46 cancel-across-the-boundary teardown; (2)
 exactly with completion loses to it — no dangling unwind); (3) the
 `current_position` end-of-body fallback above.
 
-*Provisional filed (cancel-vs-completion race, confirm in E§10.1):* a cancel
-first observed at the **module-drain** safe point — the exact instant the
-program completes — resolves to `Completed`, not `Faulted(Cancelled)` (the
-program has fully executed; nothing remains to unwind). This is a genuine
-E§10.1 edge case (host-timing-dependent, outside replay identity); the
-provisional choice is "completion wins the exact-instant race." **User
-ruling wanted** before pinning the E§10.1 wording.
+*Cancel-vs-completion race RESOLVED (user, 2026-08-03; E§10.1 pinned +
+generalized):* cancellation is a request about *future* work — once observed,
+no further program work runs, and the outcome reports what actually happened.
+It takes effect only at a safe point where program work remains; otherwise the
+run's own terminal outcome stands (a cancel first observed at completion →
+`Completed`, at an uncaught raise reaching the boundary → `Raised`), and cancel
+on an already-terminal instance is an idempotent no-op. The implementation
+already satisfies the generalized rule (a raise/limit short-circuits the cancel
+poll; a terminal instance is never re-polled).
 
 **With M2b.7, milestone M2b (the host/embedding layer) is complete:**
 M2b.1–M2b.7 all landed and reviewed; the drive-state machine, boundary value
