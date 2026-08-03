@@ -1517,7 +1517,10 @@ safe points) on the drive operation and a dedicated `Paused(SliceEnd)`
 reason, keeping `HostPause` a genuine host request. Resolve by M3. ·
 S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
 are represented (value handles vs engine-evaluated) and block-parameter
-declaration; conformance-tested through the C ABI. Resolve by M7. ·
+declaration; conformance-tested through the C ABI. Also covers the
+**foreign-value finalizer** shape: M2b.6 pinned a provisional in-engine
+form (a boxed `FnOnce(host_ptr)`), with the C-ABI `extern "C" fn(void*)`
+form deferred here. Resolve by M7. ·
 **S-46 (E§7.2/§5.4) RESOLVED (user, 2026-08-02): support non-local exits
 across a native block-consuming callee** via the machine-design §12
 mechanism (chosen over disallowing them, so a native `each`/`repeat`

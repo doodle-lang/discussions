@@ -213,6 +213,23 @@ App C S-46 ride M2b.5 per the spec-delta process).
       one spec-parity residual (the E§7.6 host-contract fault was documented but
       not enforced → now enforced + tested). 6 new drive tests + 2 crate-internal
       host-contract-fault tests.
+- [x] **M2b.6 — foreign values + finalizers. DONE** (doodle-rust `e7203cb`;
+      E§4.5 finalizer-timing wording tightened in the same discussions push).
+      `Value::Foreign` allocatable: a `foreigns` slab of
+      `ForeignObj { tag, ptr, finalizer }`; boundary `make_foreign` +
+      `foreign_tag`/`foreign_ptr` (`machine/foreign.rs`, split from boundary.rs
+      for length). Inert to Doodle (identity, no fields, arithmetic raises).
+      **Finalizers, host-side, exactly once:** GC takes+queues a dead value's
+      finalizer (run after the sweep, MD §15); `Drop for Instance` runs every
+      still-live foreign's once at `destroy` (E§3.1); a GC-finalized value is
+      never re-run at destroy. Each finalizer call is `catch_unwind`-isolated
+      (must-not-unwind contract; a buggy one can't skip peers or abort `Drop`).
+      Determinism: the finalizer is uncounted host state (fixed
+      `foreign_payload`), can't re-enter the instance. **5-lens read-only review:
+      1 confirmed folded** — a panicking finalizer leaked its peers / could abort
+      in `Drop` → `catch_unwind` isolation + test. 9 foreign tests (7 lifecycle +
+      isolation + a Doodle-injection inert/finalize test). *Provisional (S-42-
+      lite):* boxed `FnOnce(u64)` finalizer; C-ABI `extern "C" fn(void*)` → M7.
 
 **resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
 `resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site

@@ -419,30 +419,46 @@ Doodle-written block-consumer for every exit kind (S-46 parity).
   host-contract fault was documented but not enforced — was folded (the
   fault enforcement above).
 
-### M2b.6 — Foreign values + finalizers
+### M2b.6 — Foreign values + finalizers — **DONE**
 
-- **Goal.** Opaque host objects as Doodle values, with finalizers that run
-  exactly once — exit criterion 3.
-- **Lands.** `Value::Foreign` construction (the `foreigns` slab exists, MD
-  §4): a foreign value carries a host type tag + opaque host data + an
-  optional **finalizer**. Finalizers run **host-side only, never Doodle-
-  observable** (E§4.5): at **GC** for a value found dead (queued during the
-  index-order sweep, run after collection completes — MD §15), and at
-  **`destroy`** for every still-live foreign value (E§3.1). Exactly-once:
-  the sweep clears the finalizer as it queues it; `destroy` runs each
-  live one once. Foreign values are inert data to Doodle (comparable by
-  identity, storable) — arithmetic/indexing on them raises. Spec: confirm
-  E§4.5 finalizer timing wording.
-- **Design refs.** E§4.5, §3.1 (`destroy`); MD §15 (finalizers queue during
-  sweep, run after; never Doodle-observable).
-- **Tests.** A finalizer runs once when its value becomes unreachable and is
-  collected; a live foreign value's finalizer runs once at `destroy`; a
-  retained (handle-rooted) foreign value is **not** finalized at GC; the
-  GC-stress determinism trace is **unchanged** by finalizer presence (the
-  effects don't cross the boundary); double-finalize never happens.
-- **Review.** Exactly-once accounting across GC + destroy, non-observability
-  (finalizer effects can't feed Doodle state), sweep-order determinism.
-- **Depends on.** M2b.1 (construction API), M2a.10 GC.
+**Landed** (doodle-rust `e7203cb`; spec E§4.5 finalizer-timing wording
+tightened in the same discussions push). `Value::Foreign` is now
+allocatable: a `foreigns` slab of `ForeignObj { tag, ptr, finalizer }`,
+constructed at the boundary via `make_foreign(tag, ptr, finalizer?)` and read
+with `foreign_tag`/`foreign_ptr`. A foreign value is **inert** to Doodle —
+identity-typed (L§4.13), no fields, arithmetic on it raises — reachable
+through the GC like any leaf.
+
+- **Finalizers (E§4.5), host-side only, exactly once.** At **GC** for a dead
+  value: the index-order sweep **takes** the finalizer out of the dying object
+  (so it can never run twice) and queues it; the queue runs **after** the
+  collection completes (MD §15). At **`destroy`** for every still-live foreign:
+  run once — implemented in `Drop for Instance`, so a plain drop finalizes too
+  (no leaked resource); a `destroy(self)` names the E§3.1 op. Exactly-once
+  holds across the two (a GC-finalized value's finalizer is already taken, so
+  destroy never re-runs it). Each finalizer call is isolated with
+  `catch_unwind`: a finalizer **must not unwind** (the M7 C-ABI form cannot),
+  but a buggy one that does is contained so it neither skips its peers'
+  finalizers (leaking their resources) nor aborts the host during `Drop`.
+- **Determinism (E§11).** The finalizer is host state: uncounted in
+  `bytes_allocated` (fixed `foreign_payload`), so it can't shift GC triggering;
+  not snapshotted (replay re-supplies it); unable to re-enter the instance — so
+  its effects never perturb the deterministic run.
+- **Spec.** Tightened E§4.5 to state exactly-once, run-after-collection /
+  at-destroy-for-live, non-observability, and the must-not-unwind contract.
+- **Tests.** tag/ptr/kind round-trip; wrong-kind reader; finalizer once at GC
+  (with the ptr) and not re-run; a retained foreign not finalized; destroy
+  finalizes every live foreign once; no double-finalize across GC+destroy; a
+  no-finalizer foreign inert; a panicking finalizer isolated from its peers;
+  and a foreign injected into a running program is inert (arithmetic raises)
+  yet still finalizes once at destroy.
+- **Review.** 5-lens read-only adversarial workflow (find→verify): **1
+  confirmed** (a panicking finalizer leaking its peers / aborting in `Drop`),
+  folded via `catch_unwind` isolation + a test.
+
+*Provisional filed (S-42-lite):* the in-engine finalizer shape is a boxed
+`FnOnce(u64)` receiving the host ptr; the C-ABI form (`extern "C" fn(void*)`)
+is deferred to the full S-42 host-callback FFI (M7).
 
 ### M2b.7 — Cancellation + observation (position/stack) + M2b exit review
 

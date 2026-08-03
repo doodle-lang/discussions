@@ -311,8 +311,20 @@ A foreign value is **opaque** to Doodle: it is reference-typed (its equality is
 identity, L§4.13 via `is_same`), it may be held, passed, and stored, but it has
 no fields and does not support `.field` or `[]` (attempting them raises, per
 L§6.2/§6.3). The host recognizes its own foreign values by `type_tag`. The
-optional `finalizer` is called when the value is garbage-collected or when the
-instance is destroyed, letting the host release the underlying resource.
+optional `finalizer` releases the underlying resource, given the value's
+`host_ptr`.
+
+**Finalizer timing (exactly once).** A finalizer runs **exactly once**: at the
+garbage collection that reclaims the value — after that collection completes — or
+at `destroy` (§3.1) for a value still live then, never both and never twice.
+Finalizers run **host-side only** and are never observable to Doodle: a finalizer
+cannot re-enter the instance, so whether — or in what order — finalizers run does
+not affect any program result or the engine's determinism (§11). A finalizer
+**must not fail into the instance** (it runs outside any Doodle drive) nor unwind
+out of the host callback; the engine isolates a misbehaving finalizer so it cannot
+prevent its peers from running or tear down the host, but the resource it was to
+release may then leak. The in-engine finalizer representation is provisional
+pending the C-ABI host-callback FFI (App C, S-42).
 
 Foreign values are how host state that cannot be a plain Doodle value — a canvas,
 a file handle, a rendering target, a network socket — crosses the boundary.
