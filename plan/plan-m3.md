@@ -1,0 +1,416 @@
+# Working Plan: Milestone M3 — WASM Binding + First Public Demo
+
+**Status:** Proposed (awaiting ratification). · **Parent:**
+`implementation.md` §5 M3 `[M]` (WASM binding + first public demo).
+Conventions as in `plan-m2b.md`/`plan-m2a.md`. · The core strategy is
+**already accepted** in `implementation.md` AD6 (browser main-thread
+fuel-sliced pump). This file **sequences** M3 into session-sized work items,
+pins the spec deltas that gate the pump (**S-40**) and the browser suspend
+contract (**S-15/S-23**), and **surfaces the environment/product decisions**
+M3 needs that the engine milestones did not.
+
+Decomposition of M3 — the wasm facade, the JS embedding package with the
+fuel-sliced pump, a minimal turtle native surface (with animated `forward`
+as a suspending capability), the **nested-drive/JS-suspension prototype**
+(the milestone's permanent integration testbed, R4/S-15), and the public
+demo page + deploy — into ordered, session-sized work items. Each Rust item
+lands its tests green and hygiene clean; each JS item lands with a
+Node-driven test; and the milestone closes with an accept-criteria walk +
+review (the M1/M2a/M2b rhythm).
+
+**This milestone is different in kind from M0–M2b.** Those were pure Rust
+engine work under one toolchain. M3 spans **four surfaces** — the Rust
+engine (two spec amendments + one prototype-and-decide), the Rust→JS wasm
+facade, a JS/TS npm package, and a browser demo page + deploy pipeline. It
+introduces a **JS/TS toolchain and web-hosting** the project has not had,
+and several **product decisions** (repo placement, hosting, package naming,
+editor/grammar, turtle vocabulary, privacy posture, the unbounded-op guard)
+that are the user's to make. Those are collected in **§Decisions needed**
+and must be resolved before the items that depend on them.
+
+**Design authority.** `engine.md` (E) governs the embedding contract the
+facade exposes (§3 lifecycle, §5 foreign functions + native modules, §7
+drive loop + slicing, §8 observation, §10 control). `implementation.md`
+AD6 governs the **pump strategy**, AD4 the **Unicode-table size profile**,
+AD7 the **js/web repo placement**, §6.5 the **size budget**, §6.4 the
+**grammar-parity sub-suite**, §3.9/§7.3 the **environment track**, and R4/R8
+the **browser-suspend and unbounded-op risks**. A mechanism change needs the
+doc revised first (plan §8). Where an item says "per E§N" / "per AD6", that
+section governs.
+
+---
+
+## What M3 delivers (from `implementation.md` §5 M3 + AD6 + R4)
+
+- **S-40 bounded-run fuel + `Paused(SliceEnd)`** in the engine (E§7.2/§7.3):
+  a per-drive fuel count (in statement safe points) fused into the M2a.9
+  counter, and a slice-exhaustion outcome distinct from a host `HostPause`
+  request. The amendment the pump is built on.
+- **The nested-drive/JS-suspension prototype (R4/S-15) — the milestone's
+  permanent integration testbed.** A native block-consumer whose block
+  reaches a **suspending capability**, so a suspend arises *inside a
+  reentrant nested drive* (E§5.4) — the case a non-blockable JS host cannot
+  block on. M2b.5a currently **faults** this; M3 prototypes the two candidate
+  resolutions (**forbid-and-fault** vs **suspend-the-outer-drive**) and picks
+  the winner to feed E before M7.
+- **`doodle-wasm` facade:** the E§3–§8 embedding surface exposed to JS via
+  `wasm-bindgen` — create/load, register natives, drive with fuel, resolve
+  capabilities, cancel, read `current_position`, the handle boundary, and a
+  **`print` output surface** (the transcript channel conformance compares).
+- **`@doodle-lang/engine` JS package:** the **fuel-sliced pump** (AD6) —
+  ~8 ms slices via an **injectable timer/frame source** (rAF/`setTimeout` in
+  the browser, `setImmediate` in Node CI: *the same facade code CI
+  certifies*), the stop button checked **between slices**, position sampled
+  **once per animation frame**, and **capabilities surfaced as Promises**.
+- **A minimal turtle native surface:** `forward`/`right`/`penup`/… as native
+  foreign functions/capabilities, with **animated `forward` a suspending
+  capability resolved on rAF completion** (E§5.3), plus a **native
+  block-consumer** (`repeat`) that carries the S-15 prototype.
+- **The public demo page:** CodeMirror editor + a **separate Lezer grammar**
+  for highlighting (the engine exposes no AST, L§13) with the **§6.4
+  valid/invalid grammar-parity sub-suite**, a canvas, run/stop, a **live
+  executing-line highlight** (E§8.1), and a **`print` output surface**.
+- **Deploy + gates:** a CI→static-hosting pipeline producing a public URL;
+  the **≤ 300 KB brotli** wasm size gate (AD4/§6.5) and the **≤ 2 s
+  first-load** budget; and the **conformance subset green through the wasm
+  surface** in Node CI (injected timer — the cross-surface determinism gate).
+
+Provisional prelude natives (`print`/`length`/`to_string` as natives until
+the M9a stdlib) are documented as provisional where they appear.
+
+## M3 exit criteria (accept, from `implementation.md` §5 M3 + §6.5)
+
+1. A **public URL** where a **spiral program animates on the main thread**
+   with the **currently-executing line highlighted**.
+2. The **stop button interrupts an infinite loop "instantly"** (between
+   slices — E§10.1; the within-operation caveat is R8/§10.3, guarded per
+   **§Decisions #9**).
+3. The page **stays responsive throughout** (no main-thread jank).
+4. **wasm ≤ 300 KB brotli** (§6.5) **and first-load-to-running ≤ 2 s** on a
+   mid-range Chromebook (§6.5).
+5. The **conformance subset is green through the wasm surface in Node CI**
+   (same facade code, injected timer — the cross-surface determinism claim),
+   comparing full transcripts **including `print` output**.
+
+Plus (feeding E before M7, not a public-URL criterion): the **S-15
+nested-drive-suspend prototype runs**, and its chosen resolution is written
+into E (§spec-delta).
+
+## Spec-delta obligations coming due in M3
+
+Resolve each **in the spec** as part of the item that ships it (plan §8:
+edit + App C decision-log entry + conformance/test). The starred ones need a
+**fresh user ask** when reached.
+
+- **★ S-40 (E§7.2/§7.3/§8.8) — bounded-run fuel + `Paused(SliceEnd)`.**
+  Lands with **M3.1**, *before* the pump. Mechanism pinned in AD6; the
+  **E-surface shape** (where fuel sits on the drive API; how
+  `Paused(SliceEnd)` relates to `HostPause`/`Step`) is a fresh ask.
+- **S-20 (E§7.7/§10.2) — step-budget unit is mode-independent.** Rides with
+  M3.1: fuel slicing must not change what the step budget counts.
+- **★ S-15 (E§5.3/§5.4/§12) — suspend under a nested drive on a non-blockable
+  host.** **Prototyped and DECIDED at M3** (M3.3); the winner (forbid-and-
+  fault vs suspend-the-outer-drive) is written into E before M7. The engine
+  currently faults this (M2b.5a stub), so this is real engine work + a fresh
+  design decision (**§Decisions #2**), not a free re-confirm.
+- **S-23 (E§10.1) — cancellation robustness, the browser-reachable slices.**
+  Comes due because the stop button is accept #2: **cancel of a `Suspended`
+  instance discards the pending capability request; a late `resolve` after
+  cancel errors** (stop mid-animated-`forward`). Lands with **M3.6** (turtle
+  capability) + tested. The **cross-thread carve-out** stays out of scope —
+  the pump is single-threaded and checks the flag between slices (no
+  cross-thread cancel needed for M3); note that as the M3 boundary.
+- **S-16 (E§5.4/§7.6) — abandoned nested drive = host fault.** Re-confirm
+  through the wasm surface, but its wording is **contingent on the S-15
+  outcome** (the two halves of the browser nested-suspend contract) — defer
+  "no new spec text" until M3.3 lands.
+- **S-17 (E§7.5/§8) — observation while Suspended.** Re-confirm holds through
+  the facade (position readable at a suspend); no new text expected.
+- **Native-module registration (E§5.5) — a ratified-text scope call.** The
+  M3 milestone text says "**minimal native-module lookup**"; **§Decisions #5**
+  recommends instead reusing the M2b **S-43 global registry** (no new module
+  surface) and deferring the real native-module/`use` system to **M5**. This
+  is a **reduction from the ratified M3 wording**, called out as such for the
+  user's sign-off — not framed as a free default.
+
+## Decisions needed (the user's calls — resolve before the dependent item)
+
+Recommended option first; each blocks only the item(s) noted.
+
+1. **js/web repo placement (AD7).** AD7 defers where `js/` and `web/` live
+   "until they materialize" — that is now. Recommended: a **new sibling
+   submodule** under `doodle-lang/workspace` (e.g. `doodle-web`), keeping the
+   Rust crate repo clean; alternative: a `js/`+`web/` tree inside
+   `doodle-rust`. Blocks **M3.4/M3.5** (and, if a new submodule, its
+   workspace + CI wiring). 
+2. **★ S-15 nested-drive-suspend resolution.** When a suspending capability
+   is reached inside a native block-consumer's reentrant drive, the engine
+   must **forbid-and-fault** (host-contract fault, the M2b.5a behavior made
+   deliberate) **or suspend the outer drive** (propagate the request across
+   the native boundary and resume on `resolve`). R4 says M3 prototypes both
+   and E adopts the winner before M7. Recommended to **prototype both, lead
+   with forbid-and-fault** (far simpler; the demo needs suspend only at
+   top-level). Blocks **M3.3**.
+3. **Public-demo hosting + posture (D-6/D-8).** Where the public URL lives —
+   **GitHub Pages** under `doodle-lang` (recommended: CI-native, zero infra),
+   Netlify/Cloudflare Pages, or a `doodle-lang.dev` domain — and the posture
+   (unlisted vs announced). Blocks **M3.8**.
+4. **Privacy/analytics for the public kids' page (D-7).** A public page where
+   children run code. Recommended: the source default — **no third-party
+   analytics for v0.1**, no PII, strict CSP. Blocks **M3.7/M3.8** (before the
+   URL goes live).
+5. **npm package identity (D-4).** Publish as **`@doodle-lang/engine`**
+   (recommended) — reserve the scope now. Recommended: **do not `npm publish`
+   in M3**, only dry-run (real publish M7, §4.4). Blocks **M3.5** naming.
+6. **Turtle registration mechanism.** Recommended: register turtle primitives
+   as **global foreign functions/capabilities via the M2b S-43 registry** (no
+   new module surface; the demo uses bare `forward(...)`), deferring the real
+   native-module/`use` system to **M5** — *a knowing reduction from the
+   ratified "minimal native-module lookup"* (spec-delta above). Blocks
+   **M3.2**.
+7. **Turtle vocabulary (v0) + state ownership.** Recommended minimal set:
+   `forward`/`back`/`right`/`left`/`penup`/`pendown`/`pencolor`/`home`/`clear`
+   + the native `repeat`; color model = named strings. And the **JS renderer
+   owns turtle state** (position/heading/pen); capabilities carry only deltas.
+   Blocks **M3.2** (registration) and **M3.6** (rendering).
+8. **`print` output surface in the demo + Node.** Recommended: a **DOM output
+   pane** in the demo and a **Node capture buffer** in CI (so transcripts
+   compare). Blocks **M3.4** (facade output channel) / **M3.7** (demo pane).
+9. **R8 — unbounded single-operation guard for a public tab.** A single
+   long op (e.g. a huge `**`) can freeze the tab between safe points. For the
+   public kid-facing page, recommended: an **M3 interim guard** — restrict the
+   demo subset to exclude unbounded single ops until M4's finer limits, *or*
+   a host-side deadman timer. Blocks **M3.7** (demo hardening).
+10. **§6.5 budget-revision (conditional).** If the ≤ 300 KB brotli gate is
+    threatened, §6.5's ladder is: feature-gate rarely-used Unicode tables →
+    lazily fetch Unicode data as a separate artifact → **only then a
+    budget-revision decision at M3**. Surfaced now; **triggered only if
+    M3.4's measurement breaches the gate** (blocks M3.4/M3.8 if so).
+
+---
+
+## Work items (dependency-ordered)
+
+Each item: **Goal**, **Lands**, **Design refs**, **Tests**, **Review**,
+**Depends on**. Sizing is roughly one focused session; the JS/browser items
+(M3.5–M3.7) are larger and will split when reached (called out below).
+
+### M3.1 — S-40: bounded-run fuel + `Paused(SliceEnd)` (engine + spec)
+
+- **Goal.** Give the drive a **bounded-run fuel** budget — the primitive the
+  pump slices on.
+- **Lands.** A **fuel** input on the drive op (per-call, statement safe
+  points), **fused** into the M2a.9 counter as `min(remaining fuel, step
+  budget, distance-to-next-stop)` so the hot path stays one branch (AD6).
+  Exhausting fuel → **`Paused(SliceEnd)`** (new `PauseReason`, resumable,
+  state intact); `HostPause` stays a genuine host request. Step-*budget*
+  count stays mode-independent (S-20). **Spec:** E§7.2/§7.3 (+ §8.8) + App C.
+- **Design refs.** AD6; E§7.2/§7.3/§7.4, §10.2, §8.8; M2a.9 `FusedCounter`.
+- **Tests.** A fuel-bounded drive pauses at `SliceEnd` after N safe points
+  and resumes to the **same terminal** as an unbounded run (E§7.7);
+  `SliceEnd` is distinct from `Step`/`HostPause`/`StepBudget`; step-budget
+  count unchanged by slice size.
+- **Review.** Fused-counter correctness (no double-count / off-by-one at the
+  fuel↔budget boundary), slice-resumption determinism, the outcome↔state map.
+- **Depends on.** M2b (drive surface, fused counter, cancellation).
+
+### M3.2 — Turtle native surface + a native block-consumer (engine)
+
+- **Goal.** Register the turtle primitives **and** a native block-consumer
+  (`repeat`) — the surface the demo and the S-15 prototype both need
+  (per **§Decisions #6/#7**).
+- **Lands.** Turtle primitives as **registered foreign functions** (sync:
+  `right`/`left`/`penup`/`pendown`/`pencolor`/`home`/`clear`) and a
+  **suspending capability** (`forward`/`back`, animated) via the M2b S-43
+  registry — no new engine mechanism. Plus a **native `repeat(n) do … end`**
+  block-consumer (reusing the M2b.5a reentrant-drive path) as the vehicle for
+  the S-15 nested-suspend case. Provisional natives documented; turtle state
+  is host-side (§Decisions #7).
+- **Design refs.** E§5.1/§5.2/§5.3/§5.4; M2b.2/M2b.4/M2b.5a; §Decisions #6/#7.
+- **Tests.** Each primitive registers and is callable from a driven program
+  (crate-internal): `forward` **suspends** with its args; `repeat` invokes
+  its block per iteration; the sync ones return Void; argument binding (L§8.3).
+- **Review.** Descriptor correctness, the sync/capability split, that nothing
+  presumes graphics (state host-side).
+- **Depends on.** M2b.2/M2b.4/M2b.5a. **∥ M3.1** (independent; both feed M3.4).
+
+### M3.3 — S-15: nested-drive-suspend across the native boundary (engine + spec prototype)
+
+- **Goal.** Resolve what happens when a **suspending capability is reached
+  inside a native block-consumer's reentrant drive** — the milestone's
+  permanent testbed (R4), which M2b.5a currently **faults**.
+- **Lands.** Per **§Decisions #2**: prototype **both** candidate resolutions
+  and land the chosen one — (a) **forbid-and-fault**: make the M2b.5a
+  `pending`-inside-nested-drive fault a *deliberate, documented*
+  host-contract fault (E§5.4); or (b) **suspend-the-outer-drive**: propagate
+  the parked capability request out through the native boundary so the whole
+  instance goes `Suspended`, and on `resolve` resume back into the nested
+  drive. **Spec:** the winner into E§5.3/§5.4 + App C S-15 (before M7).
+- **Design refs.** R4 (implementation.md); S-15; E§5.4/§7.6 (reentrant
+  drives), §7.5 (suspend), MD §14. The M2b.5a stub (`invoke_block_inner`
+  parks `reentry_fault=Internal` on a nested `pending`).
+- **Tests.** A program that reaches a suspending capability from inside a
+  native `repeat`/`each` block hits the chosen outcome deterministically
+  (fault, or suspend→resolve→resume); replay-stable.
+- **Review.** The full multi-lens treatment (this is the risk peak): the
+  cross-boundary suspend/resume soundness or the fault's terminality; GC
+  roots across the parked request; determinism.
+- **Depends on.** M3.2 (the native block-consumer), M2b.4/M2b.5a.
+
+### M3.4 — `doodle-wasm` facade (Rust→JS via wasm-bindgen) + the size gate
+
+- **Goal.** Expose the E§3–§8 embedding surface to JS as a small, stable wasm
+  API, and **wire the ≤ 300 KB brotli gate as a failing CI check the moment
+  real doodle-core wasm exists** (AD4/§6.5).
+- **Lands.** `wasm-bindgen` exports: create/load (+register the turtle
+  natives), **`drive(fuel)` → an outcome object**, **`resolve(value|raise)`**,
+  **`cancel()`**, **`currentPosition()`**, the **handle boundary**
+  (`make_*`/readers) for capability args/results and program values, and the
+  **`print` output channel** (a capture surface for Node + the demo). Values
+  cross as **opaque handle ids**, never raw pointers. Each Run creates a
+  **fresh instance + load** (S-33 reuse out of M3 scope, §Decisions). The
+  **size gate CI job** + brotli measurement lands here; if breached, invoke
+  the §6.5 ladder (§Decisions #10).
+- **Design refs.** E§3.1/§4.2/§7/§8.1; AD4 (Unicode tables ~150–350 KB
+  dominate the wasm), AD6, §6.5. Extends the M0 stub.
+- **Tests.** wasm builds under the pinned toolchain; a **Node** smoke drives
+  `print(1 + 2)` (output captured) and `forward(10)` (→ Suspended); the size
+  gate reports brotli bytes and **fails over 300 KB**.
+- **Review.** JS-boundary shape (outcome/handle/print encoding), no
+  determinism leak (E§11), no raw-pointer/UAF, handle release discipline.
+- **Depends on.** M3.1, M3.2, M3.3.
+
+### M3.5 — `@doodle-lang/engine`: the pump + capability Promises + conformance-through-wasm (JS/TS)
+
+- **Goal.** The JS package that pumps the engine jank-free and surfaces
+  capabilities as Promises (AD6) — **and** the cross-surface conformance gate.
+- **Lands.** The **pump loop**: `drive(fuel)` in ~8 ms slices via an
+  **injectable timer/frame source**; **stop checked between slices**; on
+  `Suspended`, dispatch to a **registered async capability handler** and
+  `resolve` with its result (a **Promise**); **`currentPosition()` sampled
+  once per frame**; TS types. Plus the **conformance-subset-through-wasm Node
+  CI job** (injected `setImmediate`, scripted capability handlers,
+  transcript+`print` comparison to the native runner) — **wired as a failing
+  gate here**, when the pump first exists. (Will split: pump core / capability
+  dispatch+Promise / conformance harness.)
+- **Design refs.** AD6; E§5.3, §7.3, §10.1; §4.3 (conformance drives public
+  surfaces), §4.1 (the injected timer is the only nondeterminism, host-supplied).
+- **Tests.** Node drives a program to completion through the pump
+  deterministically; stop between slices halts an infinite loop within one
+  slice; `SliceEnd`→resume reaches the same terminal as one big drive; the
+  conformance subset passes through the facade.
+- **Review.** Pump correctness (no lost/duplicated slices; stop latency ≤ one
+  slice), capability-Promise **single-in-flight** invariant + reject/raise
+  path, same facade code in Node and browser.
+- **Depends on.** M3.4; **§Decisions #1/#5** (repo placement, npm identity).
+
+### M3.6 — Turtle rendering + animated `forward` + stop-mid-animation (S-23) (JS + canvas)
+
+- **Goal.** Draw the turtle's path and animate `forward` on rAF, and get
+  **stop during an in-flight `forward` capability** right (S-23).
+- **Lands.** A **canvas renderer** owning turtle state (§Decisions #7);
+  **capability handlers** — `forward(n)` **animates** over rAF and resolves
+  on completion (E§5.3), sync ones apply instantly; color per §Decisions #7;
+  `clear`/`home`. **S-23:** a **stop during an animated `forward`** cancels
+  the drive, **discards the pending capability request**, and a **late
+  `resolve` after cancel errors** — landed + spec'd (E§10.1). The **spiral**
+  renders end-to-end.
+- **Design refs.** E§5.3 (rAF capability), §10.1 (S-23 cancel-of-Suspended);
+  AD6 (per-frame position); §Decisions #7.
+- **Tests.** A **headless** (JSDOM/canvas-mock) test that the handlers
+  produce the expected path for a small program (injected frame source →
+  deterministic step count); **stop mid-`forward` → `Faulted(Cancelled)`,
+  pending request discarded, late resolve errors**.
+- **Review.** Turtle-state/rendering correctness, S-23 cancel-race, that
+  rendering never re-enters the engine mid-drive.
+- **Depends on.** M3.5.
+
+### M3.7 — The demo page: editor + Lezer grammar + run/stop + line highlight + output (JS/HTML)
+
+- **Goal.** The page a user visits — write, run, watch it draw, executing
+  line highlighted, stop working, `print` output shown.
+- **Lands.** A **CodeMirror 6** editor + a **Lezer grammar for Doodle**
+  (separate from the engine, §3.9) with the **§6.4 grammar-parity sub-suite**
+  (a small valid/invalid corpus the Lezer grammar and the engine parser must
+  classify identically); the canvas (M3.6); **run/stop** wired to the pump;
+  a **live line highlight** from the per-frame `currentPosition()` (engine
+  gives a byte span, the page maps span→line as diagnostics do); a **`print`
+  output pane** (§Decisions #8); a "still-running…" affordance; the **R8
+  guard** (§Decisions #9). Strict CSP, no `eval` (§3.9). (Will split:
+  editor+grammar / wiring / highlight+output.)
+- **Design refs.** §3.9, §6.4; E§8.1 (position = span, host renders); §3.9
+  web posture.
+- **Tests.** A Playwright/JSDOM test: Run drives a program and Stop halts a
+  loop; the highlight advances during a paced program; the §6.4 sub-suite
+  passes (grammar↔parser agree valid/invalid).
+- **Review.** UX-contract (stop always works, no frozen tab), span→line
+  mapping, CSP, the R8 guard, Lezer↔engine parity.
+- **Depends on.** M3.6.
+
+### M3.8 — Deploy pipeline + public URL + posture gates (CI/infra)
+
+- **Goal.** Turn the page into a **public URL** with the privacy/hosting
+  posture pinned.
+- **Lands.** A **CI→static-hosting** deploy (§Decisions #3) producing the URL
+  on push to `main`; the **≤ 2 s first-load** budget checked; the **D-7
+  privacy posture** enforced (no third-party analytics/PII; CSP) before the
+  URL goes live; npm publish **dry-run only** (§Decisions #5). (The size and
+  conformance gates already fail CI from M3.4/M3.5.)
+- **Design refs.** §4.4 (release engineering), §6.5 (≤ 2 s), D-6/D-7/D-8.
+- **Tests.** CI green on a fresh clone through build→gates→deploy; the
+  deployed URL serves the page; a first-load timing check.
+- **Review.** Deploy secrets/permissions scoped minimally, reproducible
+  build, the privacy posture actually enforced.
+- **Depends on.** M3.7; **user-hooked** — deploy automation is a scope call
+  (CLAUDE.md "stay within asked scope"): confirm before wiring the deploy.
+
+### M3.9 — M3 exit review + accept-criteria walk
+
+- **Goal.** The milestone gate.
+- **Lands.** A walk of accept #1–#5 on the deployed URL (spiral animates,
+  line highlights, stop instant, responsive, **≤ 300 KB brotli + ≤ 2 s
+  load**, conformance-through-wasm green incl. `print`) + the **S-15 prototype
+  outcome recorded in E**; a **multi-lens review** (slicing determinism, the
+  JS-boundary contract, pump/stop + S-23, the S-15 resolution, size).
+- **Depends on.** M3.8 (and M3.3's spec landing).
+
+---
+
+## Notes on ordering and risk
+
+- **Critical path:** M3.1 **∥** M3.2 → M3.3 → M3.4 → M3.5 → M3.6 → M3.7 →
+  M3.8 → M3.9. (M3.1 fuel and M3.2 turtle-registration are independent; both
+  feed the facade M3.4.) The JS items (M3.5–M3.7) are the long pole.
+- **Risk peak: S-15 (M3.3).** The nested-drive-suspend case is the
+  milestone's named hard problem (R4) and the current engine **faults** it
+  (M2b.5a). Its resolution is a **fresh design decision** (§Decisions #2)
+  feeding E before the M7 C-ABI freeze — not a re-confirm. Give it the full
+  review treatment.
+- **Risk: pump ↔ capability ↔ rAF (M3.5/M3.6).** The first capability
+  round-trip through JS async; nail the **single-in-flight-request**
+  invariant, **stop-latency ≤ one slice**, and the **S-23** stop-mid-suspend
+  race.
+- **Size risk is the ENGINE core, not the JS bundle (AD4/§6.5).** The
+  ≤ 300 KB brotli gate is on the **wasm**, dominated by AD4's Unicode tables
+  (~150–350 KB) that have shipped in doodle-core since M1 — measure at
+  **M3.4**, and if breached invoke the §6.5 ladder (feature-gate → lazy-fetch
+  → **budget-revision decision at M3**, §Decisions #10). Separately, the **JS
+  bundle** (CodeMirror + Lezer + facade) is measured against the **≤ 2 s
+  first-load** budget (§Decisions #3 keeps it framework-light) — a distinct
+  budget from the wasm gate.
+- **R8 — a public kid-facing tab.** A single unbounded op (e.g. `**`) can
+  freeze the tab between safe points; the M3 demo needs an interim guard
+  (§Decisions #9) since M4's finer limits are not yet in.
+- **New toolchain + repo placement (AD7).** M3 adds a **JS/TS build + web
+  hosting + a Lezer grammar** the repo lacks; resolve **where they live**
+  (§Decisions #1) first, and keep the facade code identical between Node CI
+  and browser (AD6) so CI actually certifies the demo.
+- **Scope realism.** This is the largest, most cross-cutting milestone and
+  the **first outside pure Rust**. The `[M]`-size JS items M3.5–M3.7 will
+  each likely split into 2–3 sessions when reached — sequencing, not
+  scope-cut. The debugger *panels*, REPL, and richer IDE UX are **M6/M9b**
+  (§7.3); only the line highlight + `print` pane ship now.
+- **Determinism through wasm (§4.1).** The conformance-through-wasm CI job
+  (M3.5) is the load-bearing check that the facade preserves engine
+  determinism; the injected timer keeps it reproducible. Cross-surface
+  record/replay (browser↔CLI) is **M8**, not M3.
