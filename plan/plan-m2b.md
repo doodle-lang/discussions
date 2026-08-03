@@ -460,32 +460,51 @@ through the GC like any leaf.
 `FnOnce(u64)` receiving the host ptr; the C-ABI form (`extern "C" fn(void*)`)
 is deferred to the full S-42 host-callback FFI (M7).
 
-### M2b.7 — Cancellation + observation (position/stack) + M2b exit review
+### M2b.7 — Cancellation + observation (position/stack) + M2b exit review — **DONE**
 
-- **Goal.** The stop button, the minimal inspection surface, and the
-  milestone exit gate.
-- **Lands.** **Cancellation** (E§10.1): a cancel request sets a flag polled
-  at the next safe point; the engine unwinds — restoring dynamic bindings
-  (none until M4, but the unwind path runs) and running block cleanup — and
-  returns `Faulted(Cancelled)`, **not catchable** by Doodle (exit criterion
-  2). **Observation surface** (E§8.1/§8.2, the M2b minimum): `current_
-  position()` (the active cont's span; at a return safe point, the just-
-  executed call's span — MD §17) and `stack_walk()` (each frame's callable
-  identity + call-site position + tail-iteration count). Wire the **step
-  budget** into the public drive surface (the M2a.9 fused counter already
-  faults; expose it as a configured limit at the boundary). Then the **M2b
-  exit review** walking all five criteria + drive-directive determinism
-  (E§7.7).
-- **Design refs.** E§10.1, §8.1/§8.2, §10.2; MD §17 (observability mapping),
-  §12 (cancel unwind = exception-shaped).
-- **Tests.** Cancel stops an infinite `loop` at the next statement →
-  `Faulted(Cancelled)`; cancel is not catchable; `current_position`/
-  `stack_walk` shapes over a known call stack (incl. a tail-elided frame in
-  the ring); the exit-review determinism gate over a directive-mix corpus.
-- **Review.** The M2b exit review (multi-lens): each criterion, cancel-
-  unwind soundness (bindings/cleanup before `Faulted`), observation-surface
-  correctness against MD §17, determinism across directives.
-- **Depends on.** M2b.3 (drive surface), M2b.5 (unwinder for cancel).
+**Landed** (doodle-rust `c181f7e`). **Cancellation** (E§10.1): a cloneable,
+thread-safe `CancelToken` sets a flag the engine polls at each safe point;
+once set the drive arms `Unwind::Cancel`, which tears the stack down **one
+frame per transition** (the MD §12 unwind path — running each frame's block/
+`with` cleanup at M4; inert now, no cleanup conts yet) and faults
+`Faulted(Cancelled)` at the empty-stack terminus — terminal, non-resumable,
+**not catchable** by Doodle. Works at the top level, across a suspend/resume,
+and *through a native block-consumer's reentrant drive* (the parked `Cancel`
+crosses the S-46 boundary: `resume_native_boundary` declines it, the
+enclosing drive tears down). **Observation** (E§8.1/§8.2, the M2b minimum,
+new `machine/observe.rs`): `current_position()` → module id + byte `Span`
+(the host renders line/column — the engine exposes positions, not text; an
+end-of-body drain reports an end-of-module position, never `(0,0)`);
+`stack_walk()` → innermost-first frames, each a callable handle + call-site
+span + tail-iteration count (frames gained a `call_site`). The **step
+budget** was already wired to the public surface (Config.limits →
+FusedCounter, M2a.9/M2a.11) — confirmed, no change.
+
+**M2b exit review (5-lens read-only find→verify, + a re-run determinism
+lens): exit-criteria and determinism CLEAN; 3 minor/nit findings folded** —
+(1) a vacuous reentrant-cancel test replaced with one that cancels from
+*inside* the block (via a test-only `IntrinsicCtx::request_cancel`),
+actually exercising the S-46 cancel-across-the-boundary teardown; (2)
+`poll_cancel` no longer arms `Cancel` on an empty stack (a cancel racing
+exactly with completion loses to it — no dangling unwind); (3) the
+`current_position` end-of-body fallback above.
+
+*Provisional filed (cancel-vs-completion race, confirm in E§10.1):* a cancel
+first observed at the **module-drain** safe point — the exact instant the
+program completes — resolves to `Completed`, not `Faulted(Cancelled)` (the
+program has fully executed; nothing remains to unwind). This is a genuine
+E§10.1 edge case (host-timing-dependent, outside replay identity); the
+provisional choice is "completion wins the exact-instant race." **User
+ruling wanted** before pinning the E§10.1 wording.
+
+**With M2b.7, milestone M2b (the host/embedding layer) is complete:**
+M2b.1–M2b.7 all landed and reviewed; the drive-state machine, boundary value
+model, intrinsic foreign functions + suspending capabilities, reentrant
+drives + native block-consumers + S-46, foreign values + finalizers,
+cancellation, and the minimal observation surface all ship. The richer
+E§8.2 frame surface (named locals, dynamic-parameter bindings) and the
+debugger facilities (breakpoints, raise-trap, per-subexpression stepping)
+are **M4/M6** as planned.
 
 ---
 

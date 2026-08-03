@@ -107,6 +107,14 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
+**Milestone M2b — Drive layer — COMPLETE (2026-08-03; M2b.1–M2b.7 all landed
++ exit-reviewed).** The host/embedding layer ships: the resumable drive-state
+machine, boundary value model, intrinsic foreign functions + suspending
+capabilities, reentrant drives + native block-consumers + S-46 non-local
+exits, foreign values + finalizers, cancellation, and the minimal observation
+surface. **Next: M3** (no working plan yet — write `plan-m3.md` when it
+begins). The per-item detail below stays as the M2b record.
+
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
 M2b.7**). Two scope-boundary calls **ruled by the user 2026-08-01**: (1)
@@ -230,6 +238,26 @@ App C S-46 ride M2b.5 per the spec-delta process).
       in `Drop` → `catch_unwind` isolation + test. 9 foreign tests (7 lifecycle +
       isolation + a Doodle-injection inert/finalize test). *Provisional (S-42-
       lite):* boxed `FnOnce(u64)` finalizer; C-ABI `extern "C" fn(void*)` → M7.
+- [x] **M2b.7 — cancellation + observation + M2b exit review. DONE**
+      (doodle-rust `c181f7e`). **Cancellation** (E§10.1): a cloneable/thread-safe
+      `CancelToken` sets a flag polled at each safe point; once set the drive arms
+      `Unwind::Cancel`, which tears the stack down one frame per transition (MD §12
+      unwind path; block/`with` cleanup runs at M4 — inert now) and faults
+      `Faulted(Cancelled)` — terminal, non-resumable, not catchable. Works top-level,
+      across suspend/resume, and through a native consumer's reentrant drive (the
+      parked `Cancel` crosses the S-46 boundary; `resume_native_boundary` declines
+      it). **Observation** (E§8.1/§8.2 minimum, new `machine/observe.rs`):
+      `current_position()` (module id + byte `Span`; end-of-body → end-of-module,
+      never `(0,0)`), `stack_walk()` (callable handle + call-site + tail count;
+      frames gained `call_site`). Step budget already wired (M2a.9). **M2b exit
+      review (5-lens + re-run determinism): exit-criteria + determinism CLEAN; 3
+      minor/nit folded** — real reentrant-cancel test (test-only
+      `IntrinsicCtx::request_cancel`), `poll_cancel` doesn't arm on an empty stack,
+      `current_position` end-of-body fallback. *Provisional (confirm in E§10.1):* a
+      cancel racing exactly with the **module drain** → `Completed`, not
+      `Faulted(Cancelled)` (program fully executed; nothing to unwind) — user ruling
+      wanted. **⇒ Milestone M2b (host/embedding layer) is COMPLETE** (M2b.1–M2b.7);
+      richer E§8.2 frame surface (locals, dyn-bindings) + debugger = M4/M6.
 
 **resolve(Raise) provisional filed (M2b.4; user-ruled 2026-08-02):** at M2b,
 `resolve(Raise(handle))` surfaces `Outcome::Raised` at the capability call site
@@ -1079,6 +1107,16 @@ From `plan/implementation.md` §10: D-2 (spec home at freeze), D-4 (names/
 npm scope), D-5 (Unicode pin verification), D-6 (demo posture), D-7
 (privacy/analytics), D-8 (hosting + release cadence). D-1 and D-3 are
 resolved (but see the visibility discrepancy above).
+
+**Cancel-vs-completion race (E§10.1) — shipped provisional, confirm the
+wording.** M2b.7 resolves the exact-instant race — a cancellation first
+observed at the **module-drain** safe point (the transition that completes
+the program) → `Completed`, not `Faulted(Cancelled)`: the program has fully
+executed, so there is nothing left to unwind, and the alternative would arm
+a dead unwind on a terminal instance. Host-timing-dependent, outside replay
+identity (E§11). If you prefer "cancel always wins at a safe point even at
+the drain," the fix is small (fault on halt-with-armed-cancel); otherwise
+pin the shipped choice in E§10.1. Flagged by the M2b exit review.
 
 ## Done
 
