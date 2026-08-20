@@ -126,12 +126,14 @@ edit + App C decision-log entry + conformance/test). The starred ones need a
   "no new spec text" until M3.3 lands.
 - **S-17 (E§7.5/§8) — observation while Suspended.** Re-confirm holds through
   the facade (position readable at a suspend); no new text expected.
-- **Native-module registration (E§5.5) — a ratified-text scope call.** The
-  M3 milestone text says "**minimal native-module lookup**"; **§Decisions #5**
-  recommends instead reusing the M2b **S-43 global registry** (no new module
-  surface) and deferring the real native-module/`use` system to **M5**. This
-  is a **reduction from the ratified M3 wording**, called out as such for the
-  user's sign-off — not framed as a free default.
+- **Turtle = Doodle code, prepended (E§5.5/§13) — RESOLVED (user, 2026-08-20,
+  §Decisions #6).** The ratified "minimal native-module lookup" is realized as:
+  the turtle is a **Doodle library prepended** to the user program (one module),
+  and the *real* native-module/`use` system lands at **M5**. The only host
+  surface is the three irreducible **platform primitives** (E§13:
+  `draw_line`/`set_turtle`/`clear`, registered like the S-43 provisional
+  natives). Provisional natives grow by **`sin`/`cos`** (the turtle's trig,
+  until the M9a stdlib) — documented as provisional where they appear.
 
 ## Decisions needed (the user's calls — resolve before the dependent item)
 
@@ -162,17 +164,26 @@ Recommended option first; each blocks only the item(s) noted.
 5. **npm package identity (D-4).** Publish as **`@doodle-lang/engine`**
    (recommended) — reserve the scope now. Recommended: **do not `npm publish`
    in M3**, only dry-run (real publish M7, §4.4). Blocks **M3.5** naming.
-6. **Turtle registration mechanism.** Recommended: register turtle primitives
-   as **global foreign functions/capabilities via the M2b S-43 registry** (no
-   new module surface; the demo uses bare `forward(...)`), deferring the real
-   native-module/`use` system to **M5** — *a knowing reduction from the
-   ratified "minimal native-module lookup"* (spec-delta above). Blocks
-   **M3.2**.
-7. **Turtle vocabulary (v0) + state ownership.** Recommended minimal set:
-   `forward`/`back`/`right`/`left`/`penup`/`pendown`/`pencolor`/`home`/`clear`
-   + the native `repeat`; color model = named strings. And the **JS renderer
-   owns turtle state** (position/heading/pen); capabilities carry only deltas.
-   Blocks **M3.2** (registration) and **M3.6** (rendering).
+6. **Turtle registration mechanism — RESOLVED (user, 2026-08-20): the turtle
+   is normal Doodle code, not host magic** (the "no-magic-boundaries"
+   philosophy — turtle graphics must be ordinary code, not a special feature).
+   The turtle is a **Doodle library** over a *tiny* host boundary; for M3 it is
+   **prepended** to the user program (one module — no module system pulled
+   forward), with the real native-module/`use` system landing properly at
+   **M5**. Only the irreducible canvas/animation primitives cross the boundary
+   (below). Blocks **M3.2**.
+7. **Turtle vocabulary (v0) + state ownership — RESOLVED (user, 2026-08-20).**
+   Commands (all **Doodle**): `forward`/`back`/`right`/`left`/`penup`/`pendown`/
+   `pencolor`/`home`/`clear`/`showturtle`/`hideturtle`/`repeat` (a Doodle `to`
+   with a block param). **State lives in Doodle** (module-level bindings at M3;
+   dynamic parameters / ref records are M4). **Color is parsed in Doodle** —
+   named table + hex `#rgb`/`#rrggbb`/`#rrggbbaa`, **RGBA (alpha from day one)**;
+   `penup` = pass alpha 0. The **host is a dumb drawing surface** — three
+   primitives: `draw_line(x0,y0,x1,y1,r,g,b,a)` (animated suspending capability;
+   a=0 = pen-up glide), `set_turtle(x,y,heading,visible)` (instant marker pose +
+   show/hide), `clear()`. **`forward` needs trig** (stdlib is M9a), so M3 adds
+   **provisional native `sin`/`cos`** to the `print`/`length`/`to_string`
+   provisional-natives bucket (superseded at M9a). Blocks **M3.2** and **M3.5**.
 8. **`print` output surface in the demo + Node.** Recommended: a **DOM output
    pane** in the demo and a **Node capture buffer** in CI (so transcripts
    compare). Blocks **M3.4** (facade output channel) / **M3.7** (demo pane).
@@ -220,25 +231,37 @@ perturbs GC (E§7.7). 4-lens review: determinism CLEAN, 3 folded.
   fuel↔budget boundary), slice-resumption determinism, the outcome↔state map.
 - **Depends on.** M2b (drive surface, fused counter, cancellation).
 
-### M3.2 — Turtle native surface + a native block-consumer (engine)
+### M3.2 — Platform primitives + the Doodle turtle library (engine)
 
-- **Goal.** Register the turtle primitives **and** a native block-consumer
-  (`repeat`) — the surface the demo and the S-15 prototype both need
-  (per **§Decisions #6/#7**).
-- **Lands.** Turtle primitives as **registered foreign functions** (sync:
-  `right`/`left`/`penup`/`pendown`/`pencolor`/`home`/`clear`) and a
-  **suspending capability** (`forward`/`back`, animated) via the M2b S-43
-  registry — no new engine mechanism. Plus a **native `repeat(n) do … end`**
-  block-consumer (reusing the M2b.5a reentrant-drive path) as the vehicle for
-  the S-15 nested-suspend case. Provisional natives documented; turtle state
-  is host-side (§Decisions #7).
-- **Design refs.** E§5.1/§5.2/§5.3/§5.4; M2b.2/M2b.4/M2b.5a; §Decisions #6/#7.
-- **Tests.** Each primitive registers and is callable from a driven program
-  (crate-internal): `forward` **suspends** with its args; `repeat` invokes
-  its block per iteration; the sync ones return Void; argument binding (L§8.3).
-- **Review.** Descriptor correctness, the sync/capability split, that nothing
-  presumes graphics (state host-side).
-- **Depends on.** M2b.2/M2b.4/M2b.5a. **∥ M3.1** (independent; both feed M3.4).
+- **Goal.** The turtle as **normal Doodle code** over a tiny host boundary
+  (§Decisions #6/#7) — buildable and testable engine-side before any canvas.
+- **Lands.** Two layers:
+  1. **Host platform primitives** (E§13), registered like the S-43 natives:
+     `draw_line(x0,y0,x1,y1, r,g,b,a)` — a **suspending capability** (the JS
+     side animates it, M3.5); `set_turtle(x,y,heading,visible)` and `clear()` —
+     sync foreign functions. Plus **provisional native `sin`/`cos`** (the
+     turtle's trig, until the M9a stdlib — like `print`).
+  2. **The Doodle turtle library** (`.doodle` source, prepended to the user
+     program): module-level state (`x,y,heading,pen_down,r,g,b,a`), the commands
+     `forward`/`back`/`right`/`left`/`penup`/`pendown`/`pencolor`/`home`/`clear`/
+     `showturtle`/`hideturtle`/`repeat`, and **color parsing in Doodle** (named
+     table + hex `#rgb`/`#rrggbb`/`#rrggbbaa`, RGBA). `forward` does the trig,
+     glides via `draw_line` (alpha 0 when pen-up); turns/teleports/show-hide use
+     `set_turtle`. Coordinate/heading convention (Logo: center origin, 0°=up,
+     `right`=CW) is a library detail.
+- **Design refs.** E§5.1/§5.2/§5.3, §13 (platform primitives); §Decisions #6/#7;
+  the S-43 registry (M2b.2) + capabilities (M2b.4). (No native block-consumer —
+  `repeat` is Doodle; the S-15 native case is carried separately by M3.3.)
+- **Tests.** Crate-internal, driving the prepended library with **scripted
+  capabilities**: a square/spiral program issues the expected `draw_line`/
+  `set_turtle` sequence (positions, headings, RGBA); `pencolor` parses named +
+  hex + alpha; `penup` → alpha 0; `repeat` runs its block per iteration; the
+  animated `draw_line` **suspends** and resumes. All in Doodle, no canvas.
+- **Review.** The Doodle library's geometry + color parsing correctness, the
+  primitive descriptors, that the host surface stays minimal (no turtle logic
+  leaks host-side), determinism of the primitive-call sequence.
+- **Depends on.** M2b.2/M2b.4 (natives + capabilities), M3.1 not required.
+  **∥ M3.1** (both feed M3.4).
 
 ### M3.3 — S-15: nested-drive-suspend across the native boundary (engine + spec prototype)
 
