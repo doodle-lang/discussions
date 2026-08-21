@@ -335,7 +335,21 @@ case — a *Doodle* block-consumer whose block suspends — suspends+resolves no
   roots across the parked request; determinism.
 - **Depends on.** M3.2 (the native block-consumer), M2b.4/M2b.5a.
 
-### M3.4 — `doodle-wasm` facade (Rust→JS via wasm-bindgen) + the size gate
+### M3.4 — `doodle-wasm` facade (Rust→JS via wasm-bindgen) + the size gate — **DONE**
+
+**Landed** (doodle-rust `e0dd50d`). The E§3–§8 surface as a **natively-testable
+core** (`facade::Session`) + a thin `#[wasm_bindgen]` shell (`DoodleInstance` +
+`DriveResult`), keeping `doodle-rust` pure Rust (Decision #1). `demo` (print-only,
+conformance parity) and `turtle` (natives + prepended library) configs; drive/
+resolve over fuel slices; values cross as **opaque handle `u64` ids**; string-tagged
+outcomes; `print` output; `currentSpan`/`preludeBytes`/`source` for the line
+highlight; `cancel`. The **size gate is now binding**: `wasm-size.sh` measures the
+real wasm-bindgen `_bg.wasm` (bindgen→wasm-opt -Oz→brotli) and the CI job installs a
+Cargo.lock-matched `wasm-bindgen-cli`. **Measured 178 KB brotli vs 300 KB — 40%
+headroom, so AD4's Unicode tables do NOT breach the gate and the §6.5 ladder /
+Decision #10 is not triggered.** Node smoke (`print(1+2)`, `forward(10)→Suspended`)
+**deferred to M3.5/doodle-web** (no JS harness in the pure-Rust repo). 3-lens
+read-only review: encoding/handle-discipline/gate all correct; 6 nits folded.
 
 - **Goal.** Expose the E§3–§8 embedding surface to JS as a small, stable wasm
   API, and **wire the ≤ 300 KB brotli gate as a failing CI check the moment

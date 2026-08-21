@@ -759,8 +759,10 @@ drifting (both must classify the corpus identically as valid/invalid).
 **6.5 Budgets.** wasm ≤ 300 KB brotli (gate from M3), with a named
 contingency ladder if the gate is threatened: feature-gate rarely-used
 Unicode tables, lazily fetch Unicode data as a separate artifact, and only
-then a budget-revision decision at M3. First-load-to-running < 2 s on a
-mid-range Chromebook. Performance floors — **measured in statement-level
+then a budget-revision decision at M3. **M3.4 measured the real facade at
+178 KB brotli — 40 % headroom — so the AD4 Unicode tables do not breach the
+gate and the ladder (Decision #10) is not triggered.** First-load-to-running
+< 2 s on a mid-range Chromebook. Performance floors — **measured in statement-level
 safe points executed per second**, the same unit as the step budget
 (S-20) and the fuel counter: ≥ 1 M/s native and ≥ 300 K/s wasm on the
 benchmark suite (sanity floors, not targets — kid programs are thousands

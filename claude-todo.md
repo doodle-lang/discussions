@@ -199,6 +199,20 @@ lands).
       Doodle-consumer-suspends-normally case. **Process note:** this was re-asked
       because the post-compaction summary dropped the 2026-08-20 ruling (recorded
       in discussions `778772a`); the user re-confirmed identically — no rework.
+- [x] **M3.4 — `doodle-wasm` facade + binding size gate. DONE**
+      (doodle-rust `e0dd50d`). The E§3–§8 surface via wasm-bindgen: a
+      natively-testable `facade::Session` core + a thin `DoodleInstance`/
+      `DriveResult` shell (Decision #1 keeps `doodle-rust` pure Rust). `demo`
+      (print-only, conformance parity) + `turtle` configs; drive/resolve over
+      fuel slices; opaque handle-`u64` boundary; string-tagged outcomes;
+      output/currentSpan/cancel. **Size gate now binding** — `wasm-size.sh`
+      measures the real `_bg.wasm` and CI installs a Cargo.lock-matched
+      `wasm-bindgen-cli`. **178 KB brotli / 300 KB — 40% headroom; AD4's Unicode
+      tables do not breach it (no §6.5 ladder / Decision #10).** 3-lens review:
+      encoding/handle-discipline/gate correct; 6 nits folded. **Node smoke
+      deferred to M3.5/doodle-web** (Decision #1 — no JS harness here). CI cost:
+      the wasm-size job now `cargo install`s wasm-bindgen-cli (~2–4 min; can be
+      sped up with a prebuilt binary later).
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
