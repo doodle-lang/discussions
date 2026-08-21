@@ -184,9 +184,10 @@ Recommended option first; each blocks only the item(s) noted.
    children run code. Recommended: the source default — **no third-party
    analytics for v0.1**, no PII, strict CSP. Blocks **M3.7/M3.8** (before the
    URL goes live).
-5. **npm package identity (D-4).** Publish as **`@doodle-lang/engine`**
-   (recommended) — reserve the scope now. Recommended: **do not `npm publish`
-   in M3**, only dry-run (real publish M7, §4.4). Blocks **M3.5** naming.
+5. **npm package identity (D-4). RULED (user, 2026-08-21): `@doodle-lang/engine`**
+   — the package name in doodle-web. **No `npm publish` in M3** (real publish M7,
+   §4.4); a publish-time guard (`prepublishOnly`) fails closed if the wasm/dist
+   artifacts are absent.
 6. **Turtle registration mechanism — RESOLVED (user, 2026-08-20): the turtle
    is normal Doodle code, not host magic** (the "no-magic-boundaries"
    philosophy — turtle graphics must be ordinary code, not a special feature).
@@ -372,7 +373,21 @@ read-only review: encoding/handle-discipline/gate all correct; 6 nits folded.
   determinism leak (E§11), no raw-pointer/UAF, handle release discipline.
 - **Depends on.** M3.1, M3.2, M3.3.
 
-### M3.5 — `@doodle-lang/engine`: the pump + capability Promises + conformance-through-wasm (JS/TS)
+### M3.5 — `@doodle-lang/engine`: the pump + capability Promises + conformance-through-wasm (JS/TS) — **PUMP LANDED; CI+conformance next**
+
+**Chunk 1 landed** (doodle-web `042b35e`; workspace submodule `8507e0a`; Decision #1
++ #5 realized). Created the **`doodle-web`** sibling submodule (public, npm-workspaces
+monorepo) with **`@doodle-lang/engine`** (Decision #5): `scripts/build-wasm.sh` builds
+`../doodle-rust`'s wasm via wasm-bindgen (`--target web`, same ESM Node+browser); the
+**fuel-sliced pump** drives in ~8 ms slices via an **injectable scheduler**, surfaces
+**capabilities as Promises** (handler-throw → Doodle raise, E§7.5), checks the **stop
+signal between slices AND after each capability** (so a capability-suspending loop is
+cancellable), samples position per slice, and streams `print` output. 8 Node tests
+through real wasm; TS strict. 3-lens review, 10/11 folded incl. a **MAJOR** stop-button
+fix (was inert for the animated-turtle shape). **Deferred:** an O(n²) per-slice
+`output()` copy (needs a since-offset method on the Rust facade — demo-scale negligible).
+**Chunk 2 (next): the cross-repo conformance-through-wasm determinism gate + doodle-web
+CI** (a workspace-superrepo job: wasm+fixtures from doodle-rust, pump from doodle-web).
 
 - **Goal.** The JS package that pumps the engine jank-free and surfaces
   capabilities as Promises (AD6) — **and** the cross-surface conformance gate.
