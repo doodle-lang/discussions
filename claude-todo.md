@@ -122,8 +122,12 @@ fuel pump + conformance-through-wasm, turtle rendering + S-23, the demo page,
 deploy, exit review). Ten environment/product decisions surfaced; three
 forks (**#2 S-15 resolution, #6 turtle registration, #7 turtle vocab**) await
 the user. **#6/#7 RESOLVED (user, 2026-08-20)** and shipped in M3.2 (turtle =
-Doodle code over three host primitives; all-capabilities). **#2 (S-15) still
-open** — the M3.3 risk peak.
+Doodle code over three host primitives; all-capabilities). **#2 (S-15)
+RULED (user, 2026-08-20): forbid-and-fault baseline, no second prototype**
+— fault not raise (the S-46 parity stance extended to suspension); the M7
+C-ABI-yield path characterized in E as the compatible extension; full
+riders on plan-m3 §Decisions #2. **M3.3 lands it** (engine + E§5.4 +
+App C S-15 + the R4/MD §19 amendments) — still the M3 risk peak.
 - [x] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). DONE**
       (doodle-rust `a7b3963`; **E§7.2/§7.3 + App C S-40 pinned**, user-ruled
       2026-08-03). `run_slice`/`resolve_slice(fuel: Option<u64>)` variants

@@ -109,10 +109,12 @@ edit + App C decision-log entry + conformance/test). The starred ones need a
 - **S-20 (E§7.7/§10.2) — step-budget unit is mode-independent.** Rides with
   M3.1: fuel slicing must not change what the step budget counts.
 - **★ S-15 (E§5.3/§5.4/§12) — suspend under a nested drive on a non-blockable
-  host.** **Prototyped and DECIDED at M3** (M3.3); the winner (forbid-and-
-  fault vs suspend-the-outer-drive) is written into E before M7. The engine
-  currently faults this (M2b.5a stub), so this is real engine work + a fresh
-  design decision (**§Decisions #2**), not a free re-confirm.
+  host. RULED (user, 2026-08-20; §Decisions #2): forbid-and-fault is the
+  baseline** — the M2b.5a stub made deliberate (distinct fault type,
+  S-16/S-46-family callback contract, the parity control test);
+  suspend-the-outer-drive is characterized in E as the deferred M7
+  C-ABI-yield extension (a compatible loosening). **M3.3** lands the engine
+  work + the E§5.4 edit + App C S-15 + the R4/MD §19 amendments.
 - **S-23 (E§10.1) — cancellation robustness, the browser-reachable slices.**
   Comes due because the stop button is accept #2: **cancel of a `Suspended`
   instance discards the pending capability request; a late `resolve` after
@@ -145,14 +147,25 @@ Recommended option first; each blocks only the item(s) noted.
    Rust crate repo clean; alternative: a `js/`+`web/` tree inside
    `doodle-rust`. Blocks **M3.4/M3.5** (and, if a new submodule, its
    workspace + CI wiring). 
-2. **★ S-15 nested-drive-suspend resolution.** When a suspending capability
-   is reached inside a native block-consumer's reentrant drive, the engine
-   must **forbid-and-fault** (host-contract fault, the M2b.5a behavior made
-   deliberate) **or suspend the outer drive** (propagate the request across
-   the native boundary and resume on `resolve`). R4 says M3 prototypes both
-   and E adopts the winner before M7. Recommended to **prototype both, lead
-   with forbid-and-fault** (far simpler; the demo needs suspend only at
-   top-level). Blocks **M3.3**.
+2. **★ S-15 nested-drive-suspend resolution. RULED (user, 2026-08-20):
+   forbid-and-fault as the pinned baseline; NO second prototype.** The
+   M2b.5a behavior becomes deliberate, distinctly-typed, tested; E§5.4
+   characterizes suspend-the-outer-drive as the deferred M7 C-ABI-yield
+   extension (adopting it later is a pure loosening — today's faults
+   become working programs). Riders: the outcome is a **fault, not a
+   raise** — a catchable raise would make native-vs-Doodle consumers
+   program-distinguishable via rescue; the fault extends the S-46 parity
+   stance to suspension. The callback contract joins the S-16/S-46
+   family (return promptly, no result, no further drives). A **parity
+   control test**: the same block + suspending capability through a
+   Doodle-written consumer suspends/resumes fine (pins that the
+   limitation is the native frame, nothing else). The R4 "prototype
+   both" mitigation is **deliberately revised** — a Rust spike would
+   explore idioms the C ABI can't carry (closures, borrowed state), so
+   its findings wouldn't transfer; the baseline+extension structure
+   keeps the door open to exactly M7, the charter's own deadline. Amend
+   R4 + App C S-15's "prototype at M3" wording + MD §19 with the M3.3
+   landing. Unblocks **M3.3**.
 3. **Public-demo hosting + posture (D-6/D-8).** Where the public URL lives —
    **GitHub Pages** under `doodle-lang` (recommended: CI-native, zero infra),
    Netlify/Cloudflare Pages, or a `doodle-lang.dev` domain — and the posture
