@@ -231,15 +231,29 @@ perturbs GC (E§7.7). 4-lens review: determinism CLEAN, 3 folded.
   fuel↔budget boundary), slice-resumption determinism, the outcome↔state map.
 - **Depends on.** M2b (drive surface, fused counter, cancellation).
 
-### M3.2 — Platform primitives + the Doodle turtle library (engine)
+### M3.2 — Platform primitives + the Doodle turtle library (engine) — **DONE**
+
+**Landed** (doodle-rust `aa6425a` turtle + `13fbdef` the `**` sweep; E§11 amended
+for transcendental determinism). The turtle is ordinary Doodle code over three
+platform primitives — `draw_line`/`set_turtle`/`clear_canvas`, **all suspending
+`to` capabilities** (user-ruled all-capabilities 2026-08-20, superseding the
+sync-for-the-instant-ones sketch below: uniform, no new engine machinery, engine
+stays turtle-agnostic) — plus provisional `sin`/`cos` natives via the bundled
+deterministic `libm`. `doodle/turtle.doodle` holds all state/geometry/color;
+colors are named + `0xrrggbb` hex-int + RGB(A) channels (the `#rrggbb` *string*
+form waits on string primitives — tracked in `claude-todo.md`). A 4-lens
+read-only review folded 9 findings; the headline was a determinism sweep-miss —
+`**`'s float path used platform `f64::powf`, now `libm::pow` (E§11).
 
 - **Goal.** The turtle as **normal Doodle code** over a tiny host boundary
   (§Decisions #6/#7) — buildable and testable engine-side before any canvas.
 - **Lands.** Two layers:
   1. **Host platform primitives** (E§13), registered like the S-43 natives:
      `draw_line(x0,y0,x1,y1, r,g,b,a)` — a **suspending capability** (the JS
-     side animates it, M3.5); `set_turtle(x,y,heading,visible)` and `clear()` —
-     sync foreign functions. Plus **provisional native `sin`/`cos`** (the
+     side animates it, M3.5); `set_turtle(x,y,heading,visible)` and `clear()`
+     (shipped as `clear_canvas`). *As shipped, all three are suspending `to`
+     capabilities* (see the Landed note); the host applies the instant two
+     immediately. Plus **provisional native `sin`/`cos`** (the
      turtle's trig, until the M9a stdlib — like `print`).
   2. **The Doodle turtle library** (`.doodle` source, prepended to the user
      program): module-level state (`x,y,heading,pen_down,r,g,b,a`), the commands

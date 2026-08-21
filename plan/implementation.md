@@ -576,7 +576,8 @@ module** (`forward`/`right`/… with animated forward as a rAF-resolved
 suspending capability), demo page: CodeMirror, canvas, run/stop, live line
 highlight; demo deploy pipeline (CI → static hosting); 300 KB brotli gate
 active; S-40 lands in E. Provisional prelude natives (`print`, `length`,
-`to_string` as natives until M9a) documented as such. This page is the
+`to_string`, and — for the turtle's trig — `sin`/`cos`, as natives until M9a)
+documented as such. This page is the
 **permanent integration testbed** for the nested-drive/JS-suspension
 contract, not a throwaway.
 *Accept:* public URL where a spiral program animates on the main thread
@@ -1523,6 +1524,18 @@ safe-point unit as the step budget but a resumable rail (the terminal
 `LimitExceeded` fault wins a same-instant race); a control signal at a
 terminal transition defers to the terminal outcome (jointly with the §10.1
 cancel pin); program-invisible, outside replay identity (§11). ·
+**S-57 (E§11) RESOLVED (M3.2, 2026-08-20; spec + code landed): Doodle-observable
+floating-point functions are host-independent.** Transcendentals and other
+non-correctly-rounded library math (`sin`, `cos`, `pow`) must be computed by the
+engine's **own bundled implementation** — the same soft-float code on every
+supported target — not the platform math library, else recordings would not
+replay across hosts and the cross-surface conformance gate (M3.4+) would diverge.
+Scoped to strict-IEEE (`FLT_EVAL_METHOD == 0`) targets (aarch64, x86-64+SSE2,
+wasm32); an excess-precision target (x87 without SSE2) is out of scope until
+pinned. Shipped: the provisional `sin`/`cos` natives and the `**` float path via
+the bundled `libm` crate (`libm::pow`, replacing `f64::powf`). The basic IEEE ops
+(`+ − × ÷`, comparison, `sqrt`, roundToIntegral, remainder) are already correctly
+rounded and stay deterministic. ·
 S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
 are represented (value handles vs engine-evaluated) and block-parameter
 declaration; conformance-tested through the C ABI. Also covers the

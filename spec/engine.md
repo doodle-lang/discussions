@@ -854,6 +854,24 @@ operation, so an un-canonicalized NaN would be hidden platform state — observa
 through hashing, formatting, or byte views — and recordings would not replay across
 hosts.
 
+**Floating-point results must be host-independent (S-57).** The basic IEEE-754 operations
+(`+ − × ÷`, comparison, `sqrt`) are correctly rounded and so already identical across
+conforming hosts, but transcendental and other library math functions (`sin`, `cos`, …)
+are **not** pinned by IEEE-754 — a platform `libm` may differ in the last bit(s), and a
+hardware fused-multiply-add may round differently from a separate multiply-then-add.
+The engine therefore computes every Doodle-observable floating-point function with its
+**own bundled implementation, identical on every supported target** (native and
+WebAssembly), and does not call the platform math library or rely on target-specific FMA
+— otherwise the same program would compute different values on different hosts and
+recordings would not replay across them (exactly as an un-canonicalized NaN would leak).
+This assumes each supported target evaluates `f64` in **strict IEEE-754 double precision**
+(`FLT_EVAL_METHOD == 0`) — true of the aarch64, x86-64+SSE2, and wasm32 targets the
+engine ships; an excess-precision target (e.g. x87 without SSE2, where a soft-float
+`sin`/`cos` may still round through 80-bit registers) is **out of scope** until pinned,
+and adding one requires re-establishing this bit-identity. (Provisional M3: the first
+such functions, `sin`/`cos`, are engine natives pending the standard library; the `**`
+float path uses the same bundled `pow`. L§14/§15.)
+
 **Deferred.** Efficient *reverse* stepping needs periodic heap **snapshots** plus replay
 between them; the snapshot format, the replay/serialization API, and shareable-artifact
 encoding are deferred to a later revision (Appendix B). This section fixes only the

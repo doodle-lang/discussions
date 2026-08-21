@@ -121,7 +121,9 @@ the S-15 nested-drive-suspend prototype, the wasm facade + size gate, the JS
 fuel pump + conformance-through-wasm, turtle rendering + S-23, the demo page,
 deploy, exit review). Ten environment/product decisions surfaced; three
 forks (**#2 S-15 resolution, #6 turtle registration, #7 turtle vocab**) await
-the user.
+the user. **#6/#7 RESOLVED (user, 2026-08-20)** and shipped in M3.2 (turtle =
+Doodle code over three host primitives; all-capabilities). **#2 (S-15) still
+open** — the M3.3 risk peak.
 - [x] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). DONE**
       (doodle-rust `a7b3963`; **E§7.2/§7.3 + App C S-40 pinned**, user-ruled
       2026-08-03). `run_slice`/`resolve_slice(fuel: Option<u64>)` variants
@@ -137,6 +139,37 @@ the user.
       identity. 4-lens review: determinism CLEAN, 3 findings folded
       (completion wins the exact-fuel boundary; slice `Option<u64>`, no
       sentinel; fuel=0).
+- [x] **M3.2 — platform primitives + the Doodle turtle library. DONE**
+      (doodle-rust `aa6425a` turtle + `13fbdef` the `**` sweep; **E§11 amended**
+      for transcendental determinism). The turtle is ordinary Doodle code over
+      three platform primitives — `draw_line`/`set_turtle`/`clear_canvas`, **all
+      suspending `to` capabilities** (user-ruled all-capabilities 2026-08-20:
+      uniform, no new engine machinery, engine stays turtle-agnostic) — plus
+      provisional `sin`/`cos` natives via the bundled deterministic `libm`
+      (default-features=false soft-float, so trig is bit-identical native↔wasm).
+      `doodle/turtle.doodle` holds all state/geometry/color; colors are named +
+      `0xrrggbb` hex-int + RGB(A) channels. 4-lens read-only review: 9 findings
+      folded. **Headline (MAJOR, found+fixed): the `**` float path called
+      platform `f64::powf`** — a transcendental determinism leak the sin/cos
+      sweep missed and the new E§11 clause forbids; now `libm::pow`, with an
+      exact-bit golden. Also folded: alpha-clobber on an unknown color name
+      (fixed + regression test); left/pendown/showturtle/home coverage; doc
+      fixes; plan-doc reconciliation.
+      - **Deferred (approved, tracked):** the `#rrggbb` **string** color form
+        waits on string-decomposition primitives (grapheme/codepoint access)
+        the runnable subset lacks — add to `pencolor` when string ops land
+        (~M4/stdlib). The `0xrrggbb` hex-int + named + channel forms ship now.
+      - **M5 (real module system) will fix:** the single-module prepend means
+        library globals (`forward`, `right`, `home`, `repeat`, `turtle_*`, …)
+        share the user's namespace, so a user redeclaration is a duplicate-name
+        error; and `pencolor(r, g)` (arity slip) forwards a `nil` channel with
+        no validation (no exceptions until M4). Both are provisional-prepend
+        limitations, not bugs.
+      - **File-length WARN (soft limit 500, hygiene still green):**
+        `machine.rs` 584 and `machine/arith.rs` 519 (the latter tipped over by
+        M3.2's `pow` doc + golden). Both are core files; a proper split along
+        natural boundaries is a **separate task** (do not trim comments/tests to
+        dodge the check).
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
