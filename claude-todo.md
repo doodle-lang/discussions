@@ -165,11 +165,13 @@ open** — the M3.3 risk peak.
         error; and `pencolor(r, g)` (arity slip) forwards a `nil` channel with
         no validation (no exceptions until M4). Both are provisional-prepend
         limitations, not bugs.
-      - **File-length WARN (soft limit 500, hygiene still green):**
-        `machine.rs` 584 and `machine/arith.rs` 519 (the latter tipped over by
-        M3.2's `pow` doc + golden). Both are core files; a proper split along
-        natural boundaries is a **separate task** (do not trim comments/tests to
-        dodge the check).
+      - **File-length split: DONE** (doodle-rust `2fd3423`). The two files
+        M3.2 pushed over the 500-line soft limit are split along natural
+        boundaries: `arith.rs` (519→281) moved its inline test module to a
+        sibling `arith/tests.rs`; `machine.rs` (584→437) moved the
+        instance-construction family (`create`/`load*`/`load_full`) to
+        `machine/load.rs` as its own `impl Instance` block. Pure refactor,
+        public paths unchanged; hygiene now green with zero warnings.
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
