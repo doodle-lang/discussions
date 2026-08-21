@@ -213,8 +213,9 @@ lands).
       deferred to M3.5/doodle-web** (Decision #1 — no JS harness here). CI cost:
       the wasm-size job now `cargo install`s wasm-bindgen-cli (~2–4 min; can be
       sped up with a prebuilt binary later).
-- [~] **M3.5 — `@doodle-lang/engine` pump + conformance-through-wasm. CHUNK 1
-      (pump) LANDED** (doodle-web `042b35e`; workspace submodule `8507e0a`).
+- [x] **M3.5 — `@doodle-lang/engine` pump + conformance-through-wasm. DONE**
+      (doodle-web `042b35e` pump + `9f77ed3` conformance/CI; workspace submodule
+      `8507e0a`).
       **Created the `doodle-web` sibling submodule** (public, npm-workspaces) with
       **`@doodle-lang/engine`** (Decision #5 RULED 2026-08-21). `build-wasm.sh`
       builds `../doodle-rust`'s wasm via wasm-bindgen (`--target web`); the
@@ -227,9 +228,14 @@ lands).
       (stale preload) — prefix Node/npm with `NODE_OPTIONS=`.
       - **Deferred (tracked):** O(n²) per-slice `output()` copy — add an
         output-since-offset method to the doodle-wasm facade (demo-scale negligible).
-      - **Chunk 2 (next):** the **cross-repo conformance-through-wasm** determinism
-        gate + **doodle-web CI** (a workspace-superrepo job: wasm+fixtures from
-        doodle-rust, pump from doodle-web) — the load-bearing cross-surface check.
+      - **Chunk 2 DONE:** the **conformance-through-wasm** gate
+        (`conformance.test.mjs`) drives every `mode: run` fixture from doodle-rust
+        through the wasm surface, matching transcript + raise (message + line:col)
+        against the fixture directives (replicating native `matcher.rs`) — the 4 run
+        fixtures pass bit-identically (§4.1). **doodle-web CI** (`ci.yml`) is the
+        cross-repo gate: checks out both repos as siblings, builds the wasm
+        (Cargo.lock-matched `wasm-bindgen-cli`), runs pump + conformance in Node.
+        12 Node tests. (As the run-fixture corpus grows, the gate widens.)
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …

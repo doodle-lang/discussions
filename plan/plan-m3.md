@@ -373,21 +373,26 @@ read-only review: encoding/handle-discipline/gate all correct; 6 nits folded.
   determinism leak (E§11), no raw-pointer/UAF, handle release discipline.
 - **Depends on.** M3.1, M3.2, M3.3.
 
-### M3.5 — `@doodle-lang/engine`: the pump + capability Promises + conformance-through-wasm (JS/TS) — **PUMP LANDED; CI+conformance next**
+### M3.5 — `@doodle-lang/engine`: the pump + capability Promises + conformance-through-wasm (JS/TS) — **DONE**
 
-**Chunk 1 landed** (doodle-web `042b35e`; workspace submodule `8507e0a`; Decision #1
-+ #5 realized). Created the **`doodle-web`** sibling submodule (public, npm-workspaces
-monorepo) with **`@doodle-lang/engine`** (Decision #5): `scripts/build-wasm.sh` builds
-`../doodle-rust`'s wasm via wasm-bindgen (`--target web`, same ESM Node+browser); the
-**fuel-sliced pump** drives in ~8 ms slices via an **injectable scheduler**, surfaces
-**capabilities as Promises** (handler-throw → Doodle raise, E§7.5), checks the **stop
-signal between slices AND after each capability** (so a capability-suspending loop is
-cancellable), samples position per slice, and streams `print` output. 8 Node tests
-through real wasm; TS strict. 3-lens review, 10/11 folded incl. a **MAJOR** stop-button
-fix (was inert for the animated-turtle shape). **Deferred:** an O(n²) per-slice
-`output()` copy (needs a since-offset method on the Rust facade — demo-scale negligible).
-**Chunk 2 (next): the cross-repo conformance-through-wasm determinism gate + doodle-web
-CI** (a workspace-superrepo job: wasm+fixtures from doodle-rust, pump from doodle-web).
+**Landed** (doodle-web `042b35e` pump + `9f77ed3` conformance/CI; workspace submodule
+`8507e0a`; Decisions #1 + #5 realized). Created the **`doodle-web`** sibling submodule
+(public, npm-workspaces monorepo) with **`@doodle-lang/engine`** (Decision #5):
+`build-wasm.sh` builds `../doodle-rust`'s wasm via wasm-bindgen (`--target web`, same ESM
+Node+browser); the **fuel-sliced pump** drives in ~8 ms slices via an **injectable
+scheduler**, surfaces **capabilities as Promises** (handler-throw → Doodle raise, E§7.5),
+checks the **stop signal between slices AND after each capability** (so a
+capability-suspending loop is cancellable), samples position per slice, and streams
+output. TS strict. 3-lens review, 10/11 folded incl. a **MAJOR** stop-button fix (was
+inert for the animated-turtle shape). **Chunk 2:** the **conformance-through-wasm gate**
+(`conformance.test.mjs`) drives every `mode: run` fixture from doodle-rust through the
+wasm surface and matches transcript + raise (message + line:col) against the fixture's
+directives, replicating the native `matcher.rs` — **the 4 run fixtures pass bit-identically
+through wasm (§4.1 cross-surface determinism)**; and **doodle-web CI** (`.github/
+workflows/ci.yml`) is the cross-repo gate — checks out both repos as siblings, builds the
+wasm (Cargo.lock-matched `wasm-bindgen-cli`), and runs the pump + conformance tests in
+Node. 12 Node tests total. **Deferred:** an O(n²) per-slice `output()` copy (needs a
+since-offset method on the Rust facade — demo-scale negligible).
 
 - **Goal.** The JS package that pumps the engine jank-free and surfaces
   capabilities as Promises (AD6) — **and** the cross-surface conformance gate.
