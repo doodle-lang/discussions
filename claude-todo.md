@@ -176,6 +176,22 @@ App C S-15 + the R4/MD §19 amendments) — still the M3 risk peak.
         instance-construction family (`create`/`load*`/`load_full`) to
         `machine/load.rs` as its own `impl Instance` block. Pure refactor,
         public paths unchanged; hygiene now green with zero warnings.
+- [x] **M3.3 — S-15 nested-drive-suspend: forbid-and-fault. DONE**
+      (doodle-rust `4a3418f`; **E§5.4/§7.6/§7.2 + App C S-15 + MD §14/§19**).
+      Decision #2 (user-ruled 2026-08-20, re-confirmed 2026-08-21): a suspending
+      capability reached inside a **native** block-consumer's reentrant drive is a
+      new, distinct **`Faulted(NestedSuspend)`** — terminal + deterministic, the
+      M2b.5a `Internal` stub made deliberate. The nested drive runs on the Rust
+      stack, so the native consumer's progress can't be frozen/resumed; a **Doodle**
+      block-consumer (whose block runs on the engine's own stack) suspends
+      normally — the turtle demo's `repeat` relies on that. "Suspend-the-outer-
+      drive" is the same save/resume protocol a C foreign fn needs, so it is
+      **characterized in E as the deferred M7 C-ABI-yield extension, not built**
+      (mechanism analysis was conclusive; R4's "prototype both" satisfied by
+      analysis). Tests: native-`each`-block-suspend → `NestedSuspend`; the parity
+      Doodle-consumer-suspends-normally case. **Process note:** this was re-asked
+      because the post-compaction summary dropped the 2026-08-20 ruling (recorded
+      in discussions `778772a`); the user re-confirmed identically — no rework.
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …

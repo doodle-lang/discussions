@@ -395,11 +395,13 @@ as a capability if it wants output routed through its event loop. Animated
 
 While handling a synchronous foreign call, the host may invoke a Doodle callable
 (e.g. to call a block argument). This is a **nested drive** on the same instance
-and the same stack: the engine runs the callable to completion (or to a suspend
-or a stop), returning an outcome to the host, which eventually returns from the
-foreign call. A nested drive may additionally return **`NonLocalExit`** when the
-invoked block exits (a `break`/`return`) to a target outside the host call, which
-the callback must relay by returning promptly (§7.6). Nested
+and the same stack: the engine runs the callable **to completion**, returning an
+outcome to the host, which eventually returns from the foreign call. A nested drive
+may additionally return **`NonLocalExit`** when the invoked block exits (a
+`break`/`return`) to a target outside the host call, which the callback must relay
+by returning promptly (§7.6). It **cannot** suspend: a capability reached inside a
+nested drive faults `NestedSuspend` (§7.6, S-15), because the native consumer's
+in-progress state lives on the host stack and cannot be frozen and resumed. Nested
 drives observe the same instrumentation as top-level drives (§8). Reentrancy is
 single-threaded; the host must not drive the instance from another thread
 meanwhile (§10).
@@ -488,11 +490,15 @@ Outcome =
   | Suspended(request)                # a capability must be fulfilled by the host
   | Paused(reason)                    # stopped at a safe point for observation
   | Raised(exception, trace)          # an uncaught exception reached the boundary
-  | Faulted(fault)                    # a limit, cancellation, or internal fault
+  | Faulted(fault)                    # a limit, cancellation, nested-suspend, or internal fault
 
 PauseReason = Step | Breakpoint(id) | RaiseTrap | HostPause | SliceEnd
-EngineFault = LimitExceeded(kind) | Cancelled | Internal
+EngineFault = LimitExceeded(kind) | Cancelled | NestedSuspend | Internal
 ```
+
+**`NestedSuspend`** is the S-15 fault (§7.6): a suspending capability was reached inside
+a native block-consumer's reentrant drive, which the engine forbids (terminal,
+deterministic) rather than freeze-and-resume the native consumer's host-stack state.
 
 The `value` on **Completed** is present exactly when the driven unit is a returning
 `fn` — a reentrant callable return (§7.6). A **top-level module drive completes with
@@ -587,9 +593,11 @@ and replayed (§11).
 
 A synchronous foreign function (§5.2) may drive the instance reentrantly by invoking
 a Doodle callable — or the **block argument** it received (§5.1, L§8.5). The nested
-drive runs on the instance's single heap stack, shares its instrumentation, and
-returns its own outcome to the caller; a nested `Suspended`/`Paused` propagates
-outward as the host chooses to handle it.
+drive runs on the instance's single heap stack and shares its instrumentation. It
+runs the invoked callable **to completion** and returns its own outcome to the
+caller — normal completion, a raise, a **`NonLocalExit`** (below), or a fault. It
+does **not** pause or suspend outward: a suspending capability reached inside it is
+the forbidden S-15 case (below).
 
 **Non-local exits across a native consumer (resolves App C S-46).** A `do … end`
 block invoked by a native block-consuming function may execute an exit whose target
@@ -616,10 +624,31 @@ true target, so several nested native consumers each see the `NonLocalExit` in t
 innermost outward, the unwind resuming at each apply site. A host that returns a
 value, raises, or drives again after `NonLocalExit` violates the contract and
 **faults** the instance — the exit's target integrity cannot otherwise be preserved.
-(The distinct abandoned-nested-drive case — a callback returning while a nested
-drive is still `Suspended`/`Paused` — is the S-16 host-contract fault.) `NonLocalExit`
+(A related host-contract case — a callback **abandoning** a nested drive it has not
+driven to completion — is **S-16**. Under forbid-and-fault a block-invocation nested
+drive always completes, raises, exits (`NonLocalExit`), or faults `NestedSuspend`, so the
+specific "nested drive still `Suspended`/`Paused`" phrasing cannot arise via block
+invocation today; S-16 becomes live only if the M7 suspend-the-outer-drive extension lets
+a nested drive suspend.) `NonLocalExit`
 and its resumption are engine-derived from the running program, not host input, so
 they add nothing to the recordable boundary (§11).
+
+**Suspending inside a nested drive (resolves App C S-15).** A **suspending capability**
+(§5.3) reached while a nested drive is running — a block invoked by a native
+block-consumer calls one — cannot suspend the way a top-level capability does: the
+native consumer's own progress (a loop index, say) lives on the **host's call stack**,
+which the engine cannot freeze and later resume. The engine therefore **forbids** the
+nested suspend: it is a **non-resumable `Faulted(NestedSuspend)`** (§7.2), terminal and
+deterministic — a well-defined engine limitation reached by legitimate Doodle code,
+distinct from an `Internal` invariant violation. (A capability reached in an ordinary,
+non-nested drive suspends normally — **including inside a *Doodle* block-consumer**,
+whose block runs on the engine's own heap stack; only a **native** consumer's reentrant
+drive is affected.) The alternative — *suspending the outer drive* by propagating the
+request across the native boundary and making native consumers **resumable** (saving and
+restoring their progress across a suspend) — is the same explicit save/resume protocol a
+C foreign function needs (it cannot freeze its C stack either), so it is **deferred to the
+C-ABI design (M7)** rather than pre-committed here. A host that wants a block-consumer
+whose block may suspend writes it in **Doodle**, not as a native function.
 
 ### 7.7 Determinism of driving
 
@@ -760,9 +789,9 @@ inspection. This is deferred (Appendix B).
 - **Driving is inherently protected.** Every `run`/`resolve` returns an outcome; a
   Doodle error never propagates as a host-language exception or crash. (This subsumes
   the role of a `pcall`-style protected-call primitive.)
-- **Engine faults** — resource-limit exhaustion, cancellation, or an internal
-  invariant violation — are `Faulted`, distinct from Doodle exceptions and **not**
-  catchable by Doodle code.
+- **Engine faults** — resource-limit exhaustion, cancellation, a nested-drive suspend
+  (`NestedSuspend`, §7.6), or an internal invariant violation — are `Faulted`, distinct
+  from Doodle exceptions and **not** catchable by Doodle code.
 - A foreign function that fails in a way the program should handle raises a Doodle
   exception; a host-level failure it cannot express becomes an engine fault surfaced
   to the driving host.

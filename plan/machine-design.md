@@ -528,8 +528,11 @@ pushes `DriveCtx { boundary: FrameIx, directive, parked: Option<Unwind> }`
 and a `HostBoundary` cont. Arguments passed to a synchronous foreign
 callback are **rooted for the callback's duration** (they are reachable
 from the suspended `Apply` cont and, for the C ABI, from the temporary
-argument handles). Suspending capabilities under a nested drive remain
-the S-15 question; the mechanism supports both candidate resolutions.
+argument handles). A **suspending capability under a nested drive** is
+**forbidden** (S-15 resolved, forbid-and-fault): reaching one faults
+`NestedSuspend` (E§7.6), since the native consumer's progress lives on the
+host stack and cannot be frozen/resumed. The resumable "suspend-the-outer-
+drive" alternative is deferred to the C-ABI-yield design (M7).
 
 ## 15. Garbage collection
 
@@ -614,8 +617,6 @@ Deliberately not pinned here (small, local, or awaiting S-items):
 - Dict tombstone/compaction policy (must preserve insertion order and
   determinism; otherwise free).
 - `FusedCounter` re-arm bookkeeping when events arm/disarm mid-run.
-- S-15 (nested-drive suspension) — drive layer decides after M3
-  prototyping; §14's mechanism supports both candidates.
 - The `TraceIdx` representation (heap object vs side table) — must be
   GC-rooted via `unwind` and exception values either way.
 

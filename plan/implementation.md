@@ -1483,10 +1483,26 @@ whether dynamic parameters always live in Doodle wrapper modules over
 native primitives (the plan assumes the latter).
 
 **Engine/drive — resolve by M2b/M3/M6/M7.**
-S-15 (E§5.3/§5.4/§12) Suspending capability under a nested drive on a
-non-blockable host: prototype at M3, specify before M7. ·
-S-16 (E§5.4/§7.6) Abandoned nested drives (callback returns while its
-nested drive is Suspended/Paused): define as a host-contract fault. ·
+**S-15 (E§5.4/§7.6/§7.2) RESOLVED (user, 2026-08-20, re-confirmed 2026-08-21;
+spec + M3.3 code landed): forbid-and-fault.** A suspending capability reached inside a **native**
+block-consumer's reentrant drive is a **non-resumable `Faulted(NestedSuspend)`**
+(a new, distinct `EngineFault`) — terminal and deterministic, distinct from
+`Internal`. The native consumer's progress lives on the host call stack and cannot
+be frozen/resumed, so the nested suspend is forbidden; a Doodle block-consumer
+(whose block runs on the engine's own stack) suspends normally — the M3 turtle
+demo's `repeat` relies on that. The chosen alternative, *suspend-the-outer-drive*
+(propagate the request across the native boundary, resumable native consumers), is
+**the same save/resume protocol a C foreign function needs and is deferred to the
+C-ABI design (M7)** — not pre-committed. R4 asked M3 to "prototype both"; the
+mechanism analysis was conclusive that (b) is the M7 C-ABI-yield design, so it is
+**characterized, not speculatively built** (user-ruled 2026-08-21). ·
+S-16 (E§5.4/§7.6) Abandoned nested drives (a callback returns without driving
+its nested drive to completion): define as a host-contract fault. **Note:** under
+the S-15 forbid-and-fault resolution a block-invocation nested drive cannot be
+left `Suspended`/`Paused` (it completes, raises, exits, or faults `NestedSuspend`),
+so the "still Suspended/Paused" form is moot until the M7 suspend-the-outer-drive
+extension; the live abandoned-drive cases today are the `NonLocalExit` contract
+violations (already faulted, E§7.6). ·
 S-17 (E§7.5/§8) Observation while Suspended: capability call sits at an
 implicit safe point; request-argument handles are host-owned. ·
 S-18 (E§8.7) Raise-trap unified across `raise`/foreign-raise/

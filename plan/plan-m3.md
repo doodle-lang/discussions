@@ -113,8 +113,9 @@ edit + App C decision-log entry + conformance/test). The starred ones need a
   baseline** — the M2b.5a stub made deliberate (distinct fault type,
   S-16/S-46-family callback contract, the parity control test);
   suspend-the-outer-drive is characterized in E as the deferred M7
-  C-ABI-yield extension (a compatible loosening). **M3.3** lands the engine
-  work + the E§5.4 edit + App C S-15 + the R4/MD §19 amendments.
+  C-ABI-yield extension (a compatible loosening). **M3.3 DONE** — landed the
+  `NestedSuspend` engine fault + tests, the E§5.4/§7.6/§7.2 edits, App C S-15,
+  and the MD §14/§19 amendments.
 - **S-23 (E§10.1) — cancellation robustness, the browser-reachable slices.**
   Comes due because the stop button is accept #2: **cancel of a `Suspended`
   instance discards the pending capability request; a late `resolve` after
@@ -290,7 +291,19 @@ read-only review folded 9 findings; the headline was a determinism sweep-miss �
 - **Depends on.** M2b.2/M2b.4 (natives + capabilities), M3.1 not required.
   **∥ M3.1** (both feed M3.4).
 
-### M3.3 — S-15: nested-drive-suspend across the native boundary (engine + spec prototype)
+### M3.3 — S-15: nested-drive-suspend across the native boundary (engine + spec) — **DONE**
+
+**Landed** (doodle-rust `4a3418f`; E§5.4/§7.6/§7.2 + App C S-15 + MD §14/§19).
+Per §Decisions #2 (user-ruled 2026-08-20, re-confirmed 2026-08-21): **forbid-and-
+fault**. A suspending capability reached inside a native block-consumer's reentrant
+drive is a new, distinct **`Faulted(NestedSuspend)`** — terminal and deterministic,
+distinct from `Internal`. The mechanism analysis was **conclusive** that
+"suspend-the-outer-drive" is the same save/resume protocol a C foreign function
+needs, so it is **characterized in E as the deferred M7 C-ABI-yield extension, not
+speculatively built** (R4's "prototype both" satisfied by analysis). Tests: the
+native `each`-block-suspends case faults `NestedSuspend` (terminal); the **parity**
+case — a *Doodle* block-consumer whose block suspends — suspends+resolves normally
+(what the turtle demo's `repeat` relies on). Multi-lens review folded below.
 
 - **Goal.** Resolve what happens when a **suspending capability is reached
   inside a native block-consumer's reentrant drive** — the milestone's
