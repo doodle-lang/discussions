@@ -142,12 +142,21 @@ edit + App C decision-log entry + conformance/test). The starred ones need a
 
 Recommended option first; each blocks only the item(s) noted.
 
-1. **js/web repo placement (AD7).** AD7 defers where `js/` and `web/` live
-   "until they materialize" — that is now. Recommended: a **new sibling
-   submodule** under `doodle-lang/workspace` (e.g. `doodle-web`), keeping the
-   Rust crate repo clean; alternative: a `js/`+`web/` tree inside
-   `doodle-rust`. Blocks **M3.4/M3.5** (and, if a new submodule, its
-   workspace + CI wiring). 
+1. **js/web repo placement (AD7). RULED (user, 2026-08-21): a new sibling
+   submodule `doodle-web`** under `doodle-lang/workspace` for **all** JS/TS +
+   web — the `@doodle-lang/engine` pump/package **and** the demo — keeping
+   `doodle-rust` **pure Rust** (the `doodle-wasm` crate that compiles to wasm
+   stays in `doodle-rust`; `doodle-web` consumes its wasm-bindgen artifact).
+   The user weighed this against the hybrid (pump in `doodle-rust`) and chose
+   repo purity + independent deploy/npm cadence over a single-repo determinism
+   gate. **Consequence:** the **conformance-through-wasm gate spans repos**
+   (wasm + fixtures in `doodle-rust`, pump in `doodle-web`); run it as a
+   **workspace-superrepo CI job** that builds the wasm from `doodle-rust`,
+   pulls fixtures from `doodle-rust/conformance`, and drives them through the
+   `doodle-web` pump in Node. **M3.4** (the Rust `doodle-wasm` facade + size
+   gate) is `doodle-rust`-internal and needs no `doodle-web`; **M3.5** creates
+   `doodle-web` (repo + workspace submodule + CI) — a new-repo setup step to
+   confirm when M3.5 begins. 
 2. **★ S-15 nested-drive-suspend resolution. RULED (user, 2026-08-20):
    forbid-and-fault as the pinned baseline; NO second prototype.** The
    M2b.5a behavior becomes deliberate, distinctly-typed, tested; E§5.4

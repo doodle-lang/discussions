@@ -307,6 +307,16 @@ programs complete in a few slices.
 applies to `doodle-rust`; whether `js/`, `web/`, and `stdlib/` ultimately
 live inside it or as sibling submodules is decided when they materialize.
 
+**`js/` + `web/` RESOLVED (user, 2026-08-21, M3 Decision #1):** all JS/TS + web
+— the `@doodle-lang/engine` pump/package **and** the demo — move to a **new
+sibling submodule `doodle-web`**, keeping `doodle-rust` **pure Rust**. The
+`doodle-wasm` crate (Rust→wasm) stays in `doodle-rust`; `doodle-web` consumes its
+wasm-bindgen artifact. The `js/` and `web/` entries in the layout below are
+therefore superseded (they live in `doodle-web`). Consequence: the
+conformance-through-wasm determinism gate spans repos and runs as a
+workspace-superrepo CI job (wasm + fixtures from `doodle-rust`, pump from
+`doodle-web`). `stdlib/` placement is still open (M9a).
+
 ```
 doodle-rust/
 ├── crates/
@@ -314,10 +324,8 @@ doodle-rust/
 │   ├── doodle-capi/      # C ABI cdylib; cbindgen → include/doodle.h
 │   ├── doodle-wasm/      # wasm-bindgen wrapper
 │   └── doodle-cli/       # the `doodle` command: run/test/repl, FS module resolver
-├── js/
-│   ├── engine/           # @doodle-lang/engine TS facade (fuel pump, async drive)
-│   └── turtle/           # turtle native module for the browser (rAF capabilities)
-├── web/                  # demo page → alpha IDE
+# js/ and web/ RESOLVED to the doodle-web submodule (Decision #1); shown here for context:
+#   doodle-web/ (sibling submodule): @doodle-lang/engine pump + turtle browser module + demo page
 ├── stdlib/               # the standard library, in Doodle + primitive declarations
 ├── conformance/          # versioned, spec-clause-tagged test corpus (D7, §6.3)
 ├── tools/                # conformance runner, replay tools, size/perf audits
@@ -923,7 +931,7 @@ medians; M2a and M5 carry the widest error bars.
 | AD4 | Small pinned Unicode crates + UCD/seam/ID-property vectors; ICU4X designated successor | low |
 | AD5 | Lexical slots + module binding cells; wildcard = live **read-only** cell aliasing + provenance | low-moderate |
 | AD6 | Bounded-run fuel (S-40) + `Paused(SliceEnd)`; ~8 ms slices; rAF position sampling; injectable timer | low |
-| AD7 | `doodle-lang/doodle` monorepo; specs stay in `discussions` for now | low |
+| AD7 | `doodle-lang/workspace` container + submodules: `doodle-rust` (pure Rust), `discussions` (specs), and — resolved M3 D#1 — `doodle-web` (all JS/TS + web) | low |
 | AD8 | CI matrix, 300 KB brotli gate, fuzz, cargo-deny, sanitizers-on-C-host + Miri-on-core, snapshot diagnostics | — |
 
 ## Appendix C — Spec-reconciliation backlog

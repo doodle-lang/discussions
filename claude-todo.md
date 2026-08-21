@@ -126,8 +126,15 @@ Doodle code over three host primitives; all-capabilities). **#2 (S-15)
 RULED (user, 2026-08-20): forbid-and-fault baseline, no second prototype**
 — fault not raise (the S-46 parity stance extended to suspension); the M7
 C-ABI-yield path characterized in E as the compatible extension; full
-riders on plan-m3 §Decisions #2. **M3.3 lands it** (engine + E§5.4 +
-App C S-15 + the R4/MD §19 amendments) — still the M3 risk peak.
+riders on plan-m3 §Decisions #2. **M3.3 DONE** (see below). **Decision #1
+(js/web placement, AD7) RULED (user, 2026-08-21): a new `doodle-web`
+submodule for all JS/TS + web; `doodle-rust` stays pure Rust** (the
+`doodle-wasm` crate stays; `doodle-web` consumes its wasm-bindgen artifact).
+The conformance-through-wasm determinism gate spans repos → a
+workspace-superrepo CI job. `doodle-web` gets created at **M3.5** (M3.4 is
+`doodle-rust`-internal). Remaining M3 forks: #3 hosting, #4 privacy, #5 npm,
+#8 print surface, #9 R8 guard, #10 budget (all resolvable when their item
+lands).
 - [x] **M3.1 — bounded-run fuel + `Paused(SliceEnd)` (S-40). DONE**
       (doodle-rust `a7b3963`; **E§7.2/§7.3 + App C S-40 pinned**, user-ruled
       2026-08-03). `run_slice`/`resolve_slice(fuel: Option<u64>)` variants
