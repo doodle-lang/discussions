@@ -211,11 +211,18 @@ Recommended option first; each blocks only the item(s) noted.
 8. **`print` output surface in the demo + Node.** Recommended: a **DOM output
    pane** in the demo and a **Node capture buffer** in CI (so transcripts
    compare). Blocks **M3.4** (facade output channel) / **M3.7** (demo pane).
-9. **R8 — unbounded single-operation guard for a public tab.** A single
-   long op (e.g. a huge `**`) can freeze the tab between safe points. For the
-   public kid-facing page, recommended: an **M3 interim guard** — restrict the
-   demo subset to exclude unbounded single ops until M4's finer limits, *or*
-   a host-side deadman timer. Blocks **M3.7** (demo hardening).
+9. **R8 — unbounded single-operation guard for a public tab. RESOLVED (user,
+   2026-08-22): accept + document; no interim guard.** A single long op (e.g. a
+   huge `**` building a giant bignum) freezes the main thread between safe points
+   — limits/cancellation are only polled at statement boundaries, and the heap
+   limit faults only *after* `num_bigint` has already built the whole number. The
+   interim options (Web Worker, restrict the subset, deadman timer) were all
+   declined as either too complex now or silly limitations. **The real fix
+   (deferred, tracked):** bound bignum *magnitude*, enforced **during** the
+   computation of the operation (so `**`/multiply fault the instant the result
+   would exceed the size/heap limit, mid-op — not after materializing it). Until
+   then a pathological input gets a brief freeze then a heap fault; the demo
+   documents the limitation. **No longer blocks M3.7.**
 10. **§6.5 budget-revision (conditional).** If the ≤ 300 KB brotli gate is
     threatened, §6.5's ladder is: feature-gate rarely-used Unicode tables →
     lazily fetch Unicode data as a separate artifact → **only then a
@@ -487,8 +494,9 @@ lvalue validity, module-level placement, positional-before-keyword arg order,
 docstring placement. Known gaps (corpus excludes): block PARAMETERS `do (x,y)`,
 string-internal validation (interpolation/escape/margin), non-ASCII identifiers.
 **Next parts:** the CodeMirror 6 editor + `LanguageSupport`/highlighting, then
-wiring (run/stop + canvas + `packages/demo`), then line-highlight + output pane —
-and **Decision #9 (R8 guard)** before the wiring/hardening (still open).
+wiring (run/stop + canvas + `packages/demo`), then line-highlight + output pane.
+**Decision #9 (R8 guard) RESOLVED** (accept + document; the real fix is a
+mid-computation bignum-size cap, deferred) — no longer blocks the wiring part.
 
 - **Goal.** The page a user visits — write, run, watch it draw, executing
   line highlighted, stop working, `print` output shown.
@@ -498,8 +506,10 @@ and **Decision #9 (R8 guard)** before the wiring/hardening (still open).
   classify identically); the canvas (M3.6); **run/stop** wired to the pump;
   a **live line highlight** from the per-frame `currentPosition()` (engine
   gives a byte span, the page maps span→line as diagnostics do); a **`print`
-  output pane** (§Decisions #8); a "still-running…" affordance; the **R8
-  guard** (§Decisions #9). Strict CSP, no `eval` (§3.9). (Will split:
+  output pane** (§Decisions #8); a "still-running…" affordance; a **documented
+  R8 note** (§Decisions #9 RESOLVED: accept + document, no interim guard — the
+  real fix is a mid-computation bignum-size cap, deferred). Strict CSP, no
+  `eval` (§3.9). (Will split:
   editor+grammar / wiring / highlight+output.)
 - **Design refs.** §3.9, §6.4; E§8.1 (position = span, host renders); §3.9
   web posture.
@@ -561,9 +571,10 @@ and **Decision #9 (R8 guard)** before the wiring/hardening (still open).
   bundle** (CodeMirror + Lezer + facade) is measured against the **≤ 2 s
   first-load** budget (§Decisions #3 keeps it framework-light) — a distinct
   budget from the wasm gate.
-- **R8 — a public kid-facing tab.** A single unbounded op (e.g. `**`) can
-  freeze the tab between safe points; the M3 demo needs an interim guard
-  (§Decisions #9) since M4's finer limits are not yet in.
+- **R8 — a public kid-facing tab.** A single unbounded op (e.g. a huge `**`)
+  freezes the main thread between safe points. **§Decisions #9 RESOLVED: accept
+  + document, no interim guard;** the real fix (a mid-computation bignum-size
+  cap) is deferred — a pathological input gets a brief freeze then a heap fault.
 - **New toolchain + repo placement (AD7).** M3 adds a **JS/TS build + web
   hosting + a Lezer grammar** the repo lacks; resolve **where they live**
   (§Decisions #1) first, and keep the facade code identical between Node CI

@@ -281,10 +281,17 @@ lands).
         string-internal validation (interpolation/escape/margin), non-ASCII idents.
       - **Next parts:** CodeMirror 6 editor + `LanguageSupport`/highlighting →
         wiring (run/stop + canvas + `packages/demo`) → highlight + output pane.
-        **Decision #9 (R8 guard) still open** — needed before the wiring/hardening
-        (bignum `**` can freeze the main-thread tab; a deadman timer can't
-        interrupt it — the real options are a Web Worker vs restricting the subset
-        vs accept-and-document).
+      - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
+        no interim guard.** A huge `**` builds a giant bignum and freezes the
+        main thread between safe points (limits poll only at statement
+        boundaries; the heap limit faults only after `num_bigint` materializes
+        the whole number). Web Worker / subset-restriction / deadman-timer all
+        declined (too complex or silly). **Deferred follow-up (the real fix):**
+        bound bignum *magnitude* enforced **during** the op (so `**`/multiply
+        fault mid-computation the instant the result would exceed the size/heap
+        limit) — an arith + E§10.2-limits change, likely with M4's finer limits.
+        Until then: brief freeze then heap fault; the demo documents it. No
+        longer blocks M3.7 wiring.
 
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
