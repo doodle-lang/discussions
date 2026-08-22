@@ -467,6 +467,29 @@ abort → value path).
 
 ### M3.7 — The demo page: editor + Lezer grammar + run/stop + line highlight + output (JS/HTML)
 
+**Part 1 (Lezer grammar + §6.4 parity gate) — DONE** (doodle-web `c9911bf`;
+corpus doodle-rust `96392c0`). New npm package **`@doodle-lang/lezer-doodle`**
+(§Decisions: separate pkg + `packages/demo` app): a Lezer grammar for Doodle
+(App A + §3), compiled by `lezer-generator` to a **static parse table (CSP-clean,
+no runtime `new Function`)**. An **external newline tokenizer + bracket-depth
+context tracker** implements §3.2 continuation (significant `newline` at depth 0,
+skipped `newlineBracketed` in brackets; structural `nl` after operators/commas).
+Engine-mirrored hard cases: **S-4 do-attachment** (a no-block `headerExpr`
+ladder), the **two-word `else if` elif** (a no-leading-`if` `nc*` ladder; `else
+if` adjacent = elif, `else`+sep+`if` = nested), separator-less protocol/implement
+members, docstring-only record body. The **§6.4 parity gate** is a shared corpus
+of **20** `mode: static, stage: parse` fixtures (`doodle-rust lang/LA/gp-*`,
+engine-verified) that the Lezer grammar must classify identically (`parity.test.mjs`,
+cross-repo). A **3-lens read-only review + a ~50-program Lezer-vs-engine divergence
+harness** found and fixed **3 false-positives** (unary continuation, member
+separators, record body) pre-land. Documented CFG omissions (engine-only checks):
+lvalue validity, module-level placement, positional-before-keyword arg order,
+docstring placement. Known gaps (corpus excludes): block PARAMETERS `do (x,y)`,
+string-internal validation (interpolation/escape/margin), non-ASCII identifiers.
+**Next parts:** the CodeMirror 6 editor + `LanguageSupport`/highlighting, then
+wiring (run/stop + canvas + `packages/demo`), then line-highlight + output pane —
+and **Decision #9 (R8 guard)** before the wiring/hardening (still open).
+
 - **Goal.** The page a user visits — write, run, watch it draw, executing
   line highlighted, stop working, `print` output shown.
 - **Lands.** A **CodeMirror 6** editor + a **Lezer grammar for Doodle**

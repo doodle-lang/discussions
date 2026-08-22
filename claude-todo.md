@@ -256,6 +256,36 @@ lands).
         (Cargo.lock-matched `wasm-bindgen-cli`), runs pump + conformance in Node.
         12 Node tests. (As the run-fixture corpus grows, the gate widens.)
 
+- [x] **M3.6 — turtle canvas renderer + animated `forward` + S-23. DONE**
+      (doodle-web `a95d026` + `8ec4cb1`; doodle-rust `6ab0927`; discussions
+      `aac25d3`). New pkg **`@doodle-lang/turtle`**: animated `draw_line` over an
+      injectable frame clock, instant `set_turtle`/`clear_canvas`, a two-layer
+      surface (interrupted `forward` discards its trail), `CanvasSurface` +
+      `turtleToPixel`. **S-23** stop-mid-`forward` → `Faulted(Cancelled)`. Review
+      surfaced a **MAJOR** cancel-vs-raise asymmetry → **fixed in the engine**
+      (`6ab0927`): a pending cancel discards a resolve-with-raise and faults
+      `Cancelled` (E§10.1 pin). 24 Node tests + 2 doodle-core regression tests.
+
+- [x] **M3.7 part 1 — Lezer grammar + §6.4 parity gate. DONE**
+      (doodle-web `c9911bf`; corpus doodle-rust `96392c0`). New pkg
+      **`@doodle-lang/lezer-doodle`** (IDE grammar, CSP-clean static parse table).
+      External newline tokenizer + bracket context (§3.2 continuation);
+      engine-mirrored S-4 do-attachment, two-word `else if` elif, separator-less
+      members, docstring-only record body. **§6.4 gate:** 20 `mode: static,
+      stage: parse` fixtures (`lang/LA/gp-*`) classified identically by the Lezer
+      grammar (parity test, cross-repo) and the engine. 3-lens review + a
+      Lezer-vs-engine divergence harness found+fixed 3 false-positives.
+      - **Documented CFG omissions** (engine-only checks): lvalue validity,
+        module-level placement, positional-before-keyword arg order, docstring
+        placement. **Known gaps** (corpus excludes): block PARAMETERS `do (x,y)`,
+        string-internal validation (interpolation/escape/margin), non-ASCII idents.
+      - **Next parts:** CodeMirror 6 editor + `LanguageSupport`/highlighting →
+        wiring (run/stop + canvas + `packages/demo`) → highlight + output pane.
+        **Decision #9 (R8 guard) still open** — needed before the wiring/hardening
+        (bignum `**` can freeze the main-thread tab; a deadman timer can't
+        interrupt it — the real options are a Web Worker vs restricting the subset
+        vs accept-and-document).
+
 **Milestone M2b — Drive layer** (`[M]`; working plan
 **`plan/plan-m2b.md`**, written 2026-08-01, decomposed into **M2b.1 …
 M2b.7**). Two scope-boundary calls **ruled by the user 2026-08-01**: (1)
