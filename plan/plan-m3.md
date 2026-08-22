@@ -416,7 +416,31 @@ since-offset method on the Rust facade — demo-scale negligible).
   path, same facade code in Node and browser.
 - **Depends on.** M3.4; **§Decisions #1/#5** (repo placement, npm identity).
 
-### M3.6 — Turtle rendering + animated `forward` + stop-mid-animation (S-23) (JS + canvas)
+### M3.6 — Turtle rendering + animated `forward` + stop-mid-animation (S-23) (JS + canvas) — **DONE**
+
+**Landed** (doodle-web `a95d026`; spec pin `discussions` this commit). New npm
+package **`@doodle-lang/turtle`** (§Decisions #7): the browser half of the Doodle
+turtle library. `createTurtleHandlers` is the pump `onCapability` — `draw_line`
+(cap 3) **animates** over an injectable frame clock (glides the marker, grows the
+pen trail, commits one line on completion, E§5.3); `set_turtle` (4) / `clear_canvas`
+(5) apply instantly. Heading/visibility persist across a `forward` (only
+`set_turtle` updates them); color channels decode from `bigint` handles. A
+**two-layer `DrawingSurface`** (committed lines + a transient marker/in-progress
+trail): an interrupted `forward` calls `endStroke(false)`, so the canvas shows only
+whole strokes. `turtleToPixel` is the pure center-origin/y-up→pixel map;
+`CanvasSurface` is the browser `CanvasRenderingContext2D` renderer (owns the scene,
+repaints per frame). **S-23:** `animateForward` races each frame against the shared
+stop signal and returns promptly on abort; the pump then cancels → `Faulted(Cancelled)`
+at the next safe point — **no engine change needed** (the cancel-of-suspended →
+resolve-to-unstick → `Cancelled` mechanism was already correct; the handler uses
+the value path). **Spec:** E§10.1 gained the **S-23 reaping/late-resolve pin**. **12
+tests** — frame-count determinism, pen-up glide, heading/visibility persistence,
+clear; and through **real wasm+pump**: hexagon (library `repeat`/block), a 20-side
+spiral end-to-end, named-color RGBA, and **stop-mid-`forward` → `Faulted(Cancelled)`
++ line discarded + late-resolve-errors**. CI builds/typechecks/tests all workspaces.
+**5-lens read-only review, 1 MAJOR surfaced (not folded — a *spec-compliant*
+value-vs-raise cancellation asymmetry in `resolve_slice`, tracked in claude-todo
+MAJOR for user disposition; M3.6 unaffected).**
 
 - **Goal.** Draw the turtle's path and animate `forward` on rAF, and get
   **stop during an in-flight `forward` capability** right (S-23).

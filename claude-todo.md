@@ -16,8 +16,29 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
-(none — the protocol-member `end` ambiguity is **RESOLVED as S-52**, see
-below; code follow-up outstanding)
+**M3.6 review (2026-08-21): resolve-with-raise on a *cancelled* suspended
+instance yields `Raised`, not `Faulted(Cancelled)` — a spec-compliant
+asymmetry; disposition needed.** `resolve_slice`'s `Resolution::Raise` arm
+(doodle-rust `drive.rs:280`) short-circuits to `Outcome::Raised` without
+calling `drive()`, so it never polls the cancel token; the `Resolution::Value`
+arm *does* drive and faults `Cancelled`. Hence `cancel()` then resolve-with-value
+→ `Faulted(Cancelled)`, but `cancel()` then resolve-with-raise → `Raised`.
+**Not a spec violation today:** E§10.1's either/or allowance explicitly lists
+`Raised` among acceptable post-cancel outcomes. **M3.6 unaffected** — the turtle
+handler returns normally on abort (Value path → correct `Cancelled`, proven by
+the integration test); the raise+abort race is only reachable if a capability
+handler *throws* while the stop signal is aborted (pump.ts encodes that as
+`raise=true`). The deeper question — should a pending cancel preempt a host
+raise's propagation? — becomes real at **M4**, when `try`/`rescue` makes the
+raise actually unwind through the machine (today the raise arm is an M3 shortcut,
+no handlers). **Discovered by** the M3.6 read-only review. **Options:** (a) accept
+as-is, revisit at M4 (recommended — spec-compliant); (b) poll cancel in the Raise
+arm now so cancel always wins. **Awaiting user disposition.** No test added yet
+(the behavior is spec-compliant; a documenting/expected-fail test depends on the
+chosen disposition).
+
+(The protocol-member `end` ambiguity is **RESOLVED as S-52**, see
+below; code follow-up outstanding.)
 
 **S-52 RESOLVED (user, 2026-07-11): every protocol member is terminated by
 its own `end`.** Empty body (docstring permitted) = required; non-empty
