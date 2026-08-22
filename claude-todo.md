@@ -17,25 +17,23 @@ go at the top, per CLAUDE.md.
 ## MAJOR
 
 **M3.6 review (2026-08-21): resolve-with-raise on a *cancelled* suspended
-instance yields `Raised`, not `Faulted(Cancelled)` — a spec-compliant
-asymmetry; disposition needed.** `resolve_slice`'s `Resolution::Raise` arm
-(doodle-rust `drive.rs:280`) short-circuits to `Outcome::Raised` without
-calling `drive()`, so it never polls the cancel token; the `Resolution::Value`
-arm *does* drive and faults `Cancelled`. Hence `cancel()` then resolve-with-value
-→ `Faulted(Cancelled)`, but `cancel()` then resolve-with-raise → `Raised`.
-**Not a spec violation today:** E§10.1's either/or allowance explicitly lists
-`Raised` among acceptable post-cancel outcomes. **M3.6 unaffected** — the turtle
-handler returns normally on abort (Value path → correct `Cancelled`, proven by
-the integration test); the raise+abort race is only reachable if a capability
-handler *throws* while the stop signal is aborted (pump.ts encodes that as
-`raise=true`). The deeper question — should a pending cancel preempt a host
-raise's propagation? — becomes real at **M4**, when `try`/`rescue` makes the
-raise actually unwind through the machine (today the raise arm is an M3 shortcut,
-no handlers). **Discovered by** the M3.6 read-only review. **Options:** (a) accept
-as-is, revisit at M4 (recommended — spec-compliant); (b) poll cancel in the Raise
-arm now so cancel always wins. **Awaiting user disposition.** No test added yet
-(the behavior is spec-compliant; a documenting/expected-fail test depends on the
-chosen disposition).
+instance yielded `Raised`, not `Faulted(Cancelled)` — FIXED (user chose "fix
+the engine now", doodle-rust `6ab0927`).** `resolve_slice`'s `Resolution::Raise`
+arm short-circuited to `Outcome::Raised` without driving, so it never polled the
+cancel token; the `Resolution::Value` arm drove and faulted `Cancelled`. Hence
+`cancel()` + resolve-with-value → `Cancelled`, but `cancel()` + resolve-with-raise
+→ `Raised`. (E§10.1 permitted `Raised` as a post-cancel outcome, so it was not a
+violation — but the asymmetry was a wart.) **Fix:** when a cancellation is pending
+at a `Raise` resolution, discard the pending request and arm the cancel unwind
+(`Instance::discard_pending_and_cancel`), then drive — the stack tears down to
+`Faulted(Cancelled)` WITHOUT running the parked call's continuation, so (unlike
+unsticking with a fabricated value) the discarded resolution has no program-visible
+effect. The value arm is unchanged. **Tests:** doodle-core `drive_directives`
+(raise+cancel → Cancelled, no output; value+cancel-with-work-remaining → Cancelled
+after the resumed statement); doodle-web `pump.test.mjs` e2e (handler throws + abort
+→ `cancelled`). **Spec:** E§10.1 S-23 pin updated (cancel wins over a host raise).
+Reachability was narrow (a handler that *throws* while the stop signal is aborted);
+M3.6's turtle handler returns normally on abort, so it was already correct.
 
 (The protocol-member `end` ambiguity is **RESOLVED as S-52**, see
 below; code follow-up outstanding.)

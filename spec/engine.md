@@ -825,19 +825,20 @@ convention: cancelling a task after it has finished is a no-op.) Requesting canc
 of an already-**terminal** instance is likewise an idempotent no-op.
 
 **Reaping a cancelled *suspended* instance (S-23).** A suspended instance advances only
-through `resolve` (§7.5), so to observe a cancellation requested while it is suspended the
-host **resumes** it. Reaping resolves with a *value*: the engine drives to the next safe
-point, observes the cancellation, and faults `Cancelled` before any statement past the
-capability call runs — so the resolution value has no program-visible effect and the
-pending capability request is effectively **discarded**. (A host that instead resolves
-with a *raise* — deliberately rejecting the call — surfaces that host-injected exception
-as `Raised`, which the either/or allowance below already lists among the run's-own terminal
-outcomes a cancelling host must accept; the reaping path uses a value.) Once terminal, the
-instance is not re-drivable (§3.3,
-§7.3): a *later* `resolve` or `run` is the ordinary re-drive-of-terminal host-contract
-violation (a non-resumable `Faulted`), **not** a second cancellation. So the "stop button"
-resolves the suspended instance once to reap the `Faulted(Cancelled)` and then does nothing
-more with it. (This is the browser turtle demo's stop-mid-animated-`forward` path, M3.6.)
+through `resolve` (§7.5), so a cancellation requested while it is suspended is reaped by
+resuming it — and once resumed with program work still ahead, the engine faults
+`Cancelled`, the pending capability request **discarded**, whether the host resolves with a
+value or a raise. A **value** resolution resumes the parked call and drives to the next
+safe point, which observes the cancellation (a resumption that *completes* the program
+first instead stands as `Completed` — a cancel racing completion loses, above). A **raise**
+resolution — the host rejecting the call — does **not** surface as `Raised` while a
+cancellation is pending: the rejection is discarded and the stack torn down to
+`Faulted(Cancelled)` without running the parked call's continuation, since a pending cancel
+wins over a host raise. Once terminal, the instance is not re-drivable (§3.3, §7.3): a
+*later* `resolve` or `run` is the ordinary re-drive-of-terminal host-contract violation (a
+non-resumable `Faulted`), **not** a second cancellation — so the "stop button" resolves the
+suspended instance once to reap the `Faulted(Cancelled)` and then does nothing more with
+it. (This is the browser turtle demo's stop-mid-animated-`forward` path, M3.6.)
 
 The **instant** at which a request is first observed is host timing, and so lies outside
 replay identity (§11): after requesting cancellation a host must accept **either**

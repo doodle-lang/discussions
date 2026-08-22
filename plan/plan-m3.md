@@ -438,9 +438,13 @@ tests** — frame-count determinism, pen-up glide, heading/visibility persistenc
 clear; and through **real wasm+pump**: hexagon (library `repeat`/block), a 20-side
 spiral end-to-end, named-color RGBA, and **stop-mid-`forward` → `Faulted(Cancelled)`
 + line discarded + late-resolve-errors**. CI builds/typechecks/tests all workspaces.
-**5-lens read-only review, 1 MAJOR surfaced (not folded — a *spec-compliant*
-value-vs-raise cancellation asymmetry in `resolve_slice`, tracked in claude-todo
-MAJOR for user disposition; M3.6 unaffected).**
+**5-lens read-only review, 1 MAJOR surfaced and FIXED** — a value-vs-raise
+cancellation asymmetry in `resolve_slice` (a host raise racing the stop button
+escaped cancellation, yielding `Raised` where the value path faulted `Cancelled`).
+Per the user's disposition ("fix the engine now"), doodle-rust `6ab0927` makes a
+pending cancel discard the resolution and fault `Cancelled` uniformly (E§10.1 S-23
+pin updated). M3.6's turtle path was already correct (handler returns normally on
+abort → value path).
 
 - **Goal.** Draw the turtle's path and animate `forward` on rAF, and get
   **stop during an in-flight `forward` capability** right (S-23).

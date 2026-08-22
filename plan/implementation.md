@@ -1534,9 +1534,10 @@ Also: cross-thread carve-out — cancel/pause are the only thread-safe
 operations (atomic flags polled at safe points).
 **[Partly landed M3.6:** the *cancel-of-Suspended discards the pending request*
 and *late-`resolve`-errors* aspects are spec'd (E§10.1 S-23 pin) and exercised
-by the browser stop-mid-`forward` path; a spec-compliant value-vs-raise
-cancellation asymmetry is tracked in claude-todo MAJOR. Remaining: reserved
-unwind budget, cap-call-during-unwind, second-cancel hard abort, cross-thread.**] ·
+by the browser stop-mid-`forward` path; a review-surfaced value-vs-raise
+cancellation asymmetry was **fixed** (a pending cancel wins over a host raise,
+faulting `Cancelled` — doodle-rust `6ab0927`). Remaining: reserved unwind budget,
+cap-call-during-unwind, second-cancel hard abort, cross-thread.**] ·
 S-33 (E§3.3/§7.3) Instance reusability after `Raised`/`Faulted` at top
 level (REPL needs drive-again); raising a step budget after
 `LimitExceeded`. ·
