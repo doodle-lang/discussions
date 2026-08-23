@@ -510,10 +510,23 @@ gzip). **Strict CSP meta** (no JS eval; `wasm-unsafe-eval` only for wasm). A **P
 smoke** drives the *built* app in headless Chromium (editor mounts, Run draws, Stop
 halts) — wired into CI. The R8 note is documented in a page footer (§Decisions #9).
 
-**Remaining:** **Part 4** — the **live line highlight** from the per-frame
-`currentPosition()` (span→line as diagnostics do) + output-pane polish; then M3.8
-(deploy) and M3.9 (exit review). **Decision #9 RESOLVED** (accept + document; the real
-fix is a mid-computation bignum-size cap, deferred).
+**Part 4 (live line highlight) — DONE** (doodle-web `51d7fb7`; engine doodle-rust
+`77ceeb5`). The demo highlights the executing **user-program** line as the turtle
+draws. The wrinkle: a user's `forward(10)` runs `draw_line` *inside* the prepended
+library, so the top frame's position is in the prelude, not the user's line — so
+the engine gained **`currentUserSpan()`** (via `Instance::call_site_spans()`): the
+innermost active call site at or past the prelude (the user command executing),
+else the top frame if it is itself user code. The pump samples it (at each suspend
++ slice end) into `onPosition`; the demo maps span→line (subtracting the prelude
+line count) → `onLine` → a CodeMirror line decoration, cleared at run end.
+Node-tested (`forward\nright\nforward` → lines [1,2,3], not the library's sites) +
+a browser test (the highlight is visible while running).
+
+**With Part 4, M3.7's page is functionally complete** (editor + highlighting +
+run/stop + canvas + output + line highlight). **Remaining in M3:** M3.8 (deploy to a
+public URL — Decisions #3 hosting / #4 privacy) and M3.9 (exit review).
+**Decision #9 RESOLVED** (accept + document; the real fix is a mid-computation
+bignum-size cap, deferred).
 
 - **Goal.** The page a user visits — write, run, watch it draw, executing
   line highlighted, stop working, `print` output shown.

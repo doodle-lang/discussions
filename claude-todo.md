@@ -293,8 +293,16 @@ lands).
       meta (no JS eval; `wasm-unsafe-eval` for wasm). **Playwright smoke** drives
       the built app in headless Chromium (mount/Run-draws/Stop-halts), in CI. R8
       note in a page footer.
-      - **Next:** **part 4** — live line highlight from per-frame `currentPosition()`
-        (span→line) + output polish; then M3.8 (deploy: Decisions #3 hosting / #4
+- [x] **M3.7 part 4 — live line highlight. DONE** (doodle-web `51d7fb7`; engine
+      doodle-rust `77ceeb5`). Highlights the executing **user-program** line as the
+      turtle draws. Wrinkle: a user `forward(10)` runs `draw_line` *inside* the
+      prepended library, so the top frame is in the prelude — added engine
+      **`currentUserSpan()`** (`Instance::call_site_spans()`: innermost call site at
+      or past the prelude, else the top frame if user code). Pump samples it into
+      `onPosition`; demo maps span→line → `onLine` → a CodeMirror decoration
+      (cleared at run end). Node-tested (`forward\nright\nforward` → [1,2,3]) + a
+      browser highlight test. **M3.7's page is functionally complete.**
+      - **Next in M3:** M3.8 (deploy to a public URL: Decisions #3 hosting / #4
         privacy) and M3.9 (exit review).
       - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
         no interim guard.** A huge `**` builds a giant bignum and freezes the
