@@ -176,14 +176,23 @@ Recommended option first; each blocks only the item(s) noted.
    keeps the door open to exactly M7, the charter's own deadline. Amend
    R4 + App C S-15's "prototype at M3" wording + MD §19 with the M3.3
    landing. Unblocks **M3.3**.
-3. **Public-demo hosting + posture (D-6/D-8).** Where the public URL lives —
-   **GitHub Pages** under `doodle-lang` (recommended: CI-native, zero infra),
-   Netlify/Cloudflare Pages, or a `doodle-lang.dev` domain — and the posture
-   (unlisted vs announced). Blocks **M3.8**.
-4. **Privacy/analytics for the public kids' page (D-7).** A public page where
-   children run code. Recommended: the source default — **no third-party
-   analytics for v0.1**, no PII, strict CSP. Blocks **M3.7/M3.8** (before the
-   URL goes live).
+3. **Public-demo hosting + posture (D-6/D-8). RESOLVED (user, 2026-08-23):
+   GitHub Pages, unlisted, default subdomain — start simple.** The public URL
+   lives on **GitHub Pages** under `doodle-lang` (CI-native, zero infra); CSP is
+   the `<meta>` tag, since Pages cannot set HTTP headers. **Unlisted** for v0.1
+   (not announced — shake out the first public demo before broadcasting). The
+   user has a domain + a Cloudflare account but deliberately deferred them to
+   keep M3 simple; the upgrade — **Cloudflare Pages + an HTTP-header CSP (incl.
+   `frame-ancestors`) + a `doodle-lang.dev` custom domain** — is a clean,
+   non-blocking later step. Unblocks **M3.8**.
+4. **Privacy/analytics for the public kids' page (D-7). RESOLVED (user,
+   2026-08-23): the source default — no third-party analytics, no PII,
+   self-contained; CSP via the `<meta>` tag (Pages).** The demo already
+   satisfies this by construction: Vite bundles every asset (no external CDN,
+   fonts, or trackers), and the page has no forms/login and stores no user data,
+   so there is no PII and nothing to clickjack. The stricter HTTP-header CSP +
+   `frame-ancestors` rides with the deferred Cloudflare move (#3). Unblocks
+   **M3.7/M3.8** (M3.7 is already done and satisfies the posture).
 5. **npm package identity (D-4). RULED (user, 2026-08-21): `@doodle-lang/engine`**
    — the package name in doodle-web. **No `npm publish` in M3** (real publish M7,
    §4.4); a publish-time guard (`prepublishOnly`) fails closed if the wasm/dist
@@ -554,10 +563,12 @@ bignum-size cap, deferred).
 
 - **Goal.** Turn the page into a **public URL** with the privacy/hosting
   posture pinned.
-- **Lands.** A **CI→static-hosting** deploy (§Decisions #3) producing the URL
-  on push to `main`; the **≤ 2 s first-load** budget checked; the **D-7
-  privacy posture** enforced (no third-party analytics/PII; CSP) before the
-  URL goes live; npm publish **dry-run only** (§Decisions #5). (The size and
+- **Lands.** A **GitHub Actions → GitHub Pages** deploy (§Decisions #3 RESOLVED:
+  Pages, unlisted) building `@doodle-lang/demo` and publishing on push to `main`;
+  a Vite **`base`** set for the project-pages sub-path (assets + the wasm URL);
+  the **≤ 2 s first-load** budget checked; the **D-7 privacy posture** (no
+  third-party analytics/PII; meta CSP — §Decisions #4 RESOLVED) verified before
+  the URL goes live; npm publish **dry-run only** (§Decisions #5). (The size and
   conformance gates already fail CI from M3.4/M3.5.)
 - **Design refs.** §4.4 (release engineering), §6.5 (≤ 2 s), D-6/D-7/D-8.
 - **Tests.** CI green on a fresh clone through build→gates→deploy; the
