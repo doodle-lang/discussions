@@ -335,8 +335,13 @@ lands).
         function table** → a runtime `WebAssembly.Table.grow()` failure on every turtle
         program. The conformance-through-wasm CI job (now driving the optimized bytes)
         caught it, but **deploy does not run that suite, so it shipped the broken binary
-        and briefly took the live demo down** (see MAJOR note). Reverted to shipping the
-        raw wasm; the honest gate stays. See the `[ ]` follow-up for safe wasm-opt.
+        and briefly took the live demo down**. Reverted to raw wasm (`9ee4ab0`) to restore
+        the site, then **re-enabled `wasm-opt -Oz` SAFELY** (`4e9d9f5`, user-directed):
+        a **pinned binaryen 130** (`scripts/install-binaryen.sh`, sha256-verified, replaces
+        the miscompiling apt one) **+ a deploy-time smoke test** (`npm test -w
+        @doodle-lang/engine` drives the optimized bytes before publishing, so a bad
+        optimization fails the deploy instead of shipping). Shipped wasm is now the
+        optimized **179 KB brotli**; CI + Deploy green, live site verified 7/7.
       - **#2 (minor) FIXED** (doodle-rust `3517f48` + doodle-web `2d9619a`): the pump's
         int decode was non-total — a bignum capability arg (beyond i64) threw out of the
         drive and wedged the instance (reachable via `pencolor(10**30,0,0)`+`forward`).
@@ -352,17 +357,13 @@ lands).
         for external refs/trackers, not bundled `assets/*.css`. Backstopped by the runtime
         meta CSP (`default-src 'self'`), which blocks any external load. **Fix when
         convenient:** scan the whole built tree (incl. `assets/*.css`) for `https?://`.
-      - [ ] **Follow-up (from #3's correction) — re-adopt `wasm-opt -Oz` SAFELY for the
-        ~15 KB brotli win**, if wanted: pin a known-good binaryen (the apt one on CI
-        mis-optimizes the growable function table) **and** add a deploy-time smoke test of
-        the *optimized* wasm (a headless Run) before publishing. Blocked on the pair —
-        either alone is unsafe.
-      - [ ] **Follow-up — the deploy path publishes without a functional smoke test.**
-        `deploy.yml` gates size + posture but never *runs* the built wasm, so a bad binary
-        can go live (it did, with wasm-opt). Low risk now that the ship path is a plain
-        wasm-bindgen artifact (byte-for-byte what CI tests), but a headless smoke step in
-        deploy (or gating deploy on the CI run) would close it. Pairs with the wasm-opt
-        follow-up.
+      - [x] **Follow-up (from #3's correction) — re-adopt `wasm-opt -Oz` SAFELY. DONE**
+        (`4e9d9f5`): pinned binaryen 130 (`scripts/install-binaryen.sh`) in ci.yml +
+        deploy.yml, and the deploy smoke test below. Shipped wasm back to 179 KB brotli.
+      - [x] **Follow-up — deploy publishes without a functional smoke test. DONE**
+        (`4e9d9f5`): `deploy.yml` now runs the engine suite against the optimized bytes
+        (turtle draw_line through the wasm) before the publish, so a wasm that does not run
+        fails the deploy instead of going live.
       - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
         no interim guard.** A huge `**` builds a giant bignum and freezes the
         main thread between safe points (limits poll only at statement

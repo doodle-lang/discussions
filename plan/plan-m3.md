@@ -609,12 +609,14 @@ clean**. Four confirmed findings, two fixed and two tracked:
 - **#3 (major) — FIXED.** The ≤ 300 KB brotli gate measured a `wasm-opt`'d artifact while
   the ship path stopped at wasm-bindgen, so the gate measured a binary the pipeline never
   shipped and falsely documented itself as measuring the shipped bytes. A new
-  `wasm-ship-size.sh` gates the **exact raw shipped bytes** (193 KB brotli, under budget),
-  wired into `ci.yml` + `deploy.yml`. A first attempt added `wasm-opt -Oz` to the ship
-  path (the chosen shape, ~179 KB) but the apt binaryen on CI mis-optimized wasm-bindgen's
-  growable function table — a runtime `Table.grow()` failure that, because deploy runs no
-  functional smoke test, briefly shipped a broken demo before being reverted. Re-adopting
-  wasm-opt for the size win needs a pinned binaryen + a deploy smoke test (tracked).
+  `wasm-ship-size.sh` gates the **exact shipped bytes**, wired into `ci.yml` + `deploy.yml`.
+  The first attempt added `wasm-opt -Oz` to the ship path but the apt binaryen on CI
+  mis-optimized wasm-bindgen's growable function table — a runtime `Table.grow()` failure
+  that, because deploy ran no functional smoke test, briefly shipped a broken demo. Fixed
+  properly (`4e9d9f5`): a **pinned, sha256-verified binaryen 130** (`install-binaryen.sh`)
+  replaces the miscompiling apt one, and **deploy now smoke-tests the optimized wasm**
+  (the engine suite through the shipped bytes) before publishing. Shipped wasm is the
+  optimized **179 KB brotli**; the demo is live and verified.
 - **#2 (minor) — FIXED.** The pump's int decode was non-total: a bignum capability
   argument (beyond `i64`) threw out of the drive and wedged the instance. Added a total
   decimal-string int boundary (`makeIntStr`/`asIntStr`); the pump uses it.
