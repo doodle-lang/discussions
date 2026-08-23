@@ -16,16 +16,14 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
-**M4 survey (2026-08-23): `[1] == [2]` panics the engine — structural `==` of
-compounds is `unimplemented!`.** Lists became constructible at M2b.5a, but the
-compound arm of `equal` (`machine/compare.rs:98-102`) is still
-`unimplemented!("structural equality of lists/dicts/records is M4")`, and its
-header comment (`compare.rs:19-20,96-97`) staleley claims compounds are "not
-constructible … so that arm is unreachable." So any `==`/`!=` on two lists aborts
-(release wasm is `panic = "abort"`). **Root cause:** known M4 gap reached early by
-the M2b list literals. **Fix:** M4.4 (structural, cycle-safe `==`); the list arm
-lands first and closes this. **First M4 step:** add an expected-fail `mode: run`
-conformance fixture (`L4.13`) reproducing `[1] == [2]` before the fix.
+**M4 survey (2026-08-23): `[1] == [2]` panicked the engine — FIXED (M4.0,
+doodle-rust `9ee3d9e`).** Lists became constructible at M2b.5a, but the compound
+arm of `equal` was `unimplemented!`, so any `==`/`!=` on two lists aborted
+(release wasm is `panic = "abort"`) — legal Doodle code crashing the tab.
+**Fix:** M4.0 implemented the list arm of structural `==` (L§4.13) with a
+cycle-safe `Vec` pair-stack (no hasher). Tests: 6 `mode: run` `L4.13` fixtures
+(incl. `[1] == [2]` → false) green on native + through wasm, plus a heap-built
+cycle-safety unit test. Dict/record arms stay for M4.4.
 
 **M3.6 review (2026-08-21): resolve-with-raise on a *cancelled* suspended
 instance yielded `Raised`, not `Faulted(Cancelled)` — FIXED (user chose "fix
@@ -152,10 +150,12 @@ Five decisions for the user (plan §Decisions): **★ D-M4-1** record-as-key mod
 (S-29), **★ D-M4-2** engine error-value shape (E§9 — reframed: "rescue binds the
 raised value" is already normative), D-M4-3 Unicode pin (17.0-if-supported-else-
 16.0) + `unicode-segmentation`, **★ D-M4-4** R8 magnitude cap, D-M4-5 S-37
-type-value spellings. First M4 step is the `[1]==[2]` expected-fail fixture
-(above), closed by M4.0. **Key review corrections:** the `WithRestore` continuation
+type-value spellings. **Key review corrections:** the `WithRestore` continuation
 is **unbuilt** (not "inert since M2a.6"); S-24→**S-28** (the dict-hash delta);
 cross-kind hash/`==` consistency (`{1:"a"}[1.0]`) is a named M4.1 requirement.
+**Progress:** **M4.0 DONE** (doodle-rust `9ee3d9e`) — list `==`, closed the
+`[1]==[2]` panic (above). **Next: M4.1** (deterministic hashing + heap dicts;
+resolve D-M4-1 first).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

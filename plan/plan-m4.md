@@ -181,7 +181,7 @@ order is flexible; the **within-track dependency edges are stated per item**
 (and corrected from the first draft). Each `[S]`/`[M]`/`[L]` is a rough session
 estimate.
 
-### M4.0 — Close the `[1]==[2]` panic: list-only cycle-safe `==` `[S]`
+### M4.0 — Close the `[1]==[2]` panic: list-only cycle-safe `==` `[S]` — **DONE** (doodle-rust `9ee3d9e`)
 
 - **Goal.** Stop legal code aborting the engine; lay the equality skeleton.
 - **Lands.** The **expected-fail `mode: run` fixture** (`L4.13`) reproducing
