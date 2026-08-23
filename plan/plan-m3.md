@@ -493,10 +493,27 @@ separators, record body) pre-land. Documented CFG omissions (engine-only checks)
 lvalue validity, module-level placement, positional-before-keyword arg order,
 docstring placement. Known gaps (corpus excludes): block PARAMETERS `do (x,y)`,
 string-internal validation (interpolation/escape/margin), non-ASCII identifiers.
-**Next parts:** the CodeMirror 6 editor + `LanguageSupport`/highlighting, then
-wiring (run/stop + canvas + `packages/demo`), then line-highlight + output pane.
-**Decision #9 (R8 guard) RESOLVED** (accept + document; the real fix is a
-mid-computation bignum-size cap, deferred) — no longer blocks the wiring part.
+**Part 2 (CodeMirror `LanguageSupport` + highlighting) — DONE** (doodle-web
+`9cb72d4`). `@doodle-lang/lezer-doodle` now exports `doodle()` (a CodeMirror 6
+`LanguageSupport`) + `doodleLanguage`, with complete `styleTags` (a coverage probe
+confirmed no keyword/literal is left unstyled) and a headless highlight test. Still
+CSP-clean (same static parse table; the language layer does no codegen).
+
+**Part 3 (the demo app: editor + canvas + run/stop) — DONE** (doodle-web
+`520b77c`). New app **`@doodle-lang/demo`** (Vite static site): a CodeMirror editor
+with Doodle highlighting, a turtle canvas (`CanvasSurface` + `requestAnimationFrame`),
+**Run/Stop** wired to the pump via a DOM-free **run core** (`src/run.ts`, Node-tested
+against real wasm with a mock surface — draws, streams `print`, load-error returned,
+Stop → `Faulted(Cancelled)`), a **`print` output pane**, and a status line. Vite picks
+up the wasm as an asset (`loadEngine()` fetches the co-located wasm; app bundle ~113 KB
+gzip). **Strict CSP meta** (no JS eval; `wasm-unsafe-eval` only for wasm). A **Playwright
+smoke** drives the *built* app in headless Chromium (editor mounts, Run draws, Stop
+halts) — wired into CI. The R8 note is documented in a page footer (§Decisions #9).
+
+**Remaining:** **Part 4** — the **live line highlight** from the per-frame
+`currentPosition()` (span→line as diagnostics do) + output-pane polish; then M3.8
+(deploy) and M3.9 (exit review). **Decision #9 RESOLVED** (accept + document; the real
+fix is a mid-computation bignum-size cap, deferred).
 
 - **Goal.** The page a user visits — write, run, watch it draw, executing
   line highlighted, stop working, `print` output shown.

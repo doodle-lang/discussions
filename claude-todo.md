@@ -279,8 +279,23 @@ lands).
         module-level placement, positional-before-keyword arg order, docstring
         placement. **Known gaps** (corpus excludes): block PARAMETERS `do (x,y)`,
         string-internal validation (interpolation/escape/margin), non-ASCII idents.
-      - **Next parts:** CodeMirror 6 editor + `LanguageSupport`/highlighting →
-        wiring (run/stop + canvas + `packages/demo`) → highlight + output pane.
+- [x] **M3.7 part 2 — CodeMirror LanguageSupport + highlighting. DONE**
+      (doodle-web `9cb72d4`). `@doodle-lang/lezer-doodle` exports `doodle()` (a
+      CodeMirror 6 `LanguageSupport`) + `doodleLanguage` with complete `styleTags`
+      (coverage-probed) + a headless highlight test. Still CSP-clean.
+- [x] **M3.7 part 3 — the demo app (editor + canvas + run/stop). DONE**
+      (doodle-web `520b77c`). New app **`@doodle-lang/demo`** (Vite static site):
+      CodeMirror editor w/ Doodle highlighting, turtle canvas (`CanvasSurface` +
+      rAF), Run/Stop wired to the pump via a DOM-free **run core** (`src/run.ts`,
+      Node-tested: draws + streams `print`, load-error returned, Stop →
+      `Faulted(Cancelled)`), a print output pane, status line. Vite picks up the
+      wasm as an asset (`loadEngine()` fetches it; ~113 KB gzip bundle). Strict CSP
+      meta (no JS eval; `wasm-unsafe-eval` for wasm). **Playwright smoke** drives
+      the built app in headless Chromium (mount/Run-draws/Stop-halts), in CI. R8
+      note in a page footer.
+      - **Next:** **part 4** — live line highlight from per-frame `currentPosition()`
+        (span→line) + output polish; then M3.8 (deploy: Decisions #3 hosting / #4
+        privacy) and M3.9 (exit review).
       - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
         no interim guard.** A huge `**` builds a giant bignum and freezes the
         main thread between safe points (limits poll only at statement
