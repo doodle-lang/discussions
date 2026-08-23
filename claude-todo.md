@@ -314,7 +314,55 @@ lands).
       CodeMirror's injected styles (script-src stays strict); a browser test now
       guards zero console errors. Deferred (Cloudflare, #3): HTTP-header CSP +
       frame-ancestors + `doodle-lang.dev`.
-      - **Next in M3:** M3.9 (exit review + accept-criteria walk on the live URL).
+- [x] **M3.9 — M3 exit review + accept-criteria walk. DONE — M3 COMPLETE.**
+      (doodle-rust `3517f48`, doodle-web `2d9619a`+`1e45522`.) **Accept #1–#5 all
+      pass**: live headless walk of https://doodle-lang.github.io/doodle-web/ (editor
+      styled 394 ms, spiral first draw 233 ms after Run, exec line highlights, Stop →
+      `stopped` in 109 ms, zero console errors, nav→running 636 ms) + CI gates green
+      (wasm ship-size 179 KB / 300 KB brotli; conformance-through-wasm incl. `print`).
+      **S-15-in-E**: already fully recorded at M3.3 (E§7.6/§7.2/§5.4 + App C);
+      lens D re-verified spec-vs-code parity — no new edit needed. **Multi-lens review**
+      (ultracode workflow, 6 read-only lenses → per-finding adversarial verify; pump/stop
+      +S-23, S-15, and turtle/line-highlight came back clean): 4 confirmed findings —
+      - **#3 (major) FIXED** (doodle-web `1e45522` then corrected in `9ee4ab0`): the
+        ≤300 KB brotli gate measured a `wasm-opt`'d artifact while the ship path stopped
+        at wasm-bindgen, so the gate measured a binary the pipeline never shipped and
+        falsely documented itself as measuring the shipped bytes. **Fix:** new
+        `wasm-ship-size.sh` gates the **exact raw shipped bytes** (193 KB brotli, under
+        budget), wired into ci.yml + deploy.yml. **Correction:** the first attempt added
+        `wasm-opt -Oz` to the ship path (the user's chosen shape, ~179 KB); it passed
+        locally but the **apt binaryen on CI mis-optimized wasm-bindgen's growable
+        function table** → a runtime `WebAssembly.Table.grow()` failure on every turtle
+        program. The conformance-through-wasm CI job (now driving the optimized bytes)
+        caught it, but **deploy does not run that suite, so it shipped the broken binary
+        and briefly took the live demo down** (see MAJOR note). Reverted to shipping the
+        raw wasm; the honest gate stays. See the `[ ]` follow-up for safe wasm-opt.
+      - **#2 (minor) FIXED** (doodle-rust `3517f48` + doodle-web `2d9619a`): the pump's
+        int decode was non-total — a bignum capability arg (beyond i64) threw out of the
+        drive and wedged the instance (reachable via `pencolor(10**30,0,0)`+`forward`).
+        Added a total decimal-string int boundary (`makeIntStr`/`asIntStr`); the pump uses
+        it. Tests added (Rust boundary/facade + pump e2e).
+      - **#1 (nit) TRACKED** — conformance-through-wasm gate never crosses a slice
+        boundary (all driven fixtures finish inside the 100 k default fuel), so it doesn't
+        exercise the slice/resume path. Backstopped by doodle-rust `drive_directives.rs`
+        slice-parity suite (same doodle-core compiles to wasm). Coverage gap, not a
+        behavior bug. **Fix when convenient:** re-run a subset of the `run` fixtures under
+        `fuelPerSlice: 1n` and assert identical output + raise line:col.
+      - **#4 (nit) TRACKED** — `posture-check.sh` scans only `index.html` + `assets/*.js`
+        for external refs/trackers, not bundled `assets/*.css`. Backstopped by the runtime
+        meta CSP (`default-src 'self'`), which blocks any external load. **Fix when
+        convenient:** scan the whole built tree (incl. `assets/*.css`) for `https?://`.
+      - [ ] **Follow-up (from #3's correction) — re-adopt `wasm-opt -Oz` SAFELY for the
+        ~15 KB brotli win**, if wanted: pin a known-good binaryen (the apt one on CI
+        mis-optimizes the growable function table) **and** add a deploy-time smoke test of
+        the *optimized* wasm (a headless Run) before publishing. Blocked on the pair —
+        either alone is unsafe.
+      - [ ] **Follow-up — the deploy path publishes without a functional smoke test.**
+        `deploy.yml` gates size + posture but never *runs* the built wasm, so a bad binary
+        can go live (it did, with wasm-opt). Low risk now that the ship path is a plain
+        wasm-bindgen artifact (byte-for-byte what CI tests), but a headless smoke step in
+        deploy (or gating deploy on the CI run) would close it. Pairs with the wasm-opt
+        follow-up.
       - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
         no interim guard.** A huge `**` builds a giant bignum and freezes the
         main thread between safe points (limits poll only at statement
