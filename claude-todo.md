@@ -138,16 +138,24 @@ body rule (discussions `d96cc33`).
 ## In progress
 
 **Milestone M4 — Language completion I (data, errors, strings) — IN PROGRESS
-(started 2026-08-23).** Working plan **`plan/plan-m4.md`** written (decomposed
-M4.1–M4.10 across three tracks — data / control / strings) and **awaiting user
-ratification** before implementation. A read-only survey established the ground
-truth: the front end (lexer/parser/resolver) is **complete** for every M4
-construct; **all M4 work is machine-layer**, behind two catch-all panics
-(`step.rs:300`/`:429`). Four decisions surfaced for the user (plan §Decisions):
-**★ D-M4-1** dict key model (S-29), **★ D-M4-2** exceptions-as-values shape (E§9),
-D-M4-3 Unicode 17 pin + `unicode-segmentation`, D-M4-4 R8 bignum-cap scheduling.
-Survey also found the `[1]==[2]` MAJOR panic (above) — first M4 step is its
-expected-fail fixture, closed by M4.4.
+(started 2026-08-23).** Working plan **`plan/plan-m4.md`** written + **4-lens
+adversarial-reviewed + revised**, **awaiting user ratification** before
+implementation. A read-only survey (confirmed by the review) established the
+ground truth: the front end is **complete** for every M4 construct; **all M4 work
+is machine-layer**, behind several `unimplemented!` sites (`step.rs:300`/`:429`/
+`:358`, `control.rs:114`, `compare.rs:101`). Decomposed into **M4.0–M4.10 across
+three tracks** (data / control / strings); the review reshaped it: **M4.0** (list
+`==`, closes the panic first), **M4.5a/b/c** split (unwind foundation / try+
+exceptions / trace — decouples `with` from the exceptions decision), **M4.8a/b**
+split (graphemes / bytes), plus string `*` and record `is` re-added.
+Five decisions for the user (plan §Decisions): **★ D-M4-1** record-as-key model
+(S-29), **★ D-M4-2** engine error-value shape (E§9 — reframed: "rescue binds the
+raised value" is already normative), D-M4-3 Unicode pin (17.0-if-supported-else-
+16.0) + `unicode-segmentation`, **★ D-M4-4** R8 magnitude cap, D-M4-5 S-37
+type-value spellings. First M4 step is the `[1]==[2]` expected-fail fixture
+(above), closed by M4.0. **Key review corrections:** the `WithRestore` continuation
+is **unbuilt** (not "inert since M2a.6"); S-24→**S-28** (the dict-hash delta);
+cross-kind hash/`==` consistency (`{1:"a"}[1.0]`) is a named M4.1 requirement.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
