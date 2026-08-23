@@ -16,6 +16,17 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
+**M4 survey (2026-08-23): `[1] == [2]` panics the engine — structural `==` of
+compounds is `unimplemented!`.** Lists became constructible at M2b.5a, but the
+compound arm of `equal` (`machine/compare.rs:98-102`) is still
+`unimplemented!("structural equality of lists/dicts/records is M4")`, and its
+header comment (`compare.rs:19-20,96-97`) staleley claims compounds are "not
+constructible … so that arm is unreachable." So any `==`/`!=` on two lists aborts
+(release wasm is `panic = "abort"`). **Root cause:** known M4 gap reached early by
+the M2b list literals. **Fix:** M4.4 (structural, cycle-safe `==`); the list arm
+lands first and closes this. **First M4 step:** add an expected-fail `mode: run`
+conformance fixture (`L4.13`) reproducing `[1] == [2]` before the fix.
+
 **M3.6 review (2026-08-21): resolve-with-raise on a *cancelled* suspended
 instance yielded `Raised`, not `Faulted(Cancelled)` — FIXED (user chose "fix
 the engine now", doodle-rust `6ab0927`).** `resolve_slice`'s `Resolution::Raise`
@@ -126,6 +137,23 @@ body rule (discussions `d96cc33`).
 
 ## In progress
 
+**Milestone M4 — Language completion I (data, errors, strings) — IN PROGRESS
+(started 2026-08-23).** Working plan **`plan/plan-m4.md`** written (decomposed
+M4.1–M4.10 across three tracks — data / control / strings) and **awaiting user
+ratification** before implementation. A read-only survey established the ground
+truth: the front end (lexer/parser/resolver) is **complete** for every M4
+construct; **all M4 work is machine-layer**, behind two catch-all panics
+(`step.rs:300`/`:429`). Four decisions surfaced for the user (plan §Decisions):
+**★ D-M4-1** dict key model (S-29), **★ D-M4-2** exceptions-as-values shape (E§9),
+D-M4-3 Unicode 17 pin + `unicode-segmentation`, D-M4-4 R8 bignum-cap scheduling.
+Survey also found the `[1]==[2]` MAJOR panic (above) — first M4 step is its
+expected-fail fixture, closed by M4.4.
+
+**Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
+M3.9 all landed + exit-reviewed; demo live at
+https://doodle-lang.github.io/doodle-web/).** The record below stays as the M3
+history.
+
 **Milestone M2b — Drive layer — COMPLETE (2026-08-03; M2b.1–M2b.7 all landed
 + exit-reviewed).** The host/embedding layer ships: the resumable drive-state
 machine, boundary value model, intrinsic foreign functions + suspending
@@ -133,8 +161,8 @@ capabilities, reentrant drives + native block-consumers + S-46 non-local
 exits, foreign values + finalizers, cancellation, and the minimal observation
 surface. The per-item detail below stays as the M2b record.
 
-**Milestone M3 — WASM binding + first public demo — IN PROGRESS.** Working
-plan **`plan/plan-m3.md`** written + 5-lens reviewed + landed (2026-08-03;
+**Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23).**
+Working plan **`plan/plan-m3.md`** written + 5-lens reviewed + landed (2026-08-03;
 decomposed M3.1–M3.9: fuel/SliceEnd, turtle surface + native block-consumer,
 the S-15 nested-drive-suspend prototype, the wasm facade + size gate, the JS
 fuel pump + conformance-through-wasm, turtle rendering + S-23, the demo page,
