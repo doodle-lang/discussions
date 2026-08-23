@@ -302,8 +302,19 @@ lands).
       `onPosition`; demo maps span→line → `onLine` → a CodeMirror decoration
       (cleared at run end). Node-tested (`forward\nright\nforward` → [1,2,3]) + a
       browser highlight test. **M3.7's page is functionally complete.**
-      - **Next in M3:** M3.8 (deploy to a public URL: Decisions #3 hosting / #4
-        privacy) and M3.9 (exit review).
+- [x] **M3.8 — deploy pipeline + public URL + posture gates. DONE** (doodle-web
+      `b4e0653` + `73f6e9b`). **Live: https://doodle-lang.github.io/doodle-web/**
+      (GitHub Pages, Actions source, HTTPS, unlisted — Decisions #3/#4 RESOLVED
+      2026-08-23). `deploy.yml` builds the wasm + libs + `vite build
+      --base=/doodle-web/` and publishes on push to main. Release gates in
+      `ci.yml`: first-load budget (~349 KB gz / 460 KB), D-7 posture check
+      (self-contained, meta CSP no JS eval, no trackers), `npm publish --dry-run`.
+      Verified live headlessly (styled editor, Run draws, Stop halts, zero console
+      errors). Caught in live verify: `style-src 'unsafe-inline'` needed for
+      CodeMirror's injected styles (script-src stays strict); a browser test now
+      guards zero console errors. Deferred (Cloudflare, #3): HTTP-header CSP +
+      frame-ancestors + `doodle-lang.dev`.
+      - **Next in M3:** M3.9 (exit review + accept-criteria walk on the live URL).
       - **Decision #9 (R8 guard) RESOLVED (user, 2026-08-22): accept + document,
         no interim guard.** A huge `**` builds a giant bignum and freezes the
         main thread between safe points (limits poll only at statement

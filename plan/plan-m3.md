@@ -559,7 +559,23 @@ bignum-size cap, deferred).
   mapping, CSP, the R8 guard, Lezer↔engine parity.
 - **Depends on.** M3.6.
 
-### M3.8 — Deploy pipeline + public URL + posture gates (CI/infra)
+### M3.8 — Deploy pipeline + public URL + posture gates (CI/infra) — **DONE**
+
+**Landed** (doodle-web `b4e0653` deploy + `73f6e9b` CSP fix). The demo is **live at
+`https://doodle-lang.github.io/doodle-web/`** — GitHub Pages enabled via API
+(Actions source, HTTPS-enforced, unlisted). **`deploy.yml`** (GitHub Actions →
+Pages) checks out both repos, builds the wasm + libs, `vite build --base=/doodle-web/`,
+re-verifies posture + budget, and publishes on push to `main`. **Release gates**
+(in `ci.yml`, every push): `first-load-budget.sh` (gzip payload ≤ 460 KB — ~349 KB
+now), `posture-check.sh` (D-7: self-contained, meta CSP forbidding JS eval, no
+external loads/trackers), and `npm publish --dry-run` for `@doodle-lang/engine`
+(Decision #5). **Verified live headlessly:** the editor mounts *styled*, Run loads
+the wasm under the base path and draws the spiral, Stop halts, zero console errors.
+**One fix caught in live verification:** `style-src` needed `'unsafe-inline'` for
+CodeMirror's runtime-injected styles (script-src stays strict — styles can't
+execute code); a browser test now asserts zero console errors so it can't regress.
+**Deferred (with the Cloudflare move, #3):** HTTP-header CSP + `frame-ancestors` +
+a `doodle-lang.dev` custom domain. **Remaining in M3: M3.9** (exit review).
 
 - **Goal.** Turn the page into a **public URL** with the privacy/hosting
   posture pinned.
