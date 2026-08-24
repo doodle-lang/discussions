@@ -1379,7 +1379,31 @@ Code: the comparison half at M2a.3, the dict-key hash half at M4. Spun
 off: S-56 — float overflow / nonfinite arithmetic results, the
 remaining arithmetic NaN/∞ producers — due M2a.3 with S-12.]** ·
 S-29 (L§4.8/§15) Mutable records as dict keys: pin the behavior (document
-stale-hash reality vs. restrict default Hashable to immutable content). ·
+stale-hash reality vs. restrict default Hashable to immutable content).
+**RESOLVED (user, 2026-08-24; direction pre-recorded as plan-m4 D-M4-1
+2026-08-23): restrict — transitively-immutable content only.** A record is
+hashable by default iff it is a **value** record whose fields are all
+(recursively) hashable; reference records, and value records with a
+list/dict/reference-record field anywhere inside, are not — a non-hashable
+key raises at insertion/lookup naming the offending field. Principle: no
+*shared* mutable value may be reachable from a stored key, the key itself
+included (structural `==` for both kinds + §15 coherence force structural
+hashing, which is sound only if content can't change while stored). The
+value-record half is required even with immutable field values (a ref
+record is shared with assignable slots; the dict's value-record copy is
+unreachable — copy-on-bind, M4.3). Explicit `implement Hashable` for a ref
+record stays permitted (a field-subset hash is automatically `==`-coherent;
+the implementer owns hash stability — the opt-in escape hatch). Gained
+invariant: the dict index and entry list can never disagree (assertable in
+the determinism/GC-stress gates); default hashing never enters a ref graph,
+so it is total without cycle detection. Stdlib companion (not this ruling):
+an identity-keyed dict on the deterministic serial identity for
+turtle→attribute maps. Rejected: all records (Kotlin/Java stale-key
+footgun; unassertable index) and naive value-records-only (shared `List`
+fields go stale identically). Precedent: Python tuples/frozen dataclasses,
+Swift structs, Rust ownership. **[spec landed with this entry: L§4.8 +
+§9.5 + §15 hook 2 + App D.1. Code: the record default hash + the
+field-naming raise land with M4.4 (record keys), per plan-m4 D-M4-1.]** ·
 S-30 (E§4.3) `make_string` failure mode from the host (error return, not
 raise) and the general no-drive-in-progress host-call error model. ·
 S-37 (L§4.12/App D.1, L§15 hook 1) Pin built-in type-value spellings and

@@ -592,8 +592,16 @@ trailing comma is permitted; `{}` is the empty dict — note that `do … end`, 
 key in a literal denotes a string key: `{name: "Alice"}` has the string key
 `"name"`.
 
-Keys must be hashable (see §15): numbers, booleans, strings, and by default
-records are usable as keys; lists and dicts are not valid keys. Indexing
+Keys must be hashable (see §15). The principle: a key's `==`-relevant content
+must not be able to change while it is stored, so **no shared mutable value
+may be reachable from a stored key** — including the key itself. Hashable:
+numbers, booleans, strings, bytes, `nil`, and **value records whose fields are
+all (recursively) hashable**; the dict holds its own copy of a value-record
+key (§4.14), which nothing else can reach. Not hashable: lists, dicts,
+reference records (shared, with assignable fields), and any value record with
+such a field anywhere inside (a value record *shares* its reference-typed
+fields, §4.14). Using a non-hashable key raises at the insertion or lookup,
+naming the offending field. Indexing
 `dict[key]` requires the key to be present and otherwise raises. Iteration and
 lookup-with-default are provided by the standard library.
 
@@ -1553,9 +1561,13 @@ reference identity is a separate question tested by a standard-library function
 
 By default every record participates in the well-known protocols the standard
 library defines for rendering and hashing (§15): a record has a default textual
-rendering (used by interpolation and display) and is usable as a dict key. A
-record type may additionally *implement* protocols (e.g. to become iterable) as
-in §10; it does not do so by default.
+rendering (used by interpolation and display), and a **value** record whose
+fields are all hashable is usable as a dict key (§4.8 — a reference record is
+not, by default: it is shared and mutable, so a structural hash could go
+stale). A record type may additionally *implement* protocols (e.g. to become
+iterable, or to supply an explicit `Hashable` for a reference record — taking
+on the obligation that the hashed content never changes while the record is a
+key) as in §10; it does not do so by default.
 
 ---
 
@@ -1888,9 +1900,15 @@ standard library must supply the *behavior*.
    `hash(a) == hash(b)` — in particular every representation of the same
    mathematical value hashes identically (`1` and `1.0`; `0`, `0.0`, and
    `-0.0`), and NaN has one fixed hash. The standard library must define
-   `Hashable`, implement it for the hashable built-in types, and provide a
-   record default. Using a non-hashable value (e.g. a list) as a dict key
-   raises.
+   `Hashable`, implement it for the hashable built-in types, and provide the
+   **record default**: a value record hashes structurally over its fields and
+   is hashable iff every field is; a reference record is not hashable by
+   default (§4.8, §9.5). Because hashing never enters a reference record, the
+   default hash is total and terminating without cycle detection. An explicit
+   `Hashable` implementation may hash any subset of a record's fields (that
+   is automatically coherent with structural `==`); the implementer owns the
+   obligation that hashed content not change while the value is a key. Using
+   a non-hashable value (e.g. a list) as a dict key raises.
 
 3. **String representation and Unicode data.** The language owns Unicode data —
    NFC normalization, extended-grapheme-cluster segmentation (UAX #29), and
@@ -2311,6 +2329,25 @@ likely to change.
   value-yielding search belongs to a block-consuming call. The dynamic half
   of S-10 (a valued `break` reaching a consuming call whose callee is a
   procedure) remains open.
+- **Record keys: transitively immutable content only (§4.8, §9.5, §15;
+  resolves implementation-plan Appendix C S-29).** The draft made every record
+  "usable as a dict key" by default. With structural `==` for both record
+  kinds and hash coherent with `==`, record hashing must be structural — and a
+  structural hash is sound only if the key's content cannot change while
+  stored. Resolved: a record is hashable by default iff it is a value record
+  whose fields are all (recursively) hashable; reference records, and value
+  records sharing a list/dict/reference-record field, are not — using one as
+  a key raises, naming the field. The value-record half is required even with
+  immutable field values: a reference record is shared and its slots are
+  assignable, whereas the dict's copy of a value-record key is unreachable.
+  Rejected: all records (the Kotlin data-class / Java `HashMap` footgun —
+  silent stale entries, and the engine could never assert index integrity)
+  and "value records only" without the field condition (a shared `List`
+  field goes stale exactly the same way). Same line as Python (tuples and
+  frozen dataclasses hash; mutable dataclasses deliberately don't), Swift
+  structs, and Rust's ownership rule. An identity-keyed dict for the
+  turtle→attribute case is a standard-library concern (deterministic serial
+  identity makes it replay-safe).
 
 ### D.2 Genuinely open (deferred by the discussion)
 

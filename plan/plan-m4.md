@@ -109,7 +109,9 @@ ask** when reached (see Decisions).
   key**, not the value/ref label (a *value* record can share a `List`/`ref`
   field, so it is as stale-prone as a `ref` record — L§4.14). Names edits to
   **L§4.8** ("records usable as keys" → the restricted rule) and **L§15 hook 2**
-  (record Hashable default). Lands with M4.1. **Decision (D-M4-1).**
+  (record Hashable default). **Decision (D-M4-1) — RESOLVED; spec LANDED
+  2026-08-24** (L§4.8 + §9.5 + §15 hook 2 + App D.1 + App C S-29). Code
+  lands with M4.4 (record keys).
 - **★ S-37 (L§4.12/App D.1, L§15 hook 1) — type-value spellings + interpolation
   binds Stringable directly.** Pin the built-in type-value spellings, **whether
   `Procedure` distinguishes procedures from functions** (partly a *ratify* — `is`
@@ -142,7 +144,13 @@ M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
    to M4.4** (they need record `==`); when they land, a record is a usable key iff
    **every value transitively reachable from it is immutable** (framed by reachable
    mutability, not the value/ref label — a *value* record can share a mutable field).
-   Edits due at M4.4: L§4.8, L§15 hook 2. (No "tuple" type exists.)
+   **Spec LANDED 2026-08-24 (the full ruling user-ratified; ahead of M4.4):**
+   L§4.8 + §9.5 + §15 hook 2 + App D.1 + App C S-29. The operational rule:
+   hashable iff a **value** record with all fields (recursively) hashable —
+   the value-record half is explicit (a ref record is itself shared mutable
+   content; the dict's value-record copy is unreachable); a non-hashable key
+   raises naming the field; explicit `implement Hashable` for a ref record
+   stays permitted as an opt-in. (No "tuple" type exists.)
 2. **★ D-M4-2 · Engine error-value shape (E§9).** *Blocks M4.5b.* **What is
    already pinned** (not open): exceptions are values; `rescue e` binds the
    raised value; trace is separate. **The fork:** (a) the **shape** of the

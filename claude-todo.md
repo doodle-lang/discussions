@@ -146,8 +146,8 @@ three tracks** (data / control / strings); the review reshaped it: **M4.0** (lis
 `==`, closes the panic first), **M4.5a/b/c** split (unwind foundation / try+
 exceptions / trace — decouples `with` from the exceptions decision), **M4.8a/b**
 split (graphemes / bytes), plus string `*` and record `is` re-added.
-Five decisions for the user (plan §Decisions): **★ D-M4-1** record-as-key model
-(S-29), **★ D-M4-2** engine error-value shape (E§9 — reframed: "rescue binds the
+Five decisions for the user (plan §Decisions): **D-M4-1** record-as-key model
+(S-29 — **RESOLVED + spec landed 2026-08-24**), **★ D-M4-2** engine error-value shape (E§9 — reframed: "rescue binds the
 raised value" is already normative), D-M4-3 Unicode pin (17.0-if-supported-else-
 16.0) + `unicode-segmentation`, **★ D-M4-4** R8 magnitude cap, D-M4-5 S-37
 type-value spellings. **Key review corrections:** the `WithRestore` continuation
@@ -1137,6 +1137,18 @@ Spec landed: E§5.5 provisional block; L§11.4 note; App C S-43;
 plan-m2b obligation. Code: **M2b.2** implements (with S-42-lite +
 S-19, as planned).
 
+**S-29 RESOLVED (user, 2026-08-24; plan-m4 D-M4-1): record keys —
+transitively-immutable content only.** Hashable iff a **value** record
+with all fields (recursively) hashable; ref records and value records
+sharing a list/dict/ref field are not — raise at insertion/lookup naming
+the field. Principle: no shared mutable value reachable from a stored key
+(the key itself included) — forced by structural `==` for both kinds +
+§15 coherence. Explicit `implement Hashable` on a ref record permitted
+(opt-in; implementer owns stability). Gained: an assertable dict-index
+invariant; default hashing never enters a ref graph. Stdlib companion:
+identity-keyed dict on serial identity. Spec landed: L§4.8 + §9.5 + §15
+hook 2 + App D.1; App C S-29; plan-m4 D-M4-1/obligation. Code: M4.4.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1437,6 +1449,13 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-24 — **S-29 resolved + spec landed: record keys need transitively
+  immutable content.** Ruling in the spec-delta queue entry above. One
+  discussions commit: L§4.8 (the principle + the operational rule + the
+  field-naming raise), §9.5 (value records hashable; ref records not by
+  default; explicit `Hashable` opt-in), §15 hook 2 (record default; total
+  without cycle detection), App D.1; App C S-29; plan-m4 D-M4-1 +
+  obligation; this file. Code lands with M4.4.
 - 2026-08-02 — **E§3.3 post-raise state resolved + spec landed: a distinct
   terminal `raised` state.** Full ruling in the M2a.3a discovered-delta
   entry above (now resolved). One discussions commit: E§3.3 (the `raised`
