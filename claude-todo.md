@@ -167,7 +167,13 @@ targets) + value-vs-`ref` copy-on-bind (L§4.14/§5.3/S-38); +12 fixtures green
 native + wasm. List *index* places (`xs[0]=v`) ride in with M4.8 list indexing;
 copy-vs-navigate covered here via records + dicts. Also split `step.rs`→`eval.rs`
 and `heap.rs` tests→`heap/tests.rs` (both under the 500-line soft limit).
-**Next: M4.4** (structural `==` dict/record arms + compound dict keys).
+**M4.4 DONE** (`8ac8feb`) — structural `==` dict/record arms (cycle-safe memo
+generalized to lists/dicts/records; dict `==` order-independent; record `==` nominal)
++ record dict keys per the S-29 ruling (value record with recursively-hashable fields
+hashes structurally; non-hashable key raises naming the offending field; hashing never
+enters a reference graph). +9 fixtures green native + wasm. Split `compare.rs` tests to
+`compare/tests.rs`. **Next: M4.5a** (unwind-cleanup foundation) — track B (control)
+begins.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

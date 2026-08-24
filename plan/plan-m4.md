@@ -292,7 +292,19 @@ the copy-on-bind/navigate distinction is fully covered here via records + dicts.
   `[S]→[M]` after review).
 - **Depends on.** M4.1 (dict places), M4.2 (record places). Lists exist.
 
-### M4.4 — Structural `==` (dict/record arms) + compound dict keys `[S]`
+### M4.4 — Structural `==` (dict/record arms) + compound dict keys `[S]` — **DONE** (doodle-rust `8ac8feb`)
+
+**Landed:** the dict and record arms of the cycle-safe walk (the memo generalized
+from list pairs to an `Agg{List,Dict,Record}` pair stack); **dict `==`
+order-independent** (same key set + equal values, via `dict::value_for_key`); record
+`==` **nominal** (same declared type + pairwise fields, value and `ref` alike);
+**record dict keys** per the S-29 ruling — a value record with all-recursively-hashable
+fields hashes structurally (type + fields), and a non-hashable key (list, dict, `ref`
+record, or a value record sharing such a field) raises `UnhashableKey` **naming the
+offending field**. Default record hashing never enters a reference graph, so it is
+total without cycle detection (L§15 hook 2). +9 fixtures (L4.13 eq-007..011, L4.8
+key-001..004 + dict-006 message) green native + wasm. Housekeeping: `compare.rs` tests
+split to `compare/tests.rs` (production back under the length limit).
 
 - **Goal.** Extend M4.0's equality to dicts/records; enable record keys.
 - **Lands.** The dict and record arms of the cycle-safe walk (extending M4.0's
