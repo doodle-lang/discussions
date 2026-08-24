@@ -246,6 +246,22 @@ estimate.
   share — re-add `is_ref` to the record schema and read it at each bind), plus the
   copy-on-store/copy-on-read rule for a value record in a container slot; copies
   happen on binding, not on place navigation (the S-38 invariant).
+- **Design (derived 2026-08-23, survives compaction).**
+  - **copy-on-bind model.** `copy_on_bind(v, heap)` copies a **value** record —
+    recursively through its **value-record** fields — and shares everything else
+    (ref records, scalars, lists, dicts). Hook it at the binding/store **choke
+    points**: `control::set_slot`/`set_slot_at` + module-cell writes (covers
+    `let`/param/assign-to-name), `list_push`, `dict::insert` value, and record
+    field-set (construction + place-set). Value **reads** return the *actual*
+    object (no copy); the copy fires at the destination bind. So `let b = a`
+    copies (b's own `RecObj`); `let r = ref-rec` shares. Re-add `is_ref` to
+    `RecordType` (populate from the decl) so the copy can tell value from ref.
+  - **place assignment.** Extend `control::assign_to` (the `unimplemented!` at
+    `control.rs:113`) for `Field`/`Index` targets. `a.x = v` / `d[k] = v`:
+    evaluate the target's **object as a place** (the *actual* `RecObj`/`DictObj`,
+    **no copy** — S-38's "no intermediate copies") and the RHS, then set the
+    field/entry. Chains `a.b.c = v`: navigate `a.b` as a place (field-read-as-
+    place, actual), then set `.c`. Needs a place-navigation cont sequence.
 - **Spec-delta.** S-38.
 - **Tests.** `a.inner.x = 5` mutates `a` (value-record `inner`, no mid-chain
   copy); `d[k] = v`; a value record copied on bind then mutated leaves the
