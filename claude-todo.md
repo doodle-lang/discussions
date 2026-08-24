@@ -172,8 +172,12 @@ generalized to lists/dicts/records; dict `==` order-independent; record `==` nom
 + record dict keys per the S-29 ruling (value record with recursively-hashable fields
 hashes structurally; non-hashable key raises naming the offending field; hashing never
 enters a reference graph). +9 fixtures green native + wasm. Split `compare.rs` tests to
-`compare/tests.rs`. **Next: M4.5a** (unwind-cleanup foundation) — track B (control)
-begins.
+`compare/tests.rs`. **M4.5a DONE** (`7185403`) — unwind-cleanup foundation: the
+`WithRestore`/`TryHandler` cleanup-cont category + `dyn_stack`, every exit runs
+`WithRestore` as it pops, and raises unwind through the frame channel (`Unwind::Raise`,
+running cleanup) instead of straight to the boundary. `TryHandler` catch is the M4.5b
+seam. Split unwind.rs → `unwind/{cleanup,arms}.rs`. **Next: M4.5b** (try/rescue/raise +
+exceptions-as-values) — track B (control) continues.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

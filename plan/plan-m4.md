@@ -317,7 +317,22 @@ split to `compare/tests.rs` (production back under the length limit).
   record `==`; a record used as a dict key.
 - **Depends on.** M4.0 (the memo), M4.1 (dict), M4.2 (record).
 
-### M4.5a — Unwind-cleanup foundation (shared) `[M]`
+### M4.5a — Unwind-cleanup foundation (shared) `[M]` — **DONE** (doodle-rust `7185403`)
+
+**Landed:** the cleanup-cont category (`WithRestore` restores a dynamic binding on
+normal completion and any unwind; `TryHandler` is the raise catch-point — variant +
+recognition seam now, bind/rescue-body M4.5b) + `Machine.dyn_stack` (GC-rooted). Every
+exit now runs each `WithRestore` it passes — the four frame-poppers via
+`cleanup_and_pop_frame`, the loop/block cont-poppers via `discard_cont` (S-9
+punch-through). `Unwind` dropped `Copy` and gained `Raise { exception, trace }`: a raise
+arms an in-flight Raise unwind (running cleanup on its way out) instead of propagating
+straight to the boundary; an uncaught raise drains the stack and surfaces as the terminal
+`Raised` (same message/position). Reentrant raises across a native boundary park as
+`NonLocalExit` and keep unwinding in the outer drive. Housekeeping: unwind.rs split into
+`unwind/cleanup.rs` (mechanism) + `unwind/arms.rs` (per-exit arms). Unit tests: cancel and
+raise each run a live `WithRestore`; raise-routing validated by all 125 conformance + 53
+wasm tests. **[user-ratified scope: TryHandler variant + seam now (catch is M4.5b);
+dyn_stack storage in M4.5a, `with`/`parameter` producer in M4.6.]**
 
 - **Goal.** The one mechanism `with`, `try`, and cancellation-cleanup all need.
 - **Lands.** Introduce the **cleanup-cont category** (`WithRestore` +
