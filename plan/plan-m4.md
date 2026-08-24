@@ -212,7 +212,12 @@ estimate.
   test; the GC-stress gate over dicts.
 - **Depends on.** D-M4-1 (key set).
 
-### M4.2 — Records: heap repr, constructor, field read, `is`, copy-on-bind `[M]`
+### M4.2 — Records: heap repr, constructor, field read, `is` `[M]` — **DONE** (doodle-rust `5227f91`)
+
+> Copy-on-bind (value vs `ref`) **moved to M4.3**: it is unobservable without
+> mutation, so it lands with place-chains where it is testable. `ref record` is
+> parsed but not yet stored on the schema; M4.3 adds it back.
+
 
 - **Goal.** Records as first-class values.
 - **Lands.** A heap **`RecObj`** with the value/ref header (L§4.14) + **its GC
@@ -230,13 +235,17 @@ estimate.
 - **Risk.** copy-on-bind × place-chain aliasing (with M4.3) — name it here.
 - **Depends on.** —
 
-### M4.3 — Place chains: lvalue assignment (S-38) `[M]`
+### M4.3 — Place chains (S-38) + copy-on-bind `[M]`
 
-- **Goal.** `a.b.c = x` and `d[k] = v` mutate in place, no intermediate copies.
+- **Goal.** `a.b.c = x` and `d[k] = v` mutate in place, no intermediate copies —
+  and, now that mutation makes it observable, **value-vs-`ref` copy-on-bind**
+  (moved here from M4.2).
 - **Lands.** Place navigation for the LHS (`Ident | Field | Index`, already
   parsed) replacing `unimplemented!("… place is M4 (S-38)")` (`control.rs:113`);
-  copies happen on binding, not on place navigation (the S-38 invariant),
-  reconciled with M4.2's copy-on-store/read rule.
+  **copy-on-bind** for value records (copy on binding/passing; `ref` records
+  share — re-add `is_ref` to the record schema and read it at each bind), plus the
+  copy-on-store/copy-on-read rule for a value record in a container slot; copies
+  happen on binding, not on place navigation (the S-38 invariant).
 - **Spec-delta.** S-38.
 - **Tests.** `a.inner.x = 5` mutates `a` (value-record `inner`, no mid-chain
   copy); `d[k] = v`; a value record copied on bind then mutated leaves the

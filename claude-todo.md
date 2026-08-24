@@ -158,8 +158,11 @@ cross-kind hash/`==` consistency (`{1:"a"}[1.0]`) is a named M4.1 requirement.
 SipHash-1-3, `==`-coherent so `{1:"a"}[1.0]` hits) + heap dicts (insertion-ordered,
 first-key-wins, GC-traced), `{k:v}` literals + `d[k]` reads; 6 L4.8 fixtures green
 native + wasm. **D-M4-1 RESOLVED (user):** scalar keys only for M4.1; record keys
-(reachable-immutable) defer to M4.4. **Next: M4.2** (records — heap repr,
-constructor, field read, `is`, copy-on-bind).
+(reachable-immutable) defer to M4.4. **M4.2 DONE** (`5227f91`) — records: type
+value (`TypeObj` now builtin-or-record), `record … with … end` decl, constructor
+(`Point(x:3,y:4)`), field read (`p.x`), nominal `is`, GC; 6 L9.1 fixtures green
+native + wasm. **Copy-on-bind moved to M4.3** (unobservable without mutation).
+**Next: M4.3** (place chains `a.b.c = x` / `d[k] = v` + copy-on-bind).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
