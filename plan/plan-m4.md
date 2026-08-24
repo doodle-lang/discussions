@@ -135,14 +135,14 @@ ask** when reached (see Decisions).
 Recommended option first; each blocks only the item(s) noted. **None block
 M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
 
-1. **★ D-M4-1 · Record-as-key model (S-29).** *Blocks M4.1's key set, not its
-   scalar core.* **Recommend:** M4.1 ships **scalar keys only** (Int/BigInt/
-   Float/Bool/Nil/Str/Bytes) — self-contained and deterministic; **record keys
-   defer to M4.4** (they need record `==`). When they land, a record is a usable
-   key iff **every value transitively reachable from it is immutable** (no
-   `List`/`Dict`/`ref`-record/mutable reachable) — framed by reachable
-   mutability, not the value/ref type label. Edits: L§4.8, L§15 hook 2. (No
-   "tuple" type exists — do not reference one.)
+1. **★ D-M4-1 · Record-as-key model (S-29). RESOLVED (user, 2026-08-23) for the
+   M4.1 scope:** M4.1 ships **scalar keys only** (Int/BigInt/Float/Bool/Nil/Str/
+   Bytes), self-contained and deterministic; a hand-rolled fixed-key SipHash-1-3
+   through a single `hash` seam (the M5-Hashable placeholder). **Record keys defer
+   to M4.4** (they need record `==`); when they land, a record is a usable key iff
+   **every value transitively reachable from it is immutable** (framed by reachable
+   mutability, not the value/ref label — a *value* record can share a mutable field).
+   Edits due at M4.4: L§4.8, L§15 hook 2. (No "tuple" type exists.)
 2. **★ D-M4-2 · Engine error-value shape (E§9).** *Blocks M4.5b.* **What is
    already pinned** (not open): exceptions are values; `rescue e` binds the
    raised value; trace is separate. **The fork:** (a) the **shape** of the
@@ -191,7 +191,7 @@ estimate.
   (`compare.rs:19-20,96-97`) corrected.
 - **Depends on.** — (dependency-free; ordered first).
 
-### M4.1 — Deterministic hashing + heap dicts (scalar keys) `[M]`
+### M4.1 — Deterministic hashing + heap dicts (scalar keys) `[M]` — **DONE** (doodle-rust `b9b73e8`)
 
 - **Goal.** The first hashing infrastructure in the engine, and a working dict.
 - **Lands.** A **fixed-key SipHash `BuildHasher`** (determinism-critical — no

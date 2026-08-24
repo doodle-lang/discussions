@@ -153,9 +153,13 @@ raised value" is already normative), D-M4-3 Unicode pin (17.0-if-supported-else-
 type-value spellings. **Key review corrections:** the `WithRestore` continuation
 is **unbuilt** (not "inert since M2a.6"); S-24→**S-28** (the dict-hash delta);
 cross-kind hash/`==` consistency (`{1:"a"}[1.0]`) is a named M4.1 requirement.
-**Progress:** **M4.0 DONE** (doodle-rust `9ee3d9e`) — list `==`, closed the
-`[1]==[2]` panic (above). **Next: M4.1** (deterministic hashing + heap dicts;
-resolve D-M4-1 first).
+**Progress:** **M4.0 DONE** (`9ee3d9e`) — list `==`, closed the `[1]==[2]` panic.
+**M4.1 DONE** (`b9b73e8`) — the engine's first hasher (hand-rolled fixed-key
+SipHash-1-3, `==`-coherent so `{1:"a"}[1.0]` hits) + heap dicts (insertion-ordered,
+first-key-wins, GC-traced), `{k:v}` literals + `d[k]` reads; 6 L4.8 fixtures green
+native + wasm. **D-M4-1 RESOLVED (user):** scalar keys only for M4.1; record keys
+(reachable-immutable) defer to M4.4. **Next: M4.2** (records — heap repr,
+constructor, field read, `is`, copy-on-bind).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
