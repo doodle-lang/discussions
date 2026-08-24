@@ -162,7 +162,12 @@ native + wasm. **D-M4-1 RESOLVED (user):** scalar keys only for M4.1; record key
 value (`TypeObj` now builtin-or-record), `record … with … end` decl, constructor
 (`Point(x:3,y:4)`), field read (`p.x`), nominal `is`, GC; 6 L9.1 fixtures green
 native + wasm. **Copy-on-bind moved to M4.3** (unobservable without mutation).
-**Next: M4.3** (place chains `a.b.c = x` / `d[k] = v` + copy-on-bind).
+**M4.3 DONE** (`046b1a6`) — place chains (`a.b.c = v` / `d[k] = v`, Field/Index
+targets) + value-vs-`ref` copy-on-bind (L§4.14/§5.3/S-38); +12 fixtures green
+native + wasm. List *index* places (`xs[0]=v`) ride in with M4.8 list indexing;
+copy-vs-navigate covered here via records + dicts. Also split `step.rs`→`eval.rs`
+and `heap.rs` tests→`heap/tests.rs` (both under the 500-line soft limit).
+**Next: M4.4** (structural `==` dict/record arms + compound dict keys).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

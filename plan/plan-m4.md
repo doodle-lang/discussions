@@ -235,7 +235,20 @@ estimate.
 - **Risk.** copy-on-bind × place-chain aliasing (with M4.3) — name it here.
 - **Depends on.** —
 
-### M4.3 — Place chains (S-38) + copy-on-bind `[M]`
+### M4.3 — Place chains (S-38) + copy-on-bind `[M]` — **DONE** (doodle-rust `046b1a6`)
+
+**Landed:** `a.b.c = v` and `d[k] = v` place assignment (Field/Index targets);
+`copy_on_bind` (value records copied recursively at every bind/store choke point —
+`let`/`const`, assign-to-name, param + default, record construction, dict insert,
+list-literal element; `ref` records and non-records shared; reads/place navigation
+never copy); `is_ref` re-added to `RecordType`. List *index* places (`xs[0] = v`,
+`xs[0].x`) ride in with **M4.8** list indexing — the read path (`index_apply`)
+handles only dicts today, so the set path matches (non-dict index → `TypeMismatch`);
+the copy-on-bind/navigate distinction is fully covered here via records + dicts.
++12 fixtures (L4.14 copy-·, L5.3 place-·) green native + wasm. Housekeeping:
+`step.rs`→`eval.rs` split and `heap.rs` tests→`heap/tests.rs` (both back under the
+500-line soft limit).
+
 
 - **Goal.** `a.b.c = x` and `d[k] = v` mutate in place, no intermediate copies —
   and, now that mutation makes it observable, **value-vs-`ref` copy-on-bind**
