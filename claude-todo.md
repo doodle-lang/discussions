@@ -176,8 +176,13 @@ enters a reference graph). +9 fixtures green native + wasm. Split `compare.rs` t
 `WithRestore`/`TryHandler` cleanup-cont category + `dyn_stack`, every exit runs
 `WithRestore` as it pops, and raises unwind through the frame channel (`Unwind::Raise`,
 running cleanup) instead of straight to the boundary. `TryHandler` catch is the M4.5b
-seam. Split unwind.rs → `unwind/{cleanup,arms}.rs`. **Next: M4.5b** (try/rescue/raise +
-exceptions-as-values) — track B (control) continues.
+seam. Split unwind.rs → `unwind/{cleanup,arms}.rs`. **M4.5b DONE** (`238cdf5`) —
+try/rescue/raise + exceptions-as-values (D-M4-2/S-58): engine raises materialize a
+built-in `Error(kind, message, details)` record (details `{}` for now), `rescue e` binds
+it, `e is Error`/`e.kind` inspect it, `raise value` throws any value, bare `raise`
+re-raises with the original trace, `try` is an expression. New modules `exception.rs` +
+`protect.rs`. +9 fixtures green native (134) + wasm (62). **Next: M4.5c** (trace capture)
+— track B continues.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

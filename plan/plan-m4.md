@@ -352,7 +352,25 @@ dyn_stack storage in M4.5a, `with`/`parameter` producer in M4.6.]**
   runs a registered cleanup cont as it unwinds.
 - **Depends on.** — (independent of Track A and of D-M4-2; unblocks M4.6).
 
-### M4.5b — `try`/`rescue`/`raise` + exceptions-as-values `[L]`
+### M4.5b — `try`/`rescue`/`raise` + exceptions-as-values `[L]` — **DONE** (doodle-rust `238cdf5`)
+
+**Landed (per D-M4-2 / S-58):** exceptions are values. An engine raise materializes a
+built-in `Error(kind, message, details)` record as it enters the unwind channel (`kind`
+a kebab slug, `details` an empty dict for now — the three-field shape is frozen, records
+having no defaults; per-kind enrichment rides the message-rubric work). `rescue e` binds
+it, `e is Error`/`e.kind` inspect it; a program raises the same shape (forgeable —
+who-raised is in the trace). `Unwind::Raise`/`Halt::Raise`/`Outcome::Raised` carry the
+raised value (GC-rooted); a host raise arms the value and re-drives so it is catchable.
+`try` runs its body under a `TryHandler` (filling the M4.5a seam); catch binds the value
+and runs the rescue body; `raise value` throws any value; a **bare `raise`** re-raises
+the handled exception with its original trace (a handling stack + `PopHandler` cleanup
+cont); `try` works as an expression (L§6.9). New machine modules `exception.rs`
+(`make_error` + boundary describe) and `protect.rs` (try/rescue/raise). +9 fixtures
+(L12.1 raise-·, L12.2 rescue-·) green native (134) + wasm (62). **Provisionals flagged:**
+`details = {}` (enrichment deferred with the message snapshots); the terminal `Raised`
+value is described (kind/message) at the boundary rather than retained for post-mortem
+value inspection.
+
 
 - **Goal.** The error control flow and the exception value model.
 - **Lands.** Handler binding via the `TryHandler` cont (M4.5a); **user `raise`**
