@@ -384,7 +384,19 @@ value inspection.
 - **Depends on.** M4.5a; D-M4-2; **and — under the recommended engine-error-record
   answer — M4.2** (engine errors materialize as record values).
 
-### M4.5c — Trace capture `[S]`
+### M4.5c — Trace capture `[S]` — **DONE** (doodle-rust `f96e4b2`)
+
+**Landed:** `Trace` gains `frames` (live call stack, innermost first — call-site span +
+tail_count) and `tail_elided` (the bounded tail-elided history's callables' decl spans,
+most-recent first). `observe::capture_trace` builds it from the machine state at the raise
+site, before unwinding, minting no handles (engine-internal spans only). Deterministic
+(E§11) — a pure function of the frame stack + the tail-elided ring
+(`RingBuffer::most_recent_first`). Wired into the engine raise (`arm_raise`), user `raise
+value` (`raise_apply`), and host raise (`resume_with_raise`); a bare re-raise keeps the
+caught exception's original trace. Test: a raise deep in tail-recursion captures live
+frames (one with nonzero `tail_count`) + a non-empty tail-elided history (accept #4). This
+completes the M4.5 error trio; the M4 exit boundary display is unchanged (134 native + 62
+wasm still green).
 
 - **Goal.** Traces that show where an error originated.
 - **Lands.** extend `Trace` (today `raised_at` only, `error.rs:84-88`) with

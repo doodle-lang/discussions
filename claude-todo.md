@@ -181,8 +181,11 @@ try/rescue/raise + exceptions-as-values (D-M4-2/S-58): engine raises materialize
 built-in `Error(kind, message, details)` record (details `{}` for now), `rescue e` binds
 it, `e is Error`/`e.kind` inspect it, `raise value` throws any value, bare `raise`
 re-raises with the original trace, `try` is an expression. New modules `exception.rs` +
-`protect.rs`. +9 fixtures green native (134) + wasm (62). **Next: M4.5c** (trace capture)
-— track B continues.
+`protect.rs`. +9 fixtures green native (134) + wasm (62). **M4.5c DONE** (`f96e4b2`) —
+trace capture: `Trace` gains live `frames` (call-site span + tail_count) + `tail_elided`
+history, captured at the raise site (`observe::capture_trace`), deterministic, no handles.
+Completes the M4.5 error trio. **Next: M4.6** (`with`/`parameter` runtime + cancellation
+cleanup) — the M4.5a `WithRestore` producer + S-10 valued-`break`-to-`to`-consumer.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
