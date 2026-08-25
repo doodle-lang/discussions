@@ -190,7 +190,15 @@ exit tier + cancel-mid-`with` (accept #5); `Frame.dyn_depth` per-frame exposure;
 runtime half (`no-value-destination` at the break site + S-46 native parity). Two ratified
 extras: the S-5 `with`-tail fix (a diverging `with` body no longer reads as fall-off-end)
 and the `with`-target static check (`with-target-not-parameter`, §5.5). Native 143, wasm 69.
-**Next: M4.7** (string `+`/`*` + AD4 seam-renormalization — Track C opens).
+**M4.7 DONE** (`3bf72ec`) — string `+`/`*` (new `machine/strop.rs`) off `arith`'s
+number-only path; the AD4 seam pass is the reusable `unicode::seam_concat` (renormalizes
+only the boundary; verified equal to whole-string NFC exhaustively). `*` symmetric (`Int`
+either side, S-59): `Float`→type-mismatch, `0`/empty→`""`, negative→`negative-count` (new
+slug), over-limit→`LimitExceeded` (via generalized `pending_fault`; R8 interior cap stays
+M4.10). Native 153, wasm 79. **Deferred to its own chunk (user, 2026-08-25):** the
+string-churn criterion benchmark (no suite/dep exists yet). **S-30** rides M4.8b.
+**Next: M4.8a** (graphemes + runtime indexing — `unicode-segmentation`, grapheme memo,
+`s[i]`), or the benchmark chunk.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1500,6 +1508,30 @@ short-circuits `step`/`safe_point` before the cancel poll; a terminal
 instance is never re-polled). E§10.1 edit landed.
 
 ## Done
+
+- 2026-08-25 — **M4.7 — string `+`/`*` + AD4 seam renormalization (doodle-rust
+  `3bf72ec`).** New `machine/strop.rs` handles `+` (concat) and `*` (repetition)
+  off `arith`'s number-only path. The AD4 seam pass is the exported reusable
+  `unicode::seam_concat` — renormalizes only the boundary (a's trailing
+  non-starter run + anchoring starter; b's leading non-starters + backward-
+  composing Hangul V/T jamo), verified equal to whole-string NFC exhaustively
+  over an interacting-char alphabet. `+` is String+String only. `*` is symmetric
+  (`Int` count either side, S-59): `Float`→type-mismatch, `0`/empty→`""`,
+  negative→**`negative-count`** (new S-58 slug), over-heap-limit→`LimitExceeded`
+  (the reentry-fault park generalized to `pending_fault`; the R8 interior cap
+  stays M4.10). Conformance L4.4 concat/repeat/seam fixtures; native 153, wasm
+  79; the huge-`*` fault is a unit test. **Deferred:** the string-churn
+  benchmark → its own chunk (queue entry below). **S-30** (host `make_string`
+  error model) rides M4.8b.
+
+## Deferred / queued work
+
+- **String benchmark suite (from M4, plan-m4 M4.7 / implementation.md R3).**
+  A `criterion` benchmark suite does not exist yet (no `benches/`, no criterion
+  dependency, no `deny.toml` allowance for its transitive deps). Deferred to its
+  own chunk (user, 2026-08-25): add criterion + `benches/`, the string-churn
+  heap/fragmentation benchmark + the pathological combining-mark append (R3);
+  wiring the CI trend tracking is a separate scope decision (do not auto-wire).
 
 - 2026-08-25 — **S-59 resolved + spec landed: string repetition `*` is
   symmetric.** One discussions commit: L§4.4 (count on either side; `Int`

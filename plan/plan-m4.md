@@ -441,7 +441,21 @@ proper never-falls-through predicate) and the `with`-target static check
 - **Depends on.** **M4.5a** (not M4.5b). Accept #4's raise-through-`with`
   additionally needs M4.5b.
 
-### M4.7 — String concat + repetition + AD4 seam-renormalization `[M]`
+### M4.7 — String concat + repetition + AD4 seam-renormalization `[M]` — **DONE** (doodle-rust `3bf72ec`)
+
+**Landed:** string `+` (concat) and `*` (repetition), both branching off `arith`'s
+number-only path (new `machine/strop.rs`). The **AD4 seam pass** is the exported reusable
+routine `unicode::seam_concat` — renormalizes only the boundary region (trailing
+non-starter run + anchoring starter on the left; leading non-starters + backward-composing
+Hangul V/T jamo on the right), verified equal to whole-string NFC exhaustively over an
+interacting-char alphabet. `*` is symmetric (`Int` count either side, S-59): `Float` count
+→ type-mismatch, `0`/empty → `""`, negative → `negative-count` (new S-58 slug), a result
+over the heap limit → `LimitExceeded` (via a generalized `pending_fault`; the R8 interior
+cap stays M4.10). Conformance L4.4 concat/repeat/seam fixtures (jamo, reorder, compose,
+repeat-seam); native 153, wasm 79. **Deferred (user, 2026-08-25):** the string-churn
+benchmark → its own chunk (the criterion suite + `deny.toml` for its deps + CI trend
+tracking don't exist yet). **S-30** (host `make_string` error model) rides M4.8b, where the
+host string boundary actually is — M4.7's `+`/`*` build NFC internally and never touch it.
 
 - **Goal.** `+` and `*` on strings, done right at the seam.
 - **Lands.** String **`+`** (concat) and **`*`** (repetition, String × Int —
