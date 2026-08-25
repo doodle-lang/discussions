@@ -653,8 +653,8 @@ module-level bindings may change from within it).
 ### 4.12 Types and protocols as values
 
 Each built-in type is denoted by a type value: `Int`, `Float`, `Bool`,
-`String`, `Bytes`, `Nil`, `List`, `Dict`, `Procedure`. (`Number` denotes "either
-`Int` or `Float`.") A record declaration introduces a type value of the same
+`String`, `Bytes`, `Nil`, `List`, `Dict`, `Procedure`, and the built-in record
+type `Error` (§12.1). (`Number` denotes "either `Int` or `Float`.") A record declaration introduces a type value of the same
 name that also serves as the constructor (§9.2). A protocol declaration
 introduces a protocol value (§10). Type and protocol values are used with the
 `is` operator (§6.5) and with reflection (§13).
@@ -1807,6 +1807,20 @@ exception currently being handled, preserving its original stack trace.
 The stack trace is captured at the point of `raise` (not lazily), so it reflects
 where the error originated.
 
+**Engine-raised errors.** When the language itself raises — a type mismatch,
+division by zero, a missing dict key, an argument error, and so on — the raised
+value is an **`Error`** record, a built-in value record with three fields:
+`kind` (a stable kebab-case slug naming the error class, e.g.
+`"division-by-zero"`, `"key-not-found"`), `message` (a readable explanation),
+and `details` (a dict of kind-specific structured data — the index and length,
+the field name, the type names involved; `{}` when there is none). `Error` is an
+ordinary record type: `rescue e` binds it as-is, `e is Error` tests the shape,
+`e.kind` selects the class, and Doodle code (the standard library included) may
+construct and raise the very same values — the language draws no line between
+engine-raised and program-raised errors. Which frame raised is recorded in the
+trace, not in the value. The set of `kind` slugs is part of the language's
+stable surface (implementation plan, Appendix C S-58).
+
 ### 12.2 Handling
 
 ```grammar
@@ -2155,7 +2169,8 @@ likely to change.
   (§4.14).** The discussion said "shallow copy" without pinning nesting; this
   spec gives the C-struct-like rule.
 - **Built-in type value spellings (§4.12).** `Int`, `Float`, `Number`, `String`,
-  `Bytes`, `Bool`, `Nil`, `List`, `Dict`, `Procedure` are provisional names.
+  `Bytes`, `Bool`, `Nil`, `List`, `Dict`, `Procedure`, `Error` are provisional
+  names.
 - **String model: grapheme-default, immutable, NFC (§4.4, §6.3, §4.13, §15).**
   The discussion deferred this. Resolved: strings are immutable and stored in
   NFC; the default character is the extended grapheme cluster, so `length`,
@@ -2348,6 +2363,21 @@ likely to change.
   structs, and Rust's ownership rule. An identity-keyed dict for the
   turtle→attribute case is a standard-library concern (deterministic serial
   identity makes it replay-safe).
+- **Engine-raised errors are one built-in `Error` record (§12.1, §4.12;
+  resolves implementation-plan Appendix C S-58 / plan-m4 D-M4-2).** The draft
+  said only that raised values are "typically a record or a string." Resolved:
+  the engine raises a built-in value record `Error(kind, message, details)` —
+  a stable kebab-case `kind` slug, a readable `message`, and a `details` dict
+  of kind-specific structured data. One record rather than one type per kind:
+  Doodle has no inheritance, so per-kind types would need an extra protocol
+  to mean "any engine error," would put a dozen-plus names in the prelude,
+  and would make the standard library mint a type per error; and with no
+  typed rescue, dispatch is `e.kind == …` either way. Not a plain string:
+  hosts must render localized, kid-friendly explanations and link help from a
+  stable kind and structured details, not by parsing English. Forgeable by
+  design: the standard library written in Doodle must raise values identical
+  to the engine's (no magic boundaries); provenance lives in the trace. The
+  type is engine-level; the name `Error` is a prelude name like `Int`.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

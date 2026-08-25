@@ -1610,6 +1610,42 @@ value/raises/re-drives after `NonLocalExit` faults. Found by the
 machine-design review (v0.2 §12 — S-16 covers abandoned drives, not this).
 Spec landed E§7.6 + §5.4 + App B.1. **Code: M2b.5 implements.**
 
+**S-58 (L§12.1/§4.12, E§9/§4.3) RESOLVED (user, 2026-08-24; plan-m4
+D-M4-2): engine-raised errors are one built-in `Error` value record
+`(kind: String, message: String, details: Dict)`.** `kind` is a stable
+kebab-case slug — the runtime half of the diagnostic-code catalog, 1:1
+with the engine's `ExceptionKind`s (`type-mismatch`, `division-by-zero`,
+`non-finite-float`, `undefined-ordering`, `procedure-in-expression`,
+`name-not-defined`, `used-before-defined`, `exponent-too-large`,
+`not-callable`, `argument-error`, `unhashable-key`, `key-not-found`,
+`no-such-field`, `no-value-destination`, `function-fell-off-end`; a
+foreign raise supplies its own value) and is API (replay artifacts, IDE
+help links) — pin the spellings in the rubric's Appendix A alongside the
+static codes; `message` is rubric-governed and snapshot-tested;
+`details` carries kind-specific structured data (`{}` if none) so hosts
+render/localize without parsing text. Fields fixed now: records have no
+defaults (§9.2), so adding one later breaks every constructor call.
+Provenance: engine-level *type* (exists at M4.5b), prelude-level *name*
+(S-43-seeded, shadowable like `Int` — shadowing rebinds the name, not
+what the engine raises). Forgeable **by design**: stdlib-in-Doodle must
+raise identical values (no magic boundaries); *who* raised is the
+trace's job (E§9), not the value's — no non-forgeable kind. `rescue e`
+binds as-is (unchanged); `e is Error` tests shape, `e.kind` the class;
+L§12.2's `e is SomeError` idiom serves user-declared error records.
+Host parity: `make_error` (E§4.3) so native intrinsics raise the same
+shape. Display: `print(e)` renders the message via the stdlib
+`Stringable` at M9a; a stdlib `error(kind, message)` helper mitigates
+the no-defaults verbosity (kids mostly `raise "text"`). Rejected: plain
+strings (un-localizable, unparseable — Lua's weakness; contradicts
+L§12.1's own advice) and per-kind records (15 prelude names × S-37, no
+common type without an extra protocol, stdlib mints a type per error;
+its one gain — a misspelled type name is loud where a misspelled slug
+silently misses — is small: fixed short catalog, AD5's linter can flag
+unknown kind literals, kids rarely dispatch on engine kinds). **[spec
+landed with this entry: L§12.1 + §4.12 + App D (spellings + D.1); E§9 +
+§4.3 + App B.1. Code: M4.5b (the `Error` type, the slug catalog, message
+snapshots, `make_error`).]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

@@ -246,6 +246,7 @@ The engine provides constructors and readers for each built-in kind, e.g.
 ```
 make_int(i)          make_float(x)      make_bool(b)      make_nil()
 make_string(bytes)   make_bytes(bytes)  make_list()       make_dict()
+make_error(kind, message, details)   # the built-in Error record (§9, L§12.1)
 kind_of(h) -> Kind
 as_int(h) as_float(h) as_bool(h)
 list_length(h)  list_get(h, i)  list_append(h, v)
@@ -781,6 +782,15 @@ inspection. This is deferred (Appendix B).
   an exception value (§5.2); the engine unwinds Doodle frames normally, restoring
   dynamic-parameter bindings and running block-protocol cleanup as it goes (L§5.5,
   L§12.2).
+- **Engine-raised errors are `Error` records** (L§12.1): a built-in value record
+  `Error(kind, message, details)` — a stable kebab-case `kind` slug (the catalog is
+  part of the engine's stable surface, implementation plan App C S-58), a readable
+  `message`, and a `details` dict of kind-specific structured data hosts render and
+  localize from. `make_error(kind, message, details)` (§4.3) builds the same value,
+  so foreign functions and native intrinsics raise the same shape the engine does;
+  a foreign function may still raise any value. The value carries *what* went
+  wrong; *who* raised it — an engine primitive or a program's `raise` — is in the
+  trace, so `Error` values are deliberately forgeable by Doodle code.
 - An uncaught exception that reaches a drive boundary yields `Raised(exception, trace)`.
   The **trace** is captured at `raise` (L§12.1) and includes the live frames and the
   bounded tail-elided history (§8.3) as positions and callables. When the boundary is
@@ -1053,6 +1063,10 @@ provides the complete set plus the interactive facilities of §7–§11.
   over disallowing such exits so a native `each`/`repeat` behaves like a
   Doodle-defined block-consumer (no-magic-boundaries, plan §1). Resolves
   implementation-plan Appendix C S-46 (user-ratified 2026-08-02).
+- **Engine errors are one built-in `Error` record (§9, §4.3).** `Error(kind,
+  message, details)` — engine-level type with a prelude-level name, forgeable by
+  design (provenance is in the trace); `make_error` gives hosts the same shape.
+  Resolves plan-m4 D-M4-2 / implementation-plan Appendix C S-58.
 
 ### B.2 Open issues, including cross-spec implications
 

@@ -159,11 +159,16 @@ M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
    **provenance** — engine-level (must exist at M4.5b, pre-stdlib) vs. stdlib
    (M9a); (c) **forgeability** — can a kid construct a value that a
    `rescue e … if e is IndexError` check treats as an engine `IndexError`?
-   **Recommend (A):** an **engine-level built-in `Error` record**, inspectable and
-   (initially) forgeable — fits Doodle's no-magic stance and L§12.2's `e is …`
-   idiom; revisit forgeability if spoofing matters. Edits: E§9, E§7.5, L§12.
-   *(Option "always bind an Exception wrapper" is rejected — it contradicts
-   L§12.2 + E§9.)* A genuine design discussion when reached.
+   **RESOLVED (user, 2026-08-24; spec LANDED — App C S-58): (A) — one
+   engine-level built-in `Error` **value** record `(kind, message, details)`.**
+   (a) shape: stable kebab-case `kind` slug (1:1 with `ExceptionKind`; API),
+   rubric-governed `message`, kind-specific `details` dict — fields fixed now
+   (no record defaults); (b) provenance: engine-level type, prelude-level name
+   (S-43-seeded, shadowable); (c) forgeability: **forgeable by design** —
+   stdlib-in-Doodle must raise identical values; *who* raised is the trace's
+   job, so no non-forgeable kind. `make_error` on the boundary for host
+   parity. Landed: L§12.1 + §4.12 + App D; E§9 + §4.3 + App B.1. **M4.5b**
+   implements (the `Error` type, slug catalog, message snapshots, `make_error`).
 3. **D-M4-3 · Unicode pin (D-5) + segmentation crate.** *Blocks M4.8a.* The
    `unicode-normalization` pin is UCD 17.0, but AD4 warns the crates ship skewed
    UCD versions. **Recommend:** pin all three to the **newest UCD version all

@@ -147,8 +147,8 @@ three tracks** (data / control / strings); the review reshaped it: **M4.0** (lis
 exceptions / trace — decouples `with` from the exceptions decision), **M4.8a/b**
 split (graphemes / bytes), plus string `*` and record `is` re-added.
 Five decisions for the user (plan §Decisions): **D-M4-1** record-as-key model
-(S-29 — **RESOLVED + spec landed 2026-08-24**), **★ D-M4-2** engine error-value shape (E§9 — reframed: "rescue binds the
-raised value" is already normative), D-M4-3 Unicode pin (17.0-if-supported-else-
+(S-29 — **RESOLVED + spec landed 2026-08-24**), **D-M4-2** engine error-value shape (E§9 — **RESOLVED + spec landed
+2026-08-24**: one built-in `Error(kind, message, details)` record, App C S-58), D-M4-3 Unicode pin (17.0-if-supported-else-
 16.0) + `unicode-segmentation`, **★ D-M4-4** R8 magnitude cap, D-M4-5 S-37
 type-value spellings. **Key review corrections:** the `WithRestore` continuation
 is **unbuilt** (not "inert since M2a.6"); S-24→**S-28** (the dict-hash delta);
@@ -1159,6 +1159,16 @@ invariant; default hashing never enters a ref graph. Stdlib companion:
 identity-keyed dict on serial identity. Spec landed: L§4.8 + §9.5 + §15
 hook 2 + App D.1; App C S-29; plan-m4 D-M4-1/obligation. Code: M4.4.
 
+**S-58 / D-M4-2 RESOLVED (user, 2026-08-24): engine-raised errors are one
+built-in `Error` value record `(kind, message, details)`.** Stable
+kebab-case `kind` slugs (1:1 with `ExceptionKind`; API — catalog in App C
+S-58 + the rubric's App A), rubric-governed `message`, kind-specific
+`details` dict; fields fixed now (no record defaults). Engine-level type,
+prelude-level name (S-43-seeded, shadowable). Forgeable by design
+(stdlib-in-Doodle raises identical values; provenance = the trace).
+`make_error` for host parity. Spec landed: L§12.1 + §4.12 + App D; E§9 +
+§4.3 + App B.1; App C S-58; plan-m4 D-M4-2. Code: **M4.5b**.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1459,6 +1469,12 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-24 — **S-58 / D-M4-2 resolved + spec landed: engine errors are one
+  built-in `Error` record.** Ruling in the spec-delta queue entry above. One
+  discussions commit: L§12.1 (engine-raised values are `Error(kind, message,
+  details)`; forgeable; provenance in the trace), §4.12 + App D spellings
+  (`Error` joins the type values), App D.1; E§9 + §4.3 (`make_error`) + App
+  B.1; App C S-58 (slug catalog); plan-m4 D-M4-2; this file. Code: M4.5b.
 - 2026-08-24 — **S-29 resolved + spec landed: record keys need transitively
   immutable content.** Ruling in the spec-delta queue entry above. One
   discussions commit: L§4.8 (the principle + the operational rule + the
