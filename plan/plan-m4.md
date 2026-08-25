@@ -124,8 +124,12 @@ ask** when reached (see Decisions).
 - **★ S-10 (L§7.10) — valued `break` into a `to`-consumer.** *(Reframed: the
   loop half is ALREADY resolved — a static error, 2026-07-29.)* The **open** half
   is a valued `break` targeting a `to`-consumer (no value slot); it was reserved
-  as a **fresh ask at M2a.6** and slipped — take it now. Expected shape: the S-6
-  static/runtime split. Lands with M4.6. **Decision.**
+  as a **fresh ask at M2a.6** and slipped. **RESOLVED (user, 2026-08-25; spec
+  LANDED): the S-6 static/runtime split** — static (valued-exit family,
+  producer-site blame) where the callee is lexically a module-level `to` of
+  the current module; `no-value-destination` attributed to the `break`
+  otherwise; native consumers by S-46 parity. **M4.6** lands the runtime
+  half + fixtures; the static check rides the queued resolver extension.
 - **★ R8 — mid-computation bignum-magnitude cap (Decision #9).** The deferred
   real fix for "huge `**`/`"a"*10**9` freezes the tab": bound bignum/string
   *magnitude* **during** the operation. Scheduled "with M4's string work"
@@ -414,7 +418,8 @@ wasm still green).
   (the `WithRestore` cont); per-frame exposure; **cancellation inside nested
   `with`/blocks restores bindings and runs cleanup before `Faulted(Cancelled)`**
   (accept #5, which needs only M4.5a + the existing `Unwind::Cancel`).
-- **Spec-delta.** ★ S-10 (valued `break` into a `to`-consumer).
+- **Spec-delta.** S-10 (valued `break` into a `to`-consumer) — **RESOLVED
+  2026-08-25, spec landed**; M4.6 implements the runtime half per App C S-10.
 - **Design refs.** L§7.8/§7.10, MD §12.
 - **Tests.** `mode: run`: nested `with` restored on each exit tier; **a cancel
   mid-`with` restores + runs cleanup before `Faulted(Cancelled)`** (accept #5);

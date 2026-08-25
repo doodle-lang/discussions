@@ -1278,7 +1278,7 @@ session): a pinning test that break-in-`with`-in-loop targets the
 loop.]** ·
 S-10 (L§7.10) `break`-with-value where the consumer has no value slot
 (plain `while`/`loop`, `to` consumers): specify (discard vs error).
-**PART-RESOLVED (user, 2026-07-29): the loop half — static error.** A
+**RESOLVED in two halves. Loop half (user, 2026-07-29): static error.** A
 valued `break`/`continue` whose lexical target is a `while`/`loop` is a
 **static error** (a loop yields Void; there is no destination),
 condition-blind, in the misplaced-exit family with its own slug and an
@@ -1297,17 +1297,42 @@ loop-with-break is value-less by ratified S-5). The `with`-body case
 from the ruling discussion is **mooted by S-9**: a `with` body is not
 an exit target, so the rule sees through it to the loop (error) or
 block (legal — the value punches through with the binding restored).
-**Still open (the `to`-consumer half; fresh ask at M2a.6):** a valued
-`break` unwinding to a consuming call whose callee is a `to` — must not
-leak a value past a Void completion (S-55's principle); expected shape
-is the S-6 split (static error for the lexically-known
-module-level-`to` callee subset; runtime error otherwise). **[spec
+**`to`-consumer half RESOLVED (user, 2026-08-25): the S-6 split — S-10
+is now fully resolved.** A valued `break` into a consuming call whose
+callee is a procedure has no destination (S-55: nothing leaks past a
+Void completion). Static where the callee is lexically a **module-level
+`to` of the current module** — exactly S-6's normative boundary, reused
+(no new subset; `voidcheck`'s `GlobalKind::Proc` detection is the
+mechanism; rule 2a + S-39 make the verdict runtime-true) — as a
+valued-exit-family static error, producer-site blame at the `break
+expr`, naming the procedure, offering: make it an `fn` / drop the value
+/ assign before breaking; condition-blind. Runtime otherwise (local
+`to`s, callable-valued variables, foreign callees): `no-value-
+destination` (S-58 slug; the M2a.6 provisional made deliberate) when the
+Break unwind reaches a consumer frame whose callable is a `to` —
+**attributed to the `break` site** (the `Unwind` record carries the
+origin) though detected at the consumer; `with` restorations already run
+stay run; the raise then unwinds outward from the consumer frame. Native
+consumers by S-46 parity: a `NonLocalExit{Break(v)}` resumed at the apply
+site of a foreign function that yields no value raises the same ("a
+foreign function that yields no value is a `to` for this purpose" —
+fixture). Unaffected: bare `break` into a `to` (completes Void), valued
+`break` into an `fn`, valued `continue` anywhere (the per-invocation
+yield always exists). Rejected: silent discard (drops a written value;
+an `fn`→`to` refactor would silently change `break 5`), runtime-only
+(necessary but not sufficient — the same-file `to repeat(n)` case is the
+kid-common one, and S-6 already treats value-into-Void statically where
+lexical; two disciplines for one category would need explaining). **[spec
 landed with this entry: L§7.10 (valued-exit rule; return-in-procedure
-stated static) + App D.1. Code follow-up (next front-end session): the
+stated static; `to`-consumer sentence, 2026-08-25) + App D.1. Code follow-up (next front-end session): the
 valued-exit×destination-kind resolver check — valued `break`/`continue`
-→ ThisLoop and valued `return` in a `to` — + battery tests +
+→ ThisLoop, valued `return` in a `to`, and valued `break` → a
+lexically-known module-level-`to` consumer (`Ctrl::Block` carrying the
+consuming call's static classification) — + battery tests +
 conformance fixtures; reserve the diagnostic slug. M2a.6 may
-`debug_assert` the loop case (no runtime path needed).]** ·
+`debug_assert` the loop case (no runtime path needed). The runtime half
+— `no-value-destination` with break-site attribution + the S-46 native
+fixture — lands with M4.6.]** ·
 S-11 (L§6.10/§8.5) Whether `fn` closures may *mutate* captured bindings.
 **RESOLVED (user, 2026-07-17): yes — aligned with blocks.** Capture is
 **by reference to the binding**, at closure creation: closures may read

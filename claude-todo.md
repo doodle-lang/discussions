@@ -185,7 +185,8 @@ re-raises with the original trace, `try` is an expression. New modules `exceptio
 trace capture: `Trace` gains live `frames` (call-site span + tail_count) + `tail_elided`
 history, captured at the raise site (`observe::capture_trace`), deterministic, no handles.
 Completes the M4.5 error trio. **Next: M4.6** (`with`/`parameter` runtime + cancellation
-cleanup) — the M4.5a `WithRestore` producer + S-10 valued-`break`-to-`to`-consumer.
+cleanup) — the M4.5a `WithRestore` producer + S-10 valued-`break`-to-`to`-consumer
+(**RESOLVED 2026-08-25**: the S-6 split; the runtime half lands here).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1247,7 +1248,7 @@ knowledge, so it lands with the **M2a.7** kind gate (plan-m2a.md §"Spec-delta
 obligations", S-55 follow-up). Tracked by the `#[ignore]`d tripwire
 `a_function_that_falls_off_the_end_raises` in `tests/drive_smoke.rs`.
 
-**S-10 to-consumer half — OPEN (flag for the user; surfaced at M2a.6):** a
+**S-10 to-consumer half — was OPEN (surfaced at M2a.6); RESOLVED below.** A
 **valued** `break` that exits a block-consuming call whose callee is a
 **procedure** (`to`) has no value destination — a `to` yields Void. The loop
 half (a valued exit targeting a `while`/`loop`) was resolved as a **static
@@ -1261,6 +1262,18 @@ a *known* `to` consumer a static error (like the loop half / valued-return-in-a-
 `to`), with a runtime `NoValueDestination` backstop for a dynamically-typed
 consumer? Tracked by `a_valued_break_into_a_procedure_consumer_raises_provisionally`
 in `tests/drive_smoke.rs`.
+**RESOLVED (user, 2026-08-25): the S-6 split — S-10 fully closed.** Static
+(valued-exit family, producer-site blame, condition-blind) where the
+consuming callee is lexically a module-level `to` of the current module —
+S-6's boundary reused; `no-value-destination` at run time otherwise,
+**attributed to the `break` site**; native consumers by S-46 parity ("a
+foreign function that yields no value is a `to` for this purpose").
+Unaffected: bare `break` into a `to`, valued `break` into an `fn`, valued
+`continue`. Spec landed: L§7.10 + App D.1; App C S-10; plan-m4. Code:
+**M4.6** (runtime half; the drive_smoke tripwire → a real fixture + the
+S-46 native fixture); the static check joins the queued resolver
+extension (`Ctrl::Block` carries the consuming call's static
+classification).
 
 **RESOLVED (M2a.6): statement-boundary register semantics** (was carried from
 M2a.2/M2a.9). The machine now clears the result register to Void at each `Seq`
@@ -1477,6 +1490,14 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-25 — **S-10 `to`-consumer half resolved + spec landed — S-10 fully
+  closed: the S-6 static/runtime split.** Ruling in the queue entry above.
+  One discussions commit: L§7.10 (the `to`-consumer sentence; static where
+  the callee is a lexically-known module-level `to`, `no-value-destination`
+  attributed to the `break` otherwise; bare `break`/valued `continue`
+  unaffected), App D.1; App C S-10 (both halves; the resolver follow-up
+  extended to the `to`-consumer static check); plan-m4 obligation + M4.6;
+  this file. Code: M4.6 runtime half + fixtures.
 - 2026-08-24 — **S-58 / D-M4-2 resolved + spec landed: engine errors are one
   built-in `Error` record.** Ruling in the spec-delta queue entry above. One
   discussions commit: L§12.1 (engine-raised values are `Error(kind, message,

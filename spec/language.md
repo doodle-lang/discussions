@@ -1277,11 +1277,21 @@ non-local exit.
 `break expr` becomes the consuming call's result and `continue expr` this
 invocation's yield (§8.5). A `while`/`loop` yields no value and can receive
 none — `break expr`/`continue expr` targeting one is a **static error**, as is
-`return expr` inside a procedure (the rule above). Every exit's destination is
-lexically determined, so the check is condition-blind (syntactic position, not
-path feasibility); the diagnostic offers the real intents: assign the value to
-a variable before exiting, `return expr` if the enclosing function should
-yield it, or a block-consuming call (§8.5) if a value-yielding loop was meant.
+`return expr` inside a procedure (the rule above). A consuming call whose
+callee is a **procedure** yields no value either, so `break expr` into it has
+no destination: where the callee is lexically a module-level `to` of the
+current module — the static subset of §6.11/§8.4 — this is the same static
+error; otherwise the callee's kind is known only at the call, and the exit
+raises `no-value-destination` (§12.1) at run time, attributed to the `break`.
+A bare `break` into a procedure is fine (the call completes without a value,
+as a procedure does), and `continue expr` is never affected: a block
+invocation always has a per-invocation yield. Every exit's destination is
+lexically determined — only a consuming callee's *kind* can be dynamic — so
+the static checks are condition-blind (syntactic position, not path
+feasibility); the diagnostic offers the real intents: assign the value to a
+variable before exiting, `return expr` if the enclosing function should
+yield it, make the consuming procedure an `fn` if it should yield the value,
+or a block-consuming call (§8.5) if a value-yielding loop was meant.
 
 ---
 
@@ -2342,8 +2352,15 @@ likely to change.
   stance). Rust draws the same line (E0571), though its "use `loop`" hint
   does not transfer — Doodle's `loop`-with-`break` is value-less by design; a
   value-yielding search belongs to a block-consuming call. The dynamic half
-  of S-10 (a valued `break` reaching a consuming call whose callee is a
-  procedure) remains open.
+  of S-10 — a valued `break` reaching a consuming call whose callee is a
+  procedure — was resolved 2026-08-25 with the same discipline as §6.11's
+  consuming-site rule: a static error where the callee is lexically a
+  module-level `to` of the current module, a `no-value-destination` raise
+  attributed to the `break` otherwise (the callee's kind being dynamic in
+  general). Silent discard was rejected again (an `fn`→`to` refactor would
+  silently change what `break 5` does), and runtime-only because the
+  lexically-known case is the common one and the language already treats
+  value-into-Void statically where lexical.
 - **Record keys: transitively immutable content only (§4.8, §9.5, §15;
   resolves implementation-plan Appendix C S-29).** The draft made every record
   "usable as a dict key" by default. With structural `==` for both record
