@@ -1643,8 +1643,9 @@ with the engine's `ExceptionKind`s (`type-mismatch`, `division-by-zero`,
 `non-finite-float`, `undefined-ordering`, `procedure-in-expression`,
 `name-not-defined`, `used-before-defined`, `exponent-too-large`,
 `not-callable`, `argument-error`, `unhashable-key`, `key-not-found`,
-`no-such-field`, `no-value-destination`, `function-fell-off-end`; a
-foreign raise supplies its own value) and is API (replay artifacts, IDE
+`no-such-field`, `no-value-destination`, `function-fell-off-end`, and —
+added by S-59 — `negative-count`; a foreign raise supplies its own
+value) and is API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts
@@ -1676,7 +1677,10 @@ symmetric** — the `Int` count may be on either side (`"ab" * 3` ==
 `3 * "ab"`); stated once as "repetition accepts the count on either
 side" so a future repeatable (`List * Int`) inherits it. Count must be
 an `Int` (a `Float` count raises — no implicit narrowing, L§4.2); `0`
-→ `""`; a negative count **raises** (loud, vs Python's silent `""`); a
+→ `""`; a negative count **raises `negative-count`** (user-approved
+2026-08-25 as a new S-58 catalog slug — an operand-domain error
+parallel to `division-by-zero`; a miscomputed count is a bug, not a
+request for `""`, so no clamping — loud, vs Python's silent `""`); a
 huge count is governed by the R8 magnitude cap (plan-m4 D-M4-4 names
 `"a" * 10**9`). Result NFC-normalized like concatenation; grapheme
 length non-additive (`"🇺" * 2` is one flag). `+` stays String+String

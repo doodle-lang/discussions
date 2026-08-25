@@ -1184,7 +1184,8 @@ prelude-level name (S-43-seeded, shadowable). Forgeable by design
 
 **S-59 RESOLVED (user, 2026-08-25): string `*` is symmetric** — `Int`
 count on either side; `Int` only (a Float count raises), `0` → `""`,
-negative raises, huge → the R8 cap; NFC result, grapheme length
+negative raises **`negative-count`** (new S-58 slug, user-approved),
+huge → the R8 cap; NFC result, grapheme length
 non-additive. Spec landed: L§4.4 + App D.1; App C S-59. Code: **M4.7**
 fixtures (both orders, the raises, zero, the flag case).
 
