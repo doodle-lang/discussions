@@ -1182,6 +1182,12 @@ prelude-level name (S-43-seeded, shadowable). Forgeable by design
 `make_error` for host parity. Spec landed: L§12.1 + §4.12 + App D; E§9 +
 §4.3 + App B.1; App C S-58; plan-m4 D-M4-2. Code: **M4.5b**.
 
+**S-59 RESOLVED (user, 2026-08-25): string `*` is symmetric** — `Int`
+count on either side; `Int` only (a Float count raises), `0` → `""`,
+negative raises, huge → the R8 cap; NFC result, grapheme length
+non-additive. Spec landed: L§4.4 + App D.1; App C S-59. Code: **M4.7**
+fixtures (both orders, the raises, zero, the flag case).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1494,6 +1500,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-25 — **S-59 resolved + spec landed: string repetition `*` is
+  symmetric.** One discussions commit: L§4.4 (count on either side; `Int`
+  only; zero/negative/NFC corners), App D.1; App C S-59; this file. Code:
+  M4.7 fixtures.
 - 2026-08-25 — **M4.6 — `with`/`parameter` runtime + cancellation cleanup
   (doodle-rust `0cda7a9`).** The M4.5a `WithRestore` producer, end to end
   (new `machine/dynamic.rs`): `parameter` seeds a module cell, `with p = v

@@ -544,7 +544,12 @@ and round-tripping text through `String` can change its bytes. Byte- or
 code-point-exact work stays in `Bytes` (§4.5); §15 gives the conversions.
 
 **Operations.** Concatenation is `+` (the result is re-normalized to NFC);
-repetition is `*` (String × Int). Ordering (`<`, …) is a simple
+repetition is `*` with an `Int` count on **either side** (`"ab" * 3` and
+`3 * "ab"` both give `"ababab"` — repeated concatenation, commutative like the
+numeric `*`): the count must be an `Int` (a `Float` count raises; nothing is
+narrowed), `0` gives `""`, and a negative count raises. The result is
+re-normalized like any concatenation, so grapheme length is not additive here
+either (`"🇺" * 2` is one flag). Ordering (`<`, …) is a simple
 code-point-lexicographic comparison over the NFC form — total and stable, but
 deliberately *not* locale/dictionary collation, which is a standard-library
 concern. The full string API (searching, splitting, case mapping, the code-point
@@ -2395,6 +2400,16 @@ likely to change.
   design: the standard library written in Doodle must raise values identical
   to the engine's (no magic boundaries); provenance lives in the trace. The
   type is engine-level; the name `Error` is a prelude name like `Int`.
+- **String repetition takes its count on either side (§4.4; resolves
+  implementation-plan Appendix C S-59).** "String × Int" named the type pair,
+  not an operand order. Resolved symmetric: `3 * "ab"` has exactly one
+  meaning, converts nothing, and matches the repeated-addition intuition
+  (`"ab" + "ab" + "ab"`), commutative like numeric `*`; Ruby's left-only rule
+  is an artifact of receiver dispatch, which Doodle's built-in `*` has no
+  reason to inherit. Corners pinned: `Int` counts only (no narrowing), zero →
+  `""`, negative raises (not Python's silent `""`), NFC re-normalization with
+  non-additive grapheme length. `+` stays String+String — `"a" + 1` would
+  need an implicit conversion, which is the line Doodle draws.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

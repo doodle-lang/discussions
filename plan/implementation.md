@@ -1671,6 +1671,25 @@ landed with this entry: L§12.1 + §4.12 + App D (spellings + D.1); E§9 +
 §4.3 + App B.1. Code: M4.5b (the `Error` type, the slug catalog, message
 snapshots, `make_error`).]**
 
+**S-59 (L§4.4) RESOLVED (user, 2026-08-25): string repetition `*` is
+symmetric** — the `Int` count may be on either side (`"ab" * 3` ==
+`3 * "ab"`); stated once as "repetition accepts the count on either
+side" so a future repeatable (`List * Int`) inherits it. Count must be
+an `Int` (a `Float` count raises — no implicit narrowing, L§4.2); `0`
+→ `""`; a negative count **raises** (loud, vs Python's silent `""`); a
+huge count is governed by the R8 magnitude cap (plan-m4 D-M4-4 names
+`"a" * 10**9`). Result NFC-normalized like concatenation; grapheme
+length non-additive (`"🇺" * 2` is one flag). `+` stays String+String
+only (String+Int would need an implicit conversion — the actual
+explicit-over-implicit line; `3 * "ab"` converts nothing). Grounds:
+"String × Int" named the type pair, not an order; `Int × String` has
+one meaning; repeated-addition intuition; Ruby's left-only is a
+receiver-dispatch artifact Doodle's built-in operator needn't inherit;
+the bug-masking argument doesn't discriminate (a stray string "works"
+in one order under either rule). **[spec landed with this entry: L§4.4
++ App D.1. Code: M4.7 (string `*`) — fixtures for both orders, the
+Float/negative raises, zero, and the flag case.]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6
