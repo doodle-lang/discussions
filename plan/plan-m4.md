@@ -452,10 +452,13 @@ interacting-char alphabet. `*` is symmetric (`Int` count either side, S-59): `Fl
 → type-mismatch, `0`/empty → `""`, negative → `negative-count` (new S-58 slug), a result
 over the heap limit → `LimitExceeded` (via a generalized `pending_fault`; the R8 interior
 cap stays M4.10). Conformance L4.4 concat/repeat/seam fixtures (jamo, reorder, compose,
-repeat-seam); native 153, wasm 79. **Deferred (user, 2026-08-25):** the string-churn
-benchmark → its own chunk (the criterion suite + `deny.toml` for its deps + CI trend
-tracking don't exist yet). **S-30** (host `make_string` error model) rides M4.8b, where the
-host string boundary actually is — M4.7's `+`/`*` build NFC internally and never touch it.
+repeat-seam); native 153, wasm 79. **Benchmark suite landed** (doodle-rust `34207e2`, a
+follow-up chunk): `criterion` (default-features off, cargo-deny green) + `benches/strings.rs`
+— string-churn (heap turnover), the adversarial combining-mark append (the AD4 O(n²) seam
+case), and a large `*`; trend-tracking only (asserts nothing). CI trend wiring is a separate
+scope decision, deliberately not wired. **S-30** (host `make_string` error model) rides
+M4.8b, where the host string boundary actually is — M4.7's `+`/`*` build NFC internally and
+never touch it.
 
 - **Goal.** `+` and `*` on strings, done right at the seam.
 - **Lands.** String **`+`** (concat) and **`*`** (repetition, String × Int —

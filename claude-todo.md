@@ -1524,14 +1524,16 @@ instance is never re-polled). E§10.1 edit landed.
   benchmark → its own chunk (queue entry below). **S-30** (host `make_string`
   error model) rides M4.8b.
 
-## Deferred / queued work
-
-- **String benchmark suite (from M4, plan-m4 M4.7 / implementation.md R3).**
-  A `criterion` benchmark suite does not exist yet (no `benches/`, no criterion
-  dependency, no `deny.toml` allowance for its transitive deps). Deferred to its
-  own chunk (user, 2026-08-25): add criterion + `benches/`, the string-churn
-  heap/fragmentation benchmark + the pathological combining-mark append (R3);
-  wiring the CI trend tracking is a separate scope decision (do not auto-wire).
+- 2026-08-25 — **String benchmark suite (doodle-rust `34207e2`; the follow-up
+  chunk to M4.7).** `criterion` (default-features off — no plotters/rayon, so
+  cargo-deny stays green with no `deny.toml` change) + `benches/strings.rs`:
+  `string_churn` (transient concat per iteration — heap turnover/fragmentation
+  on the non-moving heap), `combining_mark_append` (the adversarial AD4 O(n²)
+  seam case — a lone combining mark appended in a loop), `string_repeat` (a
+  large `*`). Driven end to end (parse→resolve→machine); trend-tracking only,
+  asserts nothing; `cargo test --workspace` does not run them. **CI trend
+  tracking deliberately NOT wired** (a separate scope decision — the plan wants
+  it "from M4", but hooking a benchmark into CI is the user's call).
 
 - 2026-08-25 — **S-59 resolved + spec landed: string repetition `*` is
   symmetric.** One discussions commit: L§4.4 (count on either side; `Int`
