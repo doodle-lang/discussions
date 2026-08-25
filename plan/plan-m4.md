@@ -409,7 +409,21 @@ wasm still green).
 - **Tests.** a raise deep in tail-recursion shows tail-elided frames (accept #4).
 - **Depends on.** M4.5b.
 
-### M4.6 — `with`/`parameter` runtime + cancellation cleanup `[M]`
+### M4.6 — `with`/`parameter` runtime + cancellation cleanup `[M]` — **DONE** (doodle-rust `0cda7a9`)
+
+**Landed:** the `with`/`parameter` runtime (new `machine/dynamic.rs`) — the producer
+for M4.5a's `WithRestore`, exercised end to end: `parameter` seeds a module cell via the
+shared bind path, `with p = v do…end` saves `(cell, old)` on `dyn_stack`, writes `v`
+(copied on bind), restores on every exit tier (conformance L5.5 `with-001…005`,
+`parameter-002`); cancel-mid-`with` restore is a unit test (accept #5). Per-frame
+exposure = `Frame.dyn_depth` (stamped at entry, preserved across tail reuse; E§8.2 reads
+it later). S-10 runtime half: a valued `break` into a `to`-consumer raises
+`no-value-destination` at the break site (L7.10 `s10-001` + the S-46 native-parity unit
+test); the drive_smoke tripwire graduated into these. Two ratified extras landed with it:
+the S-5 `with`-tail fix (a diverging `with` body no longer reads as fall-off-end — a
+proper never-falls-through predicate) and the `with`-target static check
+(`with-target-not-parameter`: a non-`parameter` target is rejected, §5.5; L5.5
+`with-006/007`). Native conformance 143, wasm 69.
 
 - **Goal.** Dynamic binding with airtight restoration.
 - **Lands.** **Parameter cells** + a **dynamic-binding stack** on the machine;

@@ -184,9 +184,13 @@ re-raises with the original trace, `try` is an expression. New modules `exceptio
 `protect.rs`. +9 fixtures green native (134) + wasm (62). **M4.5c DONE** (`f96e4b2`) —
 trace capture: `Trace` gains live `frames` (call-site span + tail_count) + `tail_elided`
 history, captured at the raise site (`observe::capture_trace`), deterministic, no handles.
-Completes the M4.5 error trio. **Next: M4.6** (`with`/`parameter` runtime + cancellation
-cleanup) — the M4.5a `WithRestore` producer + S-10 valued-`break`-to-`to`-consumer
-(**RESOLVED 2026-08-25**: the S-6 split; the runtime half lands here).
+Completes the M4.5 error trio. **M4.6 DONE** (`0cda7a9`) — `with`/`parameter` runtime
+(new `machine/dynamic.rs`), the M4.5a `WithRestore` producer end to end: restore on every
+exit tier + cancel-mid-`with` (accept #5); `Frame.dyn_depth` per-frame exposure; S-10
+runtime half (`no-value-destination` at the break site + S-46 native parity). Two ratified
+extras: the S-5 `with`-tail fix (a diverging `with` body no longer reads as fall-off-end)
+and the `with`-target static check (`with-target-not-parameter`, §5.5). Native 143, wasm 69.
+**Next: M4.7** (string `+`/`*` + AD4 seam-renormalization — Track C opens).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1490,6 +1494,27 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-25 — **M4.6 — `with`/`parameter` runtime + cancellation cleanup
+  (doodle-rust `0cda7a9`).** The M4.5a `WithRestore` producer, end to end
+  (new `machine/dynamic.rs`): `parameter` seeds a module cell, `with p = v
+  do…end` saves `(cell, old)` on `dyn_stack` and restores on every exit tier;
+  cancel-mid-`with` restore is a unit test (accept #5). `Frame.dyn_depth`
+  stamps the entry dyn-depth per frame (E§8.2 reads it later). **S-10 runtime
+  half:** a valued `break` into a `to`-consumer raises `no-value-destination`
+  at the break site (L7.10 `s10-001` via a variable callee, so it stays a
+  runtime raise after the deferred static check; + the S-46 native-parity unit
+  test); the drive_smoke tripwire graduated into these. **Two ratified extras
+  (user, this session):** the **S-5 `with`-tail fix** — `tailcheck` now
+  descends a `with` body via a never-falls-through predicate, so
+  `fn f() with p do return X end end` (always returns) is accepted, no longer
+  mis-flagged fall-off-end; and the **`with`-target static check** — a `with`
+  whose target is not a module-level `parameter` (a `let`/`const`/callable/
+  type, or undeclared) is `with-target-not-parameter` (§5.5; runtime keeps a
+  name-not-defined/used-before-defined backstop). Native conformance 143
+  (L5.5 `with-001…007` + `parameter-002`, L7.10 `s10-001`), wasm 69. **Still
+  queued:** the S-10 **static** half (valued `break` into a lexically-known
+  module-level `to`) rides the front-end resolver extension, alongside the
+  loop-half check.
 - 2026-08-25 — **S-10 `to`-consumer half resolved + spec landed — S-10 fully
   closed: the S-6 static/runtime split.** Ruling in the queue entry above.
   One discussions commit: L§7.10 (the `to`-consumer sentence; static where
