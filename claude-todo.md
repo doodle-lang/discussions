@@ -197,7 +197,8 @@ either side, S-59): `Float`→type-mismatch, `0`/empty→`""`, negative→`negat
 slug), over-limit→`LimitExceeded` (via generalized `pending_fault`; R8 interior cap stays
 M4.10). Native 153, wasm 79. **Deferred to its own chunk (user, 2026-08-25):** the
 string-churn criterion benchmark (no suite/dep exists yet). **S-30** rides M4.8b.
-**Next: M4.8a** (graphemes + runtime indexing — `unicode-segmentation`, grapheme memo,
+**Next: M4.8a** (graphemes + runtime indexing — index misses raise the new
+`index-out-of-range` slug, user-approved 2026-08-25, App C S-58; `unicode-segmentation`, grapheme memo,
 `s[i]`), or the benchmark chunk.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
@@ -1196,6 +1197,15 @@ negative raises **`negative-count`** (new S-58 slug, user-approved),
 huge → the R8 cap; NFC result, grapheme length
 non-additive. Spec landed: L§4.4 + App D.1; App C S-59. Code: **M4.7**
 fixtures (both orders, the raises, zero, the flag case).
+
+**S-58 catalog +`index-out-of-range` (user-approved 2026-08-25, M4.8a):**
+list/string/bytes index outside `0 <= k < length`, negative included —
+one slug (both directions are "no such position"), `details: {index,
+length}`, message branches on sign with the no-negative-positions hint.
+Access-miss triad by container kind: `key-not-found` (dict),
+`index-out-of-range` (list/string/bytes), `no-such-field` (record).
+Recorded in App C S-58. Code: **M4.8a** (`ExceptionKind` variant +
+fixtures: too-large, negative-with-hint, each of the three containers).
 
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/

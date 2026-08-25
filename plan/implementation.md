@@ -1643,9 +1643,18 @@ with the engine's `ExceptionKind`s (`type-mismatch`, `division-by-zero`,
 `non-finite-float`, `undefined-ordering`, `procedure-in-expression`,
 `name-not-defined`, `used-before-defined`, `exponent-too-large`,
 `not-callable`, `argument-error`, `unhashable-key`, `key-not-found`,
-`no-such-field`, `no-value-destination`, `function-fell-off-end`, and —
-added by S-59 — `negative-count`; a foreign raise supplies its own
-value) and is API (replay artifacts, IDE
+`no-such-field`, `no-value-destination`, `function-fell-off-end`, and,
+added later, `negative-count` (S-59) and `index-out-of-range` (M4.8a,
+user-approved 2026-08-25: a list/string/bytes index outside
+`0 <= k < length`, negative included — one slug for both directions,
+since either is "no such position"; `details: {index, length}` with
+`length` per L§4.4/§4.5 for each container; the message branches on
+sign, the negative branch carrying the deliberate hint that Doodle has
+no negative positions — a Python habit — and pointing at
+`length(xs) - 1`). The access-miss triad by container kind is fixed:
+`key-not-found` (dict), `index-out-of-range` (list/string/bytes),
+`no-such-field` (record) — never reuse one for another; a foreign raise
+supplies its own value) and is API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts
