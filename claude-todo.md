@@ -197,9 +197,17 @@ either side, S-59): `Float`→type-mismatch, `0`/empty→`""`, negative→`negat
 slug), over-limit→`LimitExceeded` (via generalized `pending_fault`; R8 interior cap stays
 M4.10). Native 153, wasm 79. **Deferred to its own chunk (user, 2026-08-25):** the
 string-churn criterion benchmark (no suite/dep exists yet). **S-30** rides M4.8b.
-**Next: M4.8a** (graphemes + runtime indexing — index misses raise the new
-`index-out-of-range` slug, user-approved 2026-08-25, App C S-58; `unicode-segmentation`, grapheme memo,
-`s[i]`), or the benchmark chunk.
+**M4.8a DONE** (`b5f99b5`) — graphemes + runtime indexing. `unicode-segmentation` 1.13.3
+(**D-M4-3 confirmed UCD 17.0**, all three crates aligned, joins the compile-time cross-
+check); lazy grapheme memo on `StrObj` (pure cache excluded from `bytes_allocated`, MD §5);
+`s[i]`/`list[i]`/`bytes[i]` indexing (`Node::Index` arm), out-of-range/negative → new
+`index-out-of-range` slug (sign-branching message); `length` + `each`-over-graphemes
+(provisional intrinsics, native + wasm demo registries). Native 161, wasm 87. **Carry-
+forwards:** `index-out-of-range` `details: {index, length}` rides the message-rubric /
+structured-details work (`make_error` is `{}` for all kinds today); list element assignment
+`xs[i] = v` is a separate pending list-mutation item. **Next: M4.8b** (bytes↔string
+bridging — encode/decode round-trip, O(1) `Bytes` index already done, the **S-30** host
+`make_string` error model).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1518,6 +1526,23 @@ short-circuits `step`/`safe_point` before the cancel poll; a terminal
 instance is never re-polled). E§10.1 edit landed.
 
 ## Done
+
+- 2026-08-25 — **M4.8a — graphemes + runtime indexing (doodle-rust `b5f99b5`).**
+  `unicode-segmentation` 1.13.3 (**D-M4-3 confirmed UCD 17.0**; all three crates
+  aligned and in the compile-time cross-check). `StrObj` gains a lazy grapheme
+  memo (`OnceCell` of cluster-start offsets, `unicode::grapheme_offsets`), a pure
+  cache excluded from `bytes_allocated` (MD §5 — a heap test pins the invariant).
+  `Node::Index` arm gains `List`/`String`/`Bytes` (a string yields a length-one
+  grapheme; bytes an `Int`); out-of-range/negative raises the new
+  **`index-out-of-range`** slug (S-58, sign-branching message with the no-negative-
+  positions hint). `length` (grapheme/element count) + `each` over a string's
+  graphemes: provisional intrinsics registered in the native + wasm demo registries
+  (parity, E§11). `intrinsic/mod.rs` argument binding split into
+  `intrinsic/binding.rs` (length). Native conformance 161 (L4.4 grapheme
+  count/iterate, L6.3 index read/out-of-range/negative), wasm 87. **Carry-forwards:**
+  `index-out-of-range` `details: {index, length}` rides the message-rubric /
+  structured-details work (all kinds are `{}` today); list element assignment
+  `xs[i] = v` is a separate pending list-mutation item.
 
 - 2026-08-25 — **M4.7 — string `+`/`*` + AD4 seam renormalization (doodle-rust
   `3bf72ec`).** New `machine/strop.rs` handles `+` (concat) and `*` (repetition)

@@ -173,13 +173,12 @@ M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
    job, so no non-forgeable kind. `make_error` on the boundary for host
    parity. Landed: L§12.1 + §4.12 + App D; E§9 + §4.3 + App B.1. **M4.5b**
    implements (the `Error` type, slug catalog, message snapshots, `make_error`).
-3. **D-M4-3 · Unicode pin (D-5) + segmentation crate.** *Blocks M4.8a.* The
-   `unicode-normalization` pin is UCD 17.0, but AD4 warns the crates ship skewed
-   UCD versions. **Recommend:** pin all three to the **newest UCD version all
-   three support** (audit `unicode-segmentation` + `unicode-ident` for a 17.0
-   release) — **17.0 if they support it, else 16.0** (the original D-5 target).
-   The choice changes observable grapheme counts and the replay `unicode_version`
-   identity (S-41), so confirm it explicitly during the AD4 per-crate audit.
+3. **D-M4-3 · Unicode pin (D-5) + segmentation crate.** *Blocked M4.8a.*
+   **RESOLVED (user, 2026-08-25): UCD 17.0.** The per-crate audit found all three
+   crates at 17.0 — `unicode-normalization` 0.1.25, `unicode-ident` 1.0.24,
+   `unicode-segmentation` 1.13.3 — so the "17.0 if they support it" branch holds and
+   the engine's already-reported identity (S-41) is unchanged. All three now share
+   the compile-time UCD cross-check (`unicode.rs`); a future skew is a build failure.
 4. **★ D-M4-4 · R8 bignum/string magnitude cap.** *Blocks M4.10 only.* Land the
    mid-computation cap in M4.10 (with finer limits), or defer again?
    **Recommend:** land it — M4 touches arithmetic/string limits, the demo is
@@ -473,7 +472,20 @@ never touch it.
   `s * 3` incl. a seam case; the jamo/non-starter/reordering fixtures.
 - **Depends on.** —
 
-### M4.8a — Graphemes + runtime indexing `[M]`
+### M4.8a — Graphemes + runtime indexing `[M]` — **DONE** (doodle-rust `b5f99b5`)
+
+**Landed:** `unicode-segmentation` 1.13.3 (**D-M4-3 confirmed: UCD 17.0** — all three Unicode
+crates report 17.0, so the reported identity is unchanged; segmentation joins the compile-
+time UCD cross-check). `StrObj` gains a lazy grapheme memo (`OnceCell` of cluster-start byte
+offsets via `unicode::grapheme_offsets`), a **pure cache excluded from `bytes_allocated`**
+(MD §5 determinism — a heap test pins it). Indexing (L§6.3): the `Node::Index` arm gains
+`List` (O(1)), `String` (O(k) grapheme → length-one string), `Bytes` (O(1) → `Int`); out-of-
+range/negative raises the new **`index-out-of-range`** slug (S-58) with the sign-branching
+message. `length` (provisional intrinsic: graphemes for a string, elements otherwise) and
+`each` extended to iterate a string's graphemes; both in the native + wasm demo registries.
+Native 161, wasm 87. **Carry-forwards:** `index-out-of-range`'s `details: {index, length}`
+rides the structured-details / message-rubric work (`make_error` builds `{}` for every kind
+today); list element assignment (`xs[i] = v`) stays a separate pending list-mutation item.
 
 - **Goal.** L§4.4 grapheme semantics.
 - **Lands.** the **`unicode-segmentation`** dependency (pinned, D-M4-3); the lazy
