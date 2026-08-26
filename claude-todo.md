@@ -236,11 +236,19 @@ allocating (uniform with string `*`), and a pre-charge bills result bytes agains
 step budget (`FusedCounter::charge`) so a huge magnitude faults `StepBudget` under a
 bounded budget; both deterministic upper bounds. Default heap 16 GiB → 1 GiB; the wasm
 demo loads with 64 MiB. `Machine::for_test()` (in the length-exempt `machine/tests.rs`)
-lets arith unit tests supply a throwaway machine. **Carry-forward:** E§10.2 spec text
-(step budget = work units, bignum ops cost by size) **pending user ratification** — the
-"cancel mid-operation" conformance idea is dropped as unreachable for atomic ops; the
-deterministic pre-op fault is tested instead. **M4.10 remaining:** UCD conformance
-vectors in CI, full-suite determinism gate, M4 exit review + close App C.
+lets arith unit tests supply a throwaway machine. **Spec RATIFIED (user, 2026-08-25):**
+E§10.2 step budget now counts **work units** (result-growing ops pre-charge a size
+estimate); E§10.1 rails diverge (fuel = statement safe points, budget also carries op
+charges); when an op trips both rails the **heap** fault is reported. App C S-20/S-40
+bracketed. The "cancel mid-operation" conformance idea is dropped as unreachable for
+atomic ops; the deterministic pre-op fault is tested instead. **Also (S-12 closes /
+`exponent-too-large` RETIRED):** a `**` too big to store — including a u32-overflowing
+exponent — is now a magnitude *fault*, not a raise; `exponent-too-large` removed from
+the `ExceptionKind` enum + S-58 catalog; `|base| <= 1` computes trivially whatever the
+exponent (`1 ** huge == 1`, which previously wrongly raised). **M4.10 remaining:** UCD
+conformance vectors in CI, full-suite determinism gate (add fixtures that trip the
+budget + the heap estimate, run twice — the "deterministic step" criterion now depends
+on the estimate function), M4 exit review + close App C.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

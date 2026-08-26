@@ -1379,9 +1379,14 @@ analog?) and resource behavior for huge exponents (ties to R8's interior
 poll points). (Int ** negative-Int → Float is already settled by L§4.2.)
 **[`0 ** negative` closed by S-56 (2026-07-28): `**` yields Float there
 and IEEE answers ∞, so it raises under the finite-result rule — the
-division-by-zero analog confirmed. Remaining (still open): the
-huge-exponent resource half (bignum `Int ** Int` size/fuel; R8 interior
-poll points).]** ·
+division-by-zero analog confirmed. Huge-exponent resource half CLOSED by
+R8 (D-M4-4, M4.10 `a197e13`): a `**` result too big to store — including
+an exponent past the engine's computable range (u32) — is a magnitude
+*fault* (`LimitExceeded`), from the same pre-op size estimate as any
+result-growing op, not a raise. The provisional `exponent-too-large` slug
+retired (a resource limit is a fault, E§9/§10.2, uncatchable; one
+mechanism, not two); `|base| <= 1` computes trivially whatever the
+exponent (`1 ** huge == 1`).]** ·
 S-28 (L§4.13) Numeric equality precision: Int/Float comparison beyond 2⁵³
 (compare exactly, not via lossy widening); NaN and −0.0 under total
 structural equality; hash coherence for `1` vs `1.0`. **RESOLVED (user,
@@ -1599,8 +1604,13 @@ S-18 (E§8.7) Raise-trap unified across `raise`/foreign-raise/
 `resolve(Raise)` (trap fires before any unwind in all three). ·
 S-19 (E§11) Determinism obligation on synchronous foreign functions
 (host contract: sync FFs must be deterministic or become capabilities). ·
-S-20 (E§7.7/§10.2) Step-budget unit is mode-independent (statement safe
-points) regardless of observation granularity. ·
+S-20 (E§7.7/§10.2) Step-budget unit is mode-independent regardless of
+observation granularity. **[Refined by R8 (M4.10): the unit is now **work
+units**, not just statement safe points — a result-growing op (`*`/`**`,
+repetition) pre-charges a size estimate on top of the flat per-statement
+one. Still mode-independent, which was S-20's actual point: a statement
+safe point costs one unit in every observation mode, and the operation
+charges are a pure function of operand values, mode-independent too.]** ·
 S-21 (E§8.6) Breakpoint mapping details: span index, lines without code,
 multiple statements per line, pending breakpoints for unloaded modules,
 canonical-id reuse. ·
@@ -1635,7 +1645,13 @@ sliced); per-call, never banked (`fuel = 0` = immediate `SliceEnd`); same
 safe-point unit as the step budget but a resumable rail (the terminal
 `LimitExceeded` fault wins a same-instant race); a control signal at a
 terminal transition defers to the terminal outcome (jointly with the §10.1
-cancel pin); program-invisible, outside replay identity (§11). ·
+cancel pin); program-invisible, outside replay identity (§11).
+**[Refined by R8 (M4.10): the rails now share only the *statement* unit —
+slice fuel counts statement safe points, the step budget also carries
+result-growing-op charges (see S-20). Fuel deliberately does not charge
+those: an atomic op cannot yield mid-way, so a slice charge buys no
+responsiveness; the budget's pre-charge is what bounds the longest single
+operation.]** ·
 **S-57 (E§11) RESOLVED (M3.2, 2026-08-20; spec + code landed): Doodle-observable
 floating-point functions are host-independent.** Transcendentals and other
 non-correctly-rounded library math (`sin`, `cos`, `pow`) must be computed by the
@@ -1672,8 +1688,8 @@ D-M4-2): engine-raised errors are one built-in `Error` value record
 kebab-case slug — the runtime half of the diagnostic-code catalog, 1:1
 with the engine's `ExceptionKind`s (`type-mismatch`, `division-by-zero`,
 `non-finite-float`, `undefined-ordering`, `procedure-in-expression`,
-`name-not-defined`, `used-before-defined`, `exponent-too-large`,
-`not-callable`, `argument-error`, `unhashable-key`, `key-not-found`,
+`name-not-defined`, `used-before-defined`, `not-callable`,
+`argument-error`, `unhashable-key`, `key-not-found`,
 `no-such-field`, `no-value-destination`, `function-fell-off-end`, and,
 added later, `negative-count` (S-59) and `index-out-of-range` (M4.8a,
 user-approved 2026-08-25: a list/string/bytes index outside
@@ -1684,7 +1700,11 @@ sign, the negative branch carrying the deliberate hint that Doodle has
 no negative positions — a Python habit — and pointing at
 `length(xs) - 1`). The access-miss triad by container kind is fixed:
 `key-not-found` (dict), `index-out-of-range` (list/string/bytes),
-`no-such-field` (record) — never reuse one for another. `invalid-utf8`
+`no-such-field` (record) — never reuse one for another. **[`exponent-too-large`
+RETIRED from this catalog (M4.10, R8/D-M4-4): a `**` too big to store —
+including a u32-overflowing exponent — is now a magnitude *fault*
+(`LimitExceeded`), not a catchable raise. One mechanism for "too big to
+store," not two (see S-12).]** `invalid-utf8`
 (M4.8b, user-approved 2026-08-25): `decode(bytes)` on malformed UTF-8 —
 a *data* error, not the call-shape `argument-error`; `details:
 {position, byte}` (first invalid sequence, per `Utf8Error`'s

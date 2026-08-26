@@ -552,10 +552,14 @@ RunToCompletion, n)` is the fast path — a bounded fast run with no debug stops
   `run`/`resolve` after a `SliceEnd` runs unbounded. `fuel = 0` returns `Paused(SliceEnd)`
   immediately, running nothing (a legal observe-without-progress poll). This contrasts
   with the **directive**, which is *sticky* across a `Suspended`/`Paused`; fuel is not.
-- **Same unit as the step budget, different rail.** Fuel counts **statement safe points**
-  — the same unit as the step-budget limit (§10.2) — but the step budget is a **terminal**
-  limit (`Faulted(LimitExceeded)`) and the slice fuel a **resumable scheduling** bound
-  (`Paused(SliceEnd)`). When both would trip at the same safe point, the **fault wins**.
+- **Related rails, different roles.** Slice fuel counts statement safe points, while the
+  step budget (§10.2) counts work units, of which a statement safe point is one: the rails
+  share the statement unit, but only the budget carries operation charges — an atomic
+  operation cannot yield mid-way, so a slice charge would not aid responsiveness; the
+  budget's pre-charge is what bounds the longest single operation. The step budget is a
+  **terminal** limit (`Faulted(LimitExceeded)`) and the slice fuel a **resumable
+  scheduling** bound (`Paused(SliceEnd)`). When both would trip at the same safe point, the
+  **fault wins**.
 - **A terminal transition wins the race** (as for cancellation, §10.1): a **control
   signal observed at a terminal transition defers to it** — if the fuel is spent (or a
   cancellation observed) at the very transition that completes the program or lands it
@@ -860,9 +864,20 @@ resource `Faulted`). A run for which cancellation is never requested is never af
 An instance is configured (§3.1) with limits appropriate to an untrusted or
 kid-authored program:
 
-- a **step budget** (safe points executed) — since the engine owns no clock, wall-clock
-  timeouts are enforced by the host via the step budget or by cancelling;
-- a **heap limit** (bytes/objects);
+- a **step budget** — since the engine owns no clock, wall-clock timeouts are enforced by
+  the host via the step budget or by cancelling. The budget counts **work units**: an
+  ordinary statement safe point costs one unit, and an operation that can produce a result
+  much larger than its operands — bignum `*`/`**`, string or list repetition — is charged,
+  before it runs, a deterministic estimate of its result size in units, so no single
+  operation can perform unbounded work under a bounded budget (every other operation's cost
+  is bounded by the heap limit on its operands). The estimate is a pure function of operand
+  values and is part of the engine's replay identity (§11): the same build faults at the
+  same step;
+- a **heap limit** (bytes/objects); an operation that would produce a value exceeding it —
+  the same result-growing operations — faults before allocating, from the same deterministic
+  size estimate, rather than attempting an allocation that could exhaust memory. When one
+  operation would exceed both rails, the heap fault is reported (the result could not exist
+  regardless of the work);
 - a **stack-depth limit** for non-tail recursion (proper tail calls do not count, L§8.7,
   so a tail-recursive loop never trips it, but unbounded non-tail recursion does);
 - the **tail-history bound** (§8.3).
