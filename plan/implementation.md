@@ -1653,7 +1653,17 @@ sign, the negative branch carrying the deliberate hint that Doodle has
 no negative positions — a Python habit — and pointing at
 `length(xs) - 1`). The access-miss triad by container kind is fixed:
 `key-not-found` (dict), `index-out-of-range` (list/string/bytes),
-`no-such-field` (record) — never reuse one for another; a foreign raise
+`no-such-field` (record) — never reuse one for another. `invalid-utf8`
+(M4.8b, user-approved 2026-08-25): `decode(bytes)` on malformed UTF-8 —
+a *data* error, not the call-shape `argument-error`; `details:
+{position, byte}` (first invalid sequence, per `Utf8Error`'s
+`valid_up_to`/`error_len`); the host-side `make_string` keeps S-30's
+error-return `ValueError::InvalidUtf8` (no drive to raise into) but
+carries the same position, so the boundary and `decode` tell one story;
+`encode` cannot fail (a `String` is always valid NFC UTF-8, L§4.4);
+`decode` only raises — a lossy U+FFFD decode is a later stdlib function,
+never the default. First of the malformed-data family (future parsers
+get their own specific kinds); a foreign raise
 supplies its own value) and is API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;

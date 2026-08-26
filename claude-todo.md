@@ -205,7 +205,8 @@ check); lazy grapheme memo on `StrObj` (pure cache excluded from `bytes_allocate
 (provisional intrinsics, native + wasm demo registries). Native 161, wasm 87. **Carry-
 forwards:** `index-out-of-range` `details: {index, length}` rides the message-rubric /
 structured-details work (`make_error` is `{}` for all kinds today); list element assignment
-`xs[i] = v` is a separate pending list-mutation item. **Next: M4.8b** (bytes↔string
+`xs[i] = v` is a separate pending list-mutation item. **Next: M4.8b** (malformed bytes raise the new `invalid-utf8` slug,
+user-approved 2026-08-25, App C S-58; bytes↔string
 bridging — encode/decode round-trip, O(1) `Bytes` index already done, the **S-30** host
 `make_string` error model).
 
@@ -1214,6 +1215,14 @@ Access-miss triad by container kind: `key-not-found` (dict),
 `index-out-of-range` (list/string/bytes), `no-such-field` (record).
 Recorded in App C S-58. Code: **M4.8a** (`ExceptionKind` variant +
 fixtures: too-large, negative-with-hint, each of the three containers).
+
+**S-58 catalog +`invalid-utf8` (user-approved 2026-08-25, M4.8b):**
+`decode(bytes)` on malformed UTF-8 — a data error (not `argument-error`),
+`details: {position, byte}`; the host `make_string` keeps S-30's
+error-return but carries the same position; `encode` cannot fail;
+`decode` only raises (lossy decode = later stdlib fn). Recorded in App C
+S-58. Code: **M4.8b** (`ExceptionKind` variant + fixtures: an invalid
+sequence with position, a truncated sequence, the NFC round-trip).
 
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
