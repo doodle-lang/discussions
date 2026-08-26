@@ -117,7 +117,9 @@ ask** when reached (see Decisions).
   `Procedure` distinguishes procedures from functions** (partly a *ratify* — `is`
   already picked some behavior at M2a.5), and that **interpolation invokes the
   Stringable dispatcher directly** (immune to shadowing of `to_string`). Lands
-  with M4.9. **Decision (D-M4-5).**
+  with M4.9. **Decision (D-M4-5).** **`Procedure` half RESOLVED (user,
+  2026-08-25; spec landed): the split — umbrella `Callable`, concrete
+  `Procedure`/`Function`; App C S-37. M4.9 implements.**
 - **S-30 (E§4.3) — host `make_string` error model.** **RESOLVED (M4.8b,
   `e93adb8`):** the host-side `make_string` failure mode is an **error return**
   (`ValueError::InvalidUtf8`, not a raise — a host call has no drive to raise into),
@@ -188,9 +190,13 @@ M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
    public, and it closes Decision #9's real fix. (Marked ★ in both lists.)
 5. **D-M4-5 · S-37 type-value spellings + `Procedure` distinction.** *Blocks
    M4.9's dispatcher naming, and reflection/`is`/error-message wording.* Pin the
-   spellings and whether `Procedure` splits `to`/`fn`. Partly a **ratify** of the
-   M2a.5 `is` behavior. **Recommend:** confirm the existing behavior + spellings;
-   fresh only where reflection needs the `to`/`fn` split.
+   spellings and whether `Procedure` splits `to`/`fn`. **`Procedure` half
+   RESOLVED (user, 2026-08-25; spec landed): the SPLIT** — the single
+   `Procedure` contradicted L§8's vocabulary; now `Callable` (umbrella,
+   parallels `Number`) over `Procedure` (`to`) / `Function` (`fn`); foreign
+   functions by descriptor; type values not `Callable`. The M2a.5 `is`
+   behavior is *changed*, not ratified (`fn is Procedure` → false). Spellings
+   half + the Stringable dispatcher pin: still due with M4.9.
 
 ## The work items
 

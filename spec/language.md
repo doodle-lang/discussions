@@ -658,14 +658,20 @@ module-level bindings may change from within it).
 ### 4.12 Types and protocols as values
 
 Each built-in type is denoted by a type value: `Int`, `Float`, `Bool`,
-`String`, `Bytes`, `Nil`, `List`, `Dict`, `Procedure`, and the built-in record
-type `Error` (§12.1). (`Number` denotes "either `Int` or `Float`.") A record declaration introduces a type value of the same
-name that also serves as the constructor (§9.2). A protocol declaration
-introduces a protocol value (§10). Type and protocol values are used with the
-`is` operator (§6.5) and with reflection (§13).
+`String`, `Bytes`, `Nil`, `List`, `Dict`, `Procedure`, `Function`, and the
+built-in record type `Error` (§12.1). Two umbrella values cover pairs of
+these: `Number` denotes "either `Int` or `Float`," and `Callable` denotes
+"either `Procedure` or `Function`" — a procedure (`to`) `is Procedure`, a
+function (`fn`, anonymous included) `is Function`, every callable `is
+Callable`, and exactly one of the two concrete tests holds for any callable.
+A foreign function (engine specification §5) classifies by whether it yields
+a value. Type and protocol values are not `Callable`, even though record
+construction uses call syntax (§9.2). A record declaration introduces a type
+value of the same name that also serves as the constructor (§9.2). A protocol
+declaration introduces a protocol value (§10). Type and protocol values are
+used with the `is` operator (§6.5) and with reflection (§13).
 
-> The exact spelling of built-in type values, and whether `Procedure`
-> distinguishes procedures from functions, is provisional; see Appendix D.
+> The exact spelling of built-in type values is provisional; see Appendix D.
 
 ### 4.13 Equality and identity
 
@@ -2184,8 +2190,8 @@ likely to change.
   (§4.14).** The discussion said "shallow copy" without pinning nesting; this
   spec gives the C-struct-like rule.
 - **Built-in type value spellings (§4.12).** `Int`, `Float`, `Number`, `String`,
-  `Bytes`, `Bool`, `Nil`, `List`, `Dict`, `Procedure`, `Error` are provisional
-  names.
+  `Bytes`, `Bool`, `Nil`, `List`, `Dict`, `Callable`, `Procedure`, `Function`,
+  `Error` are provisional names.
 - **String model: grapheme-default, immutable, NFC (§4.4, §6.3, §4.13, §15).**
   The discussion deferred this. Resolved: strings are immutable and stored in
   NFC; the default character is the extended grapheme cluster, so `length`,
@@ -2410,6 +2416,19 @@ likely to change.
   `""`, negative raises (not Python's silent `""`), NFC re-normalization with
   non-additive grapheme length. `+` stays String+String — `"a" + 1` would
   need an implicit conversion, which is the line Doodle draws.
+- **`Procedure`/`Function` are distinct type values under a `Callable`
+  umbrella (§4.12; resolves the `Procedure` half of implementation-plan
+  Appendix C S-37).** The draft's single `Procedure` answered `true` for a
+  function — contradicting §8's own load-bearing vocabulary. Resolved as the
+  split, mirroring `Number` over `Int`/`Float`: `Callable` (the §4.1 category
+  name) denotes either `Procedure` (`to`) or `Function` (`fn`); a foreign
+  function classifies by whether it yields a value; type values are not
+  `Callable`. The machine already knows the kind everywhere it matters (the
+  apply-time kind gate, the valued-`break` rules), so hiding it from `is`
+  was an asymmetry, not a simplification; higher-order library code can now
+  check its arguments up front with call-site blame. Rejected: keeping one
+  umbrella (renamed `Callable`) with the split deferred to a §13 reflection
+  property — a workaround for not having the types.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

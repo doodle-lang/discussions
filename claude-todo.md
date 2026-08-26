@@ -150,7 +150,8 @@ Five decisions for the user (plan §Decisions): **D-M4-1** record-as-key model
 (S-29 — **RESOLVED + spec landed 2026-08-24**), **D-M4-2** engine error-value shape (E§9 — **RESOLVED + spec landed
 2026-08-24**: one built-in `Error(kind, message, details)` record, App C S-58), D-M4-3 Unicode pin (17.0-if-supported-else-
 16.0) + `unicode-segmentation`, **★ D-M4-4** R8 magnitude cap, D-M4-5 S-37
-type-value spellings. **Key review corrections:** the `WithRestore` continuation
+type-value spellings (**`Procedure` half RESOLVED 2026-08-25: the
+`Callable`/`Procedure`/`Function` split**, App C S-37). **Key review corrections:** the `WithRestore` continuation
 is **unbuilt** (not "inert since M2a.6"); S-24→**S-28** (the dict-hash delta);
 cross-kind hash/`==` consistency (`{1:"a"}[1.0]`) is a named M4.1 requirement.
 **Progress:** **M4.0 DONE** (`9ee3d9e`) — list `==`, closed the `[1]==[2]` panic.
@@ -212,7 +213,9 @@ message; round-trip law). **S-30 resolved** — host `make_string` keeps its err
 `ValueError::InvalidUtf8` but carries the same position (one story). Native 166, wasm 92.
 Carry-forward: `invalid-utf8` `details: {position, byte}` rides the message-rubric work.
 **Next: M4.9** (string interpolation runtime — the `StrLit` `Interp` arm, the `Stringable`
-dispatcher / `to_string` hook, D-M4-5/S-37), then M4.10 (convergence).
+dispatcher / `to_string` hook, D-M4-5/S-37 — the `Procedure` half is resolved as
+the `Callable`/`Procedure`/`Function` split; implement it here), then M4.10
+(convergence).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1228,6 +1231,18 @@ error-return but carries the same position; `encode` cannot fail;
 S-58. Code: **M4.8b** (`ExceptionKind` variant + fixtures: an invalid
 sequence with position, a truncated sequence, the NFC round-trip).
 
+**S-37 `Procedure` half RESOLVED (user, 2026-08-25): the split.** `Callable`
+(umbrella, the L§4.1 category name; parallels `Number`) over `Procedure`
+(`to`) / `Function` (`fn`, anonymous included); exactly one concrete test
+per callable; foreign functions by the S-42-lite descriptor (`print is
+Procedure`); type/protocol values not `Callable`. Grounds: one `Procedure`
+called a function a procedure — L§8's own vocabulary contradicted; the
+machine already knows the kind; up-front checks in higher-order stdlib
+code. Spec landed: L§4.12 + App D spellings + App D.1; App C S-37;
+plan-m4 D-M4-5. Code: **M4.9** (`is` on `CalObj` kind + descriptor flag;
+BUILTINS +`Callable`/`Function`; M2a.5 tests flip). Spellings half +
+the Stringable-dispatcher pin: still M4.9.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1540,6 +1555,12 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-25 — **S-37 `Procedure` half resolved + spec landed: the
+  `Callable`/`Procedure`/`Function` split.** Ruling in the queue entry above.
+  One discussions commit: L§4.12 (the list, the umbrella sentence, foreign
+  classification, type values not `Callable`; provisional note narrowed to
+  spellings), App D spellings, App D.1; App C S-37; plan-m4 D-M4-5 +
+  obligation; this file. Code: M4.9.
 - 2026-08-25 — **M4.8b — bytes↔string bridging (doodle-rust `e93adb8`).**
   Doodle-callable `encode`/`decode` (provisional intrinsics, §15 "the byte view"):
   `encode(string) → bytes` is the NFC UTF-8 and **cannot fail** (§4.4);

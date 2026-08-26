@@ -1435,7 +1435,24 @@ S-37 (L§4.12/App D.1, L§15 hook 1) Pin built-in type-value spellings and
 whether `Procedure` distinguishes procedures from functions (reflection,
 `is`, and error messages all need it); pin that interpolation invokes the
 Stringable dispatcher directly (immune to lexical shadowing of the name
-`to_string`). Resolve by M4. ·
+`to_string`). Resolve by M4. **`Procedure` half RESOLVED (user, 2026-08-25;
+plan-m4 D-M4-5): the split** — `Procedure` (`to`), `Function` (`fn`,
+anonymous included), umbrella `Callable` (the L§4.1 category name;
+parallels `Number` over `Int`/`Float`): `f is Callable` iff `f is
+Procedure or f is Function`, exactly one concrete test true per callable;
+foreign functions classify by the S-42-lite descriptor (yields a value →
+`Function`; else `Procedure`, so `print is Procedure`), matching S-10's
+rule; type/protocol values are not `Callable`. Grounds: the single
+`Procedure` called a function a procedure, contradicting L§8's
+load-bearing vocabulary; the machine already knows the kind (S-55 gate,
+S-10); higher-order stdlib code gets up-front argument checks with
+call-site blame; cheapest now (provisional marker, no user programs).
+Rejected: rename-only umbrella + §13 reflection later (a workaround for
+not having the types). **[spec landed: L§4.12 (list + provisional note
+narrowed to spellings) + App D spellings + App D.1. Code: M4.9 — `is` on
+`CalObj` kind + the descriptor flag; `types::BUILTINS` gains
+`Callable`/`Function`; the M2a.5 `fn is Procedure` tests flip.]** The
+spellings half + the Stringable-dispatcher pin remain due with M4.9. ·
 S-38 (L§5.3/§4.14) Lvalue place chains: assignment targets evaluate as
 places (no intermediate value-record copies), so `a.inner.x = 5` mutates
 `a`; copies happen on binding, not place navigation. Resolve by M4. ·
