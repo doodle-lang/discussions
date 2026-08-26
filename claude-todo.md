@@ -212,10 +212,24 @@ validates UTF-8 + NFC, malformed → new **`invalid-utf8`** slug with byte posit
 message; round-trip law). **S-30 resolved** — host `make_string` keeps its error-return
 `ValueError::InvalidUtf8` but carries the same position (one story). Native 166, wasm 92.
 Carry-forward: `invalid-utf8` `details: {position, byte}` rides the message-rubric work.
-**Next: M4.9** (string interpolation runtime — the `StrLit` `Interp` arm, the `Stringable`
-dispatcher / `to_string` hook, D-M4-5/S-37 — the `Procedure` half is resolved as
-the `Callable`/`Procedure`/`Function` split; implement it here), then M4.10
-(convergence).
+**M4.9 DONE** (`e805a4f`) — string interpolation runtime + the D-M4-5/S-37 type-value
+split. Interpolation (`"…{expr}…"`) evaluates: each `{expr}` is driven through
+`Cont::StrInterp`, rendered by the placeholder `Stringable` dispatcher, and folded with
+the literal runs via the AD4 seam routine (a `seam_concat` left-fold == a single NFC
+pass). The dispatcher is invoked **directly** (a hidden binding, not the name
+`to_string`), so a local `to_string` can't change interpolation (L§15 hook 1). The
+provisional `render()` retired into a new `machine/stringify.rs` shared by `print` +
+interpolation. **S-37 Procedure half** (spec `268c822`): the callable trio replaces the
+single `Procedure` type value — `Callable` umbrella (any callable), `Procedure` (`to`),
+`Function` (`fn`); foreign callables classify by descriptor (`print` is a Procedure);
+type values are not `Callable`; M2a.5 `is` tests flipped. Native 173, wasm 98. **Carry-
+forwards:** compound-value rendering (`<list>`/`<dict>`/`<record>`/…) stays a native
+**placeholder** — the real `to_string` output is M5 (protocol dispatch) / M9a (stdlib
+defaults), carved out of M4 acceptance; the runtime `take_value` backstop in `str_interp`
+covers only the Void-in-interp cases the resolver can't catch statically (the S-6 static
+check already rejects a lexically-known `to` call in `{…}`).
+**Next: M4.10** (convergence — UCD vectors in CI, ★ R8 magnitude cap per D-M4-4,
+full-suite determinism gate, M4 exit review + close App C).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
