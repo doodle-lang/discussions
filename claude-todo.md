@@ -16,6 +16,23 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
+**`seam_concat` missed non-Hangul backward-composing starters → non-NFC results —
+FIXED (M4.10, 2026-08-26; found same day by the M4.10 UCD vectors).**
+`unicode::seam_concat` (the AD4 seam optimization behind string `+`, `*`, and
+interpolation) extended its seam region across a leading **Hangul** V/T jamo in `b`
+only (`is_backward_composing_jamo`); any *other* backward-composing starter — e.g.
+Sinhala `U+0DD9 + U+0DCF → U+0DDC` — was treated as a clean boundary, so the seam
+composition was skipped and the result **not NFC**. Impact would have been a debug
+panic (`alloc_string`'s `is_nfc` assert) or, in the release wasm demo, a silent non-NFC
+string breaking the NFC invariant (`==`, dict keys, grapheme length, replay) for
+Brahmic scripts with composing vowel signs. **Fix:** replaced the hardcoded jamo range
+with the general **NFC_QuickCheck = Maybe** predicate (`composes_backward`), which is
+exactly the canonical-composition second-element set — it subsumes Hangul V/T (Maybe)
+and excludes Hangul L / plain starters (Yes), and chaining is automatic (any char that
+composes onto the composed prefix is itself Maybe). **Verified:** the UCD
+NormalizationTest seam pass (`tests/unicode_ucd.rs`, ~28k splits over 19k rows) is green,
+plus targeted Sinhala cases in `unicode.rs`'s `seam_concat_equals_whole_string_nfc`.
+
 **M4 survey (2026-08-23): `[1] == [2]` panicked the engine — FIXED (M4.0,
 doodle-rust `9ee3d9e`).** Lists became constructible at M2b.5a, but the compound
 arm of `equal` was `unimplemented!`, so any `==`/`!=` on two lists aborted
@@ -245,10 +262,15 @@ atomic ops; the deterministic pre-op fault is tested instead. **Also (S-12 close
 `exponent-too-large` RETIRED):** a `**` too big to store — including a u32-overflowing
 exponent — is now a magnitude *fault*, not a raise; `exponent-too-large` removed from
 the `ExceptionKind` enum + S-58 catalog; `|base| <= 1` computes trivially whatever the
-exponent (`1 ** huge == 1`, which previously wrongly raised). **M4.10 remaining:** UCD
-conformance vectors in CI, full-suite determinism gate (add fixtures that trip the
-budget + the heap estimate, run twice — the "deterministic step" criterion now depends
-on the estimate function), M4 exit review + close App C.
+exponent (`1 ** huge == 1`, which previously wrongly raised). **UCD conformance vectors
+DONE** (`8daeaeb`): official Unicode 17.0 `NormalizationTest.txt` + `GraphemeBreakTest.txt`
+vendored under `crates/doodle-core/tests/data/ucd/` (~2.9 MB, Unicode license header
+kept); `tests/unicode_ucd.rs` checks `nfc`/`grapheme_offsets`/seam-law/version against
+them — the seam pass (~28k splits) **caught the MAJOR `seam_concat` NFC bug** above,
+now fixed (NFC_QuickCheck=Maybe backward-composer predicate). **M4.10 remaining:**
+full-suite determinism gate (add fixtures that trip the budget + the heap estimate, run
+twice — the "deterministic step" criterion now depends on the estimate function), M4
+exit review + close App C.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
