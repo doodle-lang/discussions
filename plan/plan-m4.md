@@ -135,11 +135,13 @@ ask** when reached (see Decisions).
   the current module; `no-value-destination` attributed to the `break`
   otherwise; native consumers by S-46 parity. **M4.6** lands the runtime
   half + fixtures; the static check rides the queued resolver extension.
-- **★ R8 — mid-computation bignum-magnitude cap (Decision #9).** The deferred
-  real fix for "huge `**`/`"a"*10**9` freezes the tab": bound bignum/string
-  *magnitude* **during** the operation. Scheduled "with M4's string work"
-  (`implementation.md`). Lands with M4.10 (or the poll-point rides M4.7). **Decision
-  (D-M4-4).**
+- **★ R8 — bignum-magnitude cap (Decision #9). RESOLVED (D-M4-4, code M4.10
+  `a197e13`).** The real fix for "huge `**`/`"a"*10**9` freezes the tab": bound
+  bignum/string *magnitude* **before** the operation, since interior mid-op
+  polling is infeasible for atomic `num-bigint` calls (see D-M4-4). Pre-size caps
+  fault `Heap` before allocating; a pre-charge bills the step budget by result
+  size. Demo heap tightened to 64 MiB. Spec text (E§10.2 cost model) pending
+  ratification.
 
 ## Decisions needed (the user's calls — resolve before the dependent item)
 
@@ -184,10 +186,19 @@ M4.0.** D-M4-1 blocks M4.1's key model but not its scalar-key core.
    `unicode-segmentation` 1.13.3 — so the "17.0 if they support it" branch holds and
    the engine's already-reported identity (S-41) is unchanged. All three now share
    the compile-time UCD cross-check (`unicode.rs`); a future skew is a build failure.
-4. **★ D-M4-4 · R8 bignum/string magnitude cap.** *Blocks M4.10 only.* Land the
-   mid-computation cap in M4.10 (with finer limits), or defer again?
-   **Recommend:** land it — M4 touches arithmetic/string limits, the demo is
-   public, and it closes Decision #9's real fix. (Marked ★ in both lists.)
+4. **★ D-M4-4 · R8 bignum/string magnitude cap. RESOLVED (user, 2026-08-25):
+   land it as pre-size + pre-charge caps.** Investigation found true *interior*
+   mid-op cancellation infeasible — the expensive work bottoms out in single
+   atomic `num-bigint`/`std` calls that can't be polled from inside, and `**` is
+   ≤32 squarings dominated by the last few huge multiplies. So the cap guards each
+   `*`/`**` **before** it runs: a **pre-size** estimate faults `LimitExceeded(Heap)`
+   before allocating (uniform now with string `*`), and a **pre-charge** bills the
+   estimated bytes against the step budget so bignum work costs proportional to size
+   (faulting `StepBudget` under a bounded budget). Both are deterministic upper
+   bounds (E§11). Also: default heap 16 GiB → 1 GiB (embedder backstop), and the
+   **wasm demo loads with 64 MiB** so a pathological magnitude faults promptly.
+   **Code: M4.10 (doodle-rust `a197e13`).** Spec-delta: E§10.2 step-budget cost
+   model (bignum ops cost by size) — App C, spec text pending ratification.
 5. **D-M4-5 · S-37 type-value spellings + `Procedure` distinction.** *Blocks
    M4.9's dispatcher naming, and reflection/`is`/error-message wording.* Pin the
    spellings and whether `Procedure` splits `to`/`fn`. **`Procedure` half

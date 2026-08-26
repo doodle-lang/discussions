@@ -228,8 +228,19 @@ forwards:** compound-value rendering (`<list>`/`<dict>`/`<record>`/…) stays a 
 defaults), carved out of M4 acceptance; the runtime `take_value` backstop in `str_interp`
 covers only the Void-in-interp cases the resolver can't catch statically (the S-6 static
 check already rejects a lexically-known `to` call in `{…}`).
-**Next: M4.10** (convergence — UCD vectors in CI, ★ R8 magnitude cap per D-M4-4,
-full-suite determinism gate, M4 exit review + close App C).
+**M4.10 IN PROGRESS** (convergence). **R8 magnitude cap DONE** (`a197e13`, D-M4-4):
+interior mid-op polling proved infeasible (atomic `num-bigint` calls; `**` is ≤32
+squarings dominated by the last few huge multiplies), so `*`/`**` are guarded
+**before** running — a pre-size estimate faults `LimitExceeded(Heap)` before
+allocating (uniform with string `*`), and a pre-charge bills result bytes against the
+step budget (`FusedCounter::charge`) so a huge magnitude faults `StepBudget` under a
+bounded budget; both deterministic upper bounds. Default heap 16 GiB → 1 GiB; the wasm
+demo loads with 64 MiB. `Machine::for_test()` (in the length-exempt `machine/tests.rs`)
+lets arith unit tests supply a throwaway machine. **Carry-forward:** E§10.2 spec text
+(step budget = work units, bignum ops cost by size) **pending user ratification** — the
+"cancel mid-operation" conformance idea is dropped as unreachable for atomic ops; the
+deterministic pre-op fault is tested instead. **M4.10 remaining:** UCD conformance
+vectors in CI, full-suite determinism gate, M4 exit review + close App C.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

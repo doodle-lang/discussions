@@ -865,13 +865,27 @@ principles as the tiebreaker for delta resolution.
 
 **R8 — Unbounded single operations defeat the stop button.** Cancellation
 fires at safe points, but `9 ** 9 ** 9`, `"a" * 10**9`, or one giant
-bignum multiply is a *single* operation — as written it freezes the tab
-un-stoppably, contradicting the M3 story. *Mitigation:* interior
-cost-accounting poll points inside potentially unbounded primitives
-(bignum arithmetic, string/list repetition, normalization of huge inputs)
-and/or operand-size caps tied to the heap limit, specified alongside S-12
-and conformance-tested by cancelling mid-operation (scheduled with M4's
-string work).
+bignum multiply is a *single* operation — as written it froze the tab
+un-stoppably, contradicting the M3 story. **RESOLVED (D-M4-4, M4.10,
+doodle-rust `a197e13`) as *operand-size caps*, not interior poll points.**
+The interior-poll-point idea proved infeasible for these primitives: the
+expensive work bottoms out in single atomic `num-bigint`/`std` calls that
+cannot be polled from inside (and `**` is ≤32 squarings dominated by the
+last few huge multiplies), so mid-op cancellation of the dominant multiply
+is unreachable without reimplementing bignum multiplication. Instead each
+`*`/`**` is guarded **before** it runs (`Machine::admit_bignum`): a
+**pre-size** estimate faults `LimitExceeded(Heap)` before allocating
+(uniform with the string `*` bound), and a **pre-charge** bills the
+estimated result bytes against the step budget so bignum work costs
+proportional to size (faulting `StepBudget` under a bounded budget). Both
+are deterministic upper bounds (E§11). The default heap dropped 16 GiB → 1
+GiB (embedder backstop) and the wasm demo now loads with 64 MiB, so a
+pathological magnitude faults promptly with headroom for kid programs.
+**Spec-delta pending ratification:** E§10.2's step budget changes from a
+flat statement-safe-point count to *work units* (a bignum op costs by
+size); the "conformance-test by cancelling mid-operation" plan is dropped
+as unreachable for atomic ops — the deterministic pre-op fault is the tested
+behavior instead (see `machine/tests.rs`).
 
 ---
 
