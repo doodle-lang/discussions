@@ -205,10 +205,14 @@ check); lazy grapheme memo on `StrObj` (pure cache excluded from `bytes_allocate
 (provisional intrinsics, native + wasm demo registries). Native 161, wasm 87. **Carry-
 forwards:** `index-out-of-range` `details: {index, length}` rides the message-rubric /
 structured-details work (`make_error` is `{}` for all kinds today); list element assignment
-`xs[i] = v` is a separate pending list-mutation item. **Next: M4.8b** (malformed bytes raise the new `invalid-utf8` slug,
-user-approved 2026-08-25, App C S-58; bytes↔string
-bridging — encode/decode round-trip, O(1) `Bytes` index already done, the **S-30** host
-`make_string` error model).
+`xs[i] = v` is a separate pending list-mutation item. **M4.8b DONE** (`e93adb8`) — bytes↔string
+bridging: Doodle `encode`/`decode` (provisional intrinsics; `encode` can't fail, `decode`
+validates UTF-8 + NFC, malformed → new **`invalid-utf8`** slug with byte position in the
+message; round-trip law). **S-30 resolved** — host `make_string` keeps its error-return
+`ValueError::InvalidUtf8` but carries the same position (one story). Native 166, wasm 92.
+Carry-forward: `invalid-utf8` `details: {position, byte}` rides the message-rubric work.
+**Next: M4.9** (string interpolation runtime — the `StrLit` `Interp` arm, the `Stringable`
+dispatcher / `to_string` hook, D-M4-5/S-37), then M4.10 (convergence).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1535,6 +1539,21 @@ short-circuits `step`/`safe_point` before the cancel poll; a terminal
 instance is never re-polled). E§10.1 edit landed.
 
 ## Done
+
+- 2026-08-25 — **M4.8b — bytes↔string bridging (doodle-rust `e93adb8`).**
+  Doodle-callable `encode`/`decode` (provisional intrinsics, §15 "the byte view"):
+  `encode(string) → bytes` is the NFC UTF-8 and **cannot fail** (§4.4);
+  `decode(bytes) → string` validates UTF-8 + NFC-normalizes, malformed → the new
+  **`invalid-utf8`** slug (S-58) with the first bad byte offset in the message; the
+  round-trip law `decode(encode(s)) == s` holds. **S-30 resolved:** host `make_string`
+  keeps its error-return `ValueError::InvalidUtf8` (no drive to raise into) but now
+  carries the same byte position, so the boundary and `decode` tell one story.
+  `IntrinsicCtx` gained `alloc_bytes`; both intrinsics register in the native + wasm
+  demo registries (parity). Conformance L4.5 (round-trip, decode-normalizes, encode
+  byte count, invalid + truncated raises); native 166, wasm 92. O(1) `Bytes` index
+  landed in M4.8a. **Carry-forward:** `invalid-utf8` `details: {position, byte}` rides
+  the message-rubric / structured-details work (`make_error` is `{}` for all kinds; the
+  position is in the message today).
 
 - 2026-08-25 — **M4.8a — graphemes + runtime indexing (doodle-rust `b5f99b5`).**
   `unicode-segmentation` 1.13.3 (**D-M4-3 confirmed UCD 17.0**; all three crates

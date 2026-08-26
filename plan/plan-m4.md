@@ -118,9 +118,12 @@ ask** when reached (see Decisions).
   already picked some behavior at M2a.5), and that **interpolation invokes the
   Stringable dispatcher directly** (immune to shadowing of `to_string`). Lands
   with M4.9. **Decision (D-M4-5).**
-- **S-30 (E§4.3) — host `make_string` error model.** The host-side `make_string`
-  failure mode (error return, not raise) and the general no-drive-in-progress
-  host-call error model. Lands with the string boundary work (M4.7 / M4.8b).
+- **S-30 (E§4.3) — host `make_string` error model.** **RESOLVED (M4.8b,
+  `e93adb8`):** the host-side `make_string` failure mode is an **error return**
+  (`ValueError::InvalidUtf8`, not a raise — a host call has no drive to raise into),
+  the general no-drive-in-progress host-call error model; it now carries the first
+  bad byte's position so it and Doodle `decode` (which raises `invalid-utf8`, S-58)
+  tell one story across the boundary.
 - **★ S-10 (L§7.10) — valued `break` into a `to`-consumer.** *(Reframed: the
   loop half is ALREADY resolved — a static error, 2026-07-29.)* The **open** half
   is a valued `break` targeting a `to`-consumer (no value slot); it was reserved
@@ -500,7 +503,19 @@ today); list element assignment (`xs[i] = v`) stays a separate pending list-muta
   index/iterate; the UCD grapheme vectors (feed M4.10).
 - **Depends on.** M4.7 (soft — shares `StrObj` growth); D-M4-3.
 
-### M4.8b — Bytes ↔ string bridging `[S]`
+### M4.8b — Bytes ↔ string bridging `[S]` — **DONE** (doodle-rust `e93adb8`)
+
+**Landed:** Doodle-callable `encode`/`decode` (provisional intrinsics, §15 "the byte view").
+`encode(string) → bytes` = the string's NFC UTF-8; **cannot fail** (a `String` is always
+valid NFC UTF-8, §4.4). `decode(bytes) → string` validates UTF-8 + NFC-normalizes; malformed
+bytes raise the new **`invalid-utf8`** slug (S-58), the message naming the first bad byte
+offset. Round-trip law holds (`decode(encode(s)) == s`). **S-30 resolved:** the host
+`make_string` keeps its error-return `ValueError::InvalidUtf8` (no drive to raise into) but
+now carries the same byte position as `decode` — one story across the boundary.
+`IntrinsicCtx` gained `alloc_bytes`. Conformance L4.5 (round-trip, decode-normalizes, encode
+byte count, invalid + truncated raises); native 166, wasm 92. O(1) `Bytes` index already
+landed in M4.8a. **Carry-forward:** `invalid-utf8` `details: {position, byte}` rides the
+message-rubric / structured-details work (the position is in the message today).
 
 - **Goal.** String/bytes interop.
 - **Lands.** encode/decode with the **round-trip law**; O(1) `Bytes` indexing
