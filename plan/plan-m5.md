@@ -121,26 +121,39 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   green with the single module reframed as `ModuleId(0)`. (A two-module
   independent-rooting test lands with M5.1, when a second module can exist.)
 
-### M5.1 — Resolver hook + load state machine + suspendable driving `[L]` (critical)
+### M5.1 — Resolver hook + load state machine + suspendable driving `[L]` (critical) — **M5.1a LANDED**
 - **Goal.** Load a second module on first reference, drivably.
-- **Lands.** The host `resolve(module_path) → Source(text, canonical_id) |
-  NotFound` hook (E§6); the `{unloaded, loading, loaded, failed}` state machine
-  with **cycle detection that survives a suspend**; driving an imported module's
-  top level as **ordinary engine frames** (not a native reentrant drive);
-  **circular-import diagnostic naming the cycle**; `failed` + re-raise (S-8); a
-  real heap **module value** exposing name + source location + exported
-  names/values + docstring (L§4.11, §13 reflection).
+- **Landed (M5.1a — loading machinery).** The `import` **suspension** +
+  `resolve_import(Source | NotFound | Raise)` host API (E§6/S-60); the
+  `{loading, loaded, failed}` state machine + `by_path`/`by_canonical` singleton
+  caches, with **cycle detection that survives a suspend**; driving an imported
+  module's top level as **ordinary engine frames** (it can itself suspend);
+  **circular-import diagnostic naming the cycle** (`a imports b imports a`); **S-8
+  failed** — `LoadState::Failed(value)` retains the load's exception, re-import
+  re-raises it unchanged (latent in a single run: a load failure is uncatchable
+  and terminates — imports are top-level, `import`-in-`try` is a static error);
+  `module-load-error` for a fetched module with static errors; the **multi-module
+  GC rooting** the second module makes live (all modules' namespace cells are
+  permanent roots). Two new S-58 slugs ratified: `circular-import`,
+  `module-load-error`.
+- **Still M5.1b / folded into M5.2.** The heap **module value** (name + source
+  location + exported names/values + docstring, L§4.11/§13) — built once binding
+  gives it a consumer; and the **cross-module call lookup** (a callee's info lives
+  in *its* module's resolved) — live only once a bound cross-module call exists
+  (M5.2). Name **binding** of every import form is M5.2.
 - **Spec-delta.** D-M5-2 — **RESOLVED 2026-08-27, spec landed** (E§6 rewrite:
   import is a suspension; App C S-60; `module-not-found` slug). Implement the
   `Import` request kind per E§6/§7.5.
 - **Depends.** M5.0.
-- **Tests.** load-once singleton (top-level effect runs once); a module raising
-  at load → `failed`, re-import re-raises; a 2-module cycle → the naming
-  diagnostic; a module whose top-level suspends (a capability at load) resumes
-  correctly with the importer parked; **the import itself suspends** — host
-  resolves immediately (bundling), host resolves later (importer parked,
-  resumes), `NotFound` → `module-not-found` in the importer, `Raise(h)` →
-  raises `h` in the importer.
+- **Tests (M5.1a landed).** load-once singleton (top-level effect runs once);
+  canonical-id dedupe; a 2-module cycle → the naming diagnostic; a module raising
+  at load propagates + is marked `failed` retaining its exception (re-raise itself
+  is latent — see S-8); a fetched module with static errors → `module-load-error`;
+  a module whose top-level suspends (a capability at load) resumes with the importer
+  parked; **the import itself suspends** — immediate (bundling) resolve, deferred
+  resolve (importer parked, resumes), `NotFound` → `module-not-found`, `Raise(h)`;
+  and the multi-module GC-rooting test. (`crates/doodle-core/tests/modules.rs` +
+  machine unit tests.)
 
 ### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical)
 - **Goal.** All import forms, with correct aliasing and read-only provenance.

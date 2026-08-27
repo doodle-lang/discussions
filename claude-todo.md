@@ -327,6 +327,22 @@ resolved+namespace; main module reframed as `ModuleId(0)`, all gates green (conf
 namespace GC rooting → M5.1; `CellObj` kind/provenance → M5.2/M5.5. **Next: M5.1** (resolver
 hook + load state machine + suspendable driving — **D-M5-2 RESOLVED 2026-08-27:
 import is a suspension, async-capable from v0.1**; App C S-60).
+**M5.1a DONE (2026-08-27): the import-load machinery.** `import` **suspends** with
+`SuspendedImport(ImportRequest{path, importer})`, resolved via `resolve_import(Source |
+NotFound | Raise)` (reuses the M2b.4 park/resume); the `{loading, loaded, failed}` state
+machine + `by_path`/`by_canonical` singleton caches; a sub-module's top level drives as
+**ordinary frames** (it can itself suspend); **circular-import** naming the cycle; **S-8
+failed** — `LoadState::Failed(value)` retains the load's exception (a GC root), re-import
+re-raises it unchanged (latent single-run: a load failure is uncatchable — `import`-in-
+`try` is a static error — so it terminates); **module-load-error** for a fetched module
+with static errors; the **multi-namespace GC rooting** the 2nd module makes live (all
+modules' namespace cells are permanent roots). Two S-58 slugs ratified: `circular-import`,
+`module-load-error`. Tests: `tests/modules.rs` (10) + machine unit (retention, GC-rooting).
+All gates green (conformance 180, wasm 104). **Deferred: cross-module call lookup + the
+heap module value + name binding of every import form → M5.2** (the module value gets a
+consumer once binding exists). **Tracked obligation (rubric):** per-kind `details` schemas
+must be populated for every `Error` kind before M6 (the IDE consumes `details`); messages
+are never API. **Next: M5.2** (import forms + cell aliasing + provenance/ambiguity).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

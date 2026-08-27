@@ -1553,9 +1553,28 @@ table (resolver `walk/tailmark.rs`), excluding block-arg calls.]**
 S-13 (L§11.2) Wildcard-collision rule: second wildcard supplying an
 existing wildcard-bound name marks it ambiguous; use raises naming both
 modules; explicit/selective bindings override. ·
-S-8 (L§11.3/E§6) Module load-failure state: a module whose top-level
-raises is `failed`; re-import re-raises (no silent retry); reload is an
-environment-level operation (S-26). ·
+**S-8 (L§11.3/E§6) PINNED (user, 2026-08-27; M5.1 code landed): module
+load-failure state.** A module whose load fails is `failed` — its
+top-level raised, or its fetched source had static errors (a
+`module-load-error`, E§3.2's `LoadError` as a runtime raise). `failed`
+**retains the exception the load produced** (the raised value, or the
+materialized `module-load-error`); a re-import **re-raises that retained
+value unchanged** — no silent retry, no wrapping, no fresh slug. This is a
+determinism/replay requirement (a reload run must re-raise the same value,
+never re-run) and disambiguates `failed` from `loading` (a re-import of a
+failed module is not a cycle). Reload is an environment-level operation
+(S-26). **The re-raise is *latent* in a single run:** a load failure is
+uncatchable — `import` is a module-level statement, a static error inside a
+`try` body (the parser's proof that imports are strictly top-level, which
+is also why S-15/S-60's nested-drive rule never touches an import) — so it
+propagates through the importer and terminates the program; the retained
+value is re-raised only once a reload/REPL path (M9b) can re-import a failed
+module. The failing module's frame sits on the importer's stack (MD §18), so
+the trace shows both the failing line in the module and the `import` that
+pulled it in. **[M5.1 code: `LoadState::Failed(value)` retains the value (a
+GC root); `module-load-error` for static-error source; re-import re-raises
+the retained value. Slugs `circular-import` + `module-load-error` land in
+the S-58 catalog.]** ·
 S-14 (L§11.1/§11.3) `exports` corners (multiplicity, undeclared names,
 position); module-block semantics. ·
 S-31 (L§10) Protocol-implementation signature conformance (arity/defaults/
@@ -1735,7 +1754,16 @@ get their own specific kinds). `module-not-found` (M5.1, S-60): an
 `import` whose request the host resolved `NotFound` — raised in the
 importing program, `details: {path, importer}`; a failed fetch is instead
 `resolve(Raise(h))` carrying the host's own value; a foreign raise
-supplies its own value) and is API (replay artifacts, IDE
+supplies its own value. `circular-import` (M5.1, L§11.3/S-8): an `import`
+of a module whose load is already in progress; the message names the chain
+(`a imports b imports a`), `details: {cycle}`. `module-load-error` (M5.1,
+S-8/E§3.2): a fetched module whose **source has static errors** — the
+runtime face of E's `LoadError` (E§3.2), scoped to *that* case only (a
+module whose top-level *raises* propagates that raise, and a re-import of a
+`failed` module re-raises its retained value — neither mints this slug);
+`details: {path, canonical_id, diagnostics}`, the full list so an IDE
+renders an imported module's errors as the main program's) and is API
+(replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts
@@ -1802,7 +1830,9 @@ design); replay improves (import resolutions are recorded, so a recording
 carries every loaded module's source/identity in load order — E§11's
 "loaded program" generalizes to multi-module programs); S-15 never bites
 (imports are module-level statements in top-level frames, never inside a
-nested drive). Observation while suspended on an import: position at the
+nested drive — the parser makes this concrete: an `import` inside any body,
+a `try` included, is a static error, so an import request can never arise
+mid-nested-drive). Observation while suspended on an import: position at the
 `import` statement (S-17). The M5 prelude star-import may arrive through
 the same request or via instance config — the plan's call. Rejected:
 synchronous-for-v0.1 with async as a later delta (saves almost nothing,

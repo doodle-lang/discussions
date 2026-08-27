@@ -95,6 +95,36 @@ enum only when their producer lands (M1.3–M1.11); each names an L rule.
 `positional-after-keyword` · `shadowing` (warning, L§5.1) ·
 `discarded-value` (warning, L§6.11).
 
+### Runtime `Error` kinds — the `details` schema (tracked obligation)
+
+The runtime half of the catalog is the `Error.kind` slugs (S-58; 1:1 with the
+engine's `ExceptionKind`s). Each runtime `Error` also carries a `details` dict of
+**structured, kind-specific data** so a host renders/localizes without ever
+parsing text. Two pins govern it:
+
+- **(a) Messages are not API.** No host may parse an `Error.message`, ever — it is
+  rubric-governed prose, snapshot-tested, and free to change. Anything a host
+  needs programmatically lives in `details` (or `kind`).
+- **(b) `details` must be populated for every kind before M6.** The M6 IDE
+  consumes `details`; until then `make_error` builds `details = {}` uniformly
+  (S-58 fixed the *shape*; populating per-kind data is a deliberate rubric-pass
+  sequencing, not the end state). The per-kind schema below is the **checklist**
+  for that pass — so it is a table, not a vibe. New raising kinds add a row when
+  they land.
+
+| kind | `details` schema |
+| --- | --- |
+| `index-out-of-range` | `{index, length}` |
+| `invalid-utf8` | `{position, byte}` |
+| `key-not-found` | `{key}` |
+| `name-not-defined` / `used-before-defined` | `{name}` |
+| `no-such-field` | `{field, type}` |
+| `negative-count` | `{count}` |
+| `module-not-found` | `{path, importer}` |
+| `circular-import` | `{cycle}` — the import chain as a list of paths |
+| `module-load-error` | `{path, canonical_id, diagnostics}` — the full diagnostic list, so an IDE renders an imported module's errors exactly as it renders the main program's |
+| *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
+
 ## Appendix B — provisional caret / column model
 
 The M1.1 renderer reports line/column and caret widths in **code points** over

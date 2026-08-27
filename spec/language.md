@@ -1779,6 +1779,11 @@ per module:
 - **Circular imports are an error.** If loading module `a` requires loading `b`,
   and loading `b` requires `a` before `a` has finished loading, loading fails
   with a diagnostic. Refactor the shared portion into a third module.
+- **A failed load is retained.** If a module raises while loading — or its source
+  fails to compile — the module is marked *failed* and the exception propagates to
+  the importer at the `import`. The failed module **retains that exception**: a
+  later import of the same module **re-raises the retained value unchanged** rather
+  than re-running the load. A failed load is never silently retried.
 - A module may hold mutable module-level state (via `let`); `const` declares
   module-level constants. Such state is shared across all importers (a
   consequence of singleton loading).

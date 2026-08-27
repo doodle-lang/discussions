@@ -473,6 +473,16 @@ The engine detects **circular imports** (L§11.3) and raises. Packages (director
 L§11.1) are the host's concern: the engine passes the dotted path through to the
 resolver, which maps it to a source.
 
+A **load failure** — the module's top-level raised, or its `Source` did not compile
+(`module-load-error`, the runtime face of §3.2's `LoadError`) — marks the module
+*failed* and **retains the exception it produced**; the raise propagates to the
+importer at the `import` statement. A later import of the same module **re-raises the
+retained value unchanged** (L§11.3) rather than re-running the load, so a recording
+replays a failed load identically (§11). Because a load failure cannot be caught in
+the same run — an `import` is a top-level statement, never inside a `try` — this
+terminates the program; the retained value is re-raised only when an environment
+feature (reload) re-imports.
+
 Module loading runs code and can therefore suspend, pause, raise, or hit a limit
 like any other driven execution; the host sees these through the ordinary drive
 loop (§7).
