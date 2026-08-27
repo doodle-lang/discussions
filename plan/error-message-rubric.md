@@ -124,6 +124,8 @@ parsing text. Two pins govern it:
 | `circular-import` | `{cycle}` — the import chain as a list of paths |
 | `module-load-error` | `{path, canonical_id, diagnostics}` — the full diagnostic list, so an IDE renders an imported module's errors exactly as it renders the main program's |
 | `ambiguous-import` | `{name, modules: [a, b]}` — the name and both wildcard sources, in import order (raised at *use*, S-13) |
+| `protocol-not-implemented` | `{type, protocol, member}` — the value's runtime type, a supplying protocol, and the member; the message points at `implement P for T` (L§10.3) |
+| `ambiguous-member` | `{member, protocols: [a, b], type}` — the member, both *unrelated* protocols supplying it (declaration/load order), and the type; raised at *use*, points at `P.member(args)` (L§10.3, S-31) |
 | *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
 
 ## Appendix B — provisional caret / column model

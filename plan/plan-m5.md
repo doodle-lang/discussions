@@ -225,7 +225,22 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
 - **Tests.** exit criterion #5; a native-module member resolves and calls;
   registration after load is a host-API error.
 
-### M5.5 — Protocols: dispatch, defaults, extends, qualified, ambiguity `[L]` (parallel track; critical for accept)
+### M5.5 — Protocols: dispatch, defaults, extends, qualified, ambiguity `[L]` (parallel track; critical for accept) — **M5.5a LANDED (dispatch core)**
+- **Split.** **5.5a (LANDED):** `CellKind` tag (AD5, deferred since M2a) + protocol
+  registry + `protocol`/`implement` load-time registration + dispatcher cells +
+  single dispatch (S-31 bind-then-dispatch, positional **and** keyword) + defaults +
+  qualified `P.member` + `protocol-not-implemented` + `ambiguous-member`. **`x is P`
+  landed here too** (M5.6 absorbed — trivial once the registry existed). **5.5b (next):**
+  the `extends` chain (transitive requirements, nearest-default-wins, cycle=static
+  error, S-61) + the static conformance checks (first-param-no-default, impl
+  arity/block conformance, missing-required-member naming) + member-parameter
+  defaults + the dispatcher-value `is Procedure/Function` refinement.
+- **Provisional (5.5a, → 5.5b):** a member parameter may not have a default *is not
+  yet enforced*, and member-parameter defaults are not yet evaluated (dispatch requires
+  every ordinary parameter supplied); a bare dispatcher value classifies as `Function`
+  under `is` (registry not yet threaded into `types::callable_kind_of`); an incomplete
+  `implement` block (omitting a required member with no default) surfaces at the *call*
+  as `protocol-not-implemented` rather than statically.
 - **Goal.** `protocol`/`implement` with real single dispatch.
 - **Lands.** Load-time registration of `implement P for T` into a
   `(type, member) → callable` table; **dispatcher cells** (a member name binds a

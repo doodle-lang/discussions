@@ -1795,7 +1795,24 @@ raises; a selective import or alias of the name overrides the mark), its message
 naming the name and both source modules; `details: {name, modules: [a, b]}` —
 both sources in **import order** (deterministic, and the order the message
 uses). Sits in the module family with `module-not-found` / `circular-import` /
-`module-load-error`) and is API (replay artifacts, IDE
+`module-load-error`. `protocol-not-implemented` (M5.5a, L§10.3;
+user-ratified 2026-08-27): a protocol member called on a value whose **runtime
+type implements no protocol supplying the member** — raised at the call, its
+message naming the type, a supplying protocol, and the member and pointing at the
+fix `implement P for T`; `details: {type, protocol, member}`. The spelling carries
+the extra word deliberately: bare `not-implemented` collides with the "unfinished
+stub" sense (Python's `NotImplementedError`, .NET, `TODO` markers), a different
+concept — this is a *type-conformance* gap whose fix is `implement P for T`.
+`ambiguous-member` (M5.5a, L§10.3/S-31; user-ratified 2026-08-27): a **bare**
+protocol member call where **two *unrelated* protocols both implemented by the
+argument's type** supply the member name — raised at the *use* site (protocols
+related by `extends` never collide: a member reached through one chain is one
+member, a shared ancestor counts once), its message naming the member and both
+protocols and pointing at the qualified form `P.member(args)`; `details: {member,
+protocols: [a, b], type}` — the two sources in **declaration/load order**
+(deterministic). Parallels `ambiguous-import` (one name, two sources, fix
+by qualifying); "member" is L§10.1's own term. Both sit in the protocol family.
+These runtime `kind`s are API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts

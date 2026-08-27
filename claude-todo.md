@@ -372,8 +372,37 @@ they win for free (S-13 override). Threaded `modules` into the read path (`step`
 `details {name, modules:[a,b]}`, raised at use). Tests: wildcard-all-exports, live alias,
 explicit-override, local-shadow, two-wildcard ambiguity (**exit #3**), undefined-name. All
 gates green (conformance 180, wasm 104). **S-13 closed.** **Residue:** S-39
-wildcard-provenance-naming for *assignment* (polish, non-gating). **Next: the protocol track
-(M5.5) or M5.3/M5.4 per plan order.**
+wildcard-provenance-naming for *assignment* (polish, non-gating).
+
+**M5.5a DONE (2026-08-27): protocol dispatch core.** The `CellObj` **`kind` tag** (AD5,
+deferred since M2a) is now built (`CellKind::{Let, Const, Parameter, Dispatcher(member)}`,
+mapped from `GlobalKind` at seed/bind). Protocol **registry** on the machine (interned member
+names, protocol defs, `implement` blocks — index-addressed `Vec`s, no hashing, load-order
+numbering for replay); `protocol`/`implement` register at load (`machine/protocol/`).
+`protocol P` binds `P` to a `TypeKind::Protocol` value and binds each member name to a
+**dispatcher cell** in the namespace. A bare member call **binds args against the member
+signature (S-31 — positional or by the member's keyword), dispatches on the first
+parameter's runtime type** as an ordinary driven call, and enters the impl (or a default),
+raising **`protocol-not-implemented`** (type implements no supplying protocol) or
+**`ambiguous-member`** (two unrelated implemented protocols supply the name). Qualified
+`P.member(args)` via field access on a protocol value. Umbrella `implement … for Number`
+expands to leaves. GC roots the registry's default/impl callables. **`x is P` landed here
+too** (M5.6 absorbed — trivial with the registry). Both slugs **ratified** (user 2026-08-27;
+App C S-58 + rubric App A: `{type, protocol, member}` / `{member, protocols:[a,b], type}`).
+Files split to stay under length: `machine/protocol/{mod.rs,load.rs}`, `machine/cancel.rs`
+(extracted `CancelToken`). Tests: `tests/protocols.rs` (10) — dispatch-by-type, default,
+override, not-implemented (**names type+protocol+member+fix**), ambiguity + qualified
+disambiguation, keyword dispatch (S-31), `is P`, block-arg dispatch, incomplete-impl. All
+gates green (native 179 lib + 10 protocol, conformance 180, wasm32 check, hygiene 6/6).
+**Provisional → M5.5b:** first-param-no-default not yet *enforced* and member-param defaults
+not yet evaluated (every ordinary param must be supplied); a bare dispatcher value classifies
+as `Function` under `is` (registry not threaded into `types::callable_kind_of`); an
+incomplete `implement` surfaces at the *call* (not statically).
+
+**Next: M5.5b** — the `extends` chain (transitive requirements, nearest-default-wins,
+cycle=static error, S-61) + static conformance checks (first-param-no-default, impl
+arity/block conformance, missing-required-member naming) + member-param defaults + the
+dispatcher-`is` kind refinement. Then M5.4/M5.3 per plan order.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
