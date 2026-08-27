@@ -310,9 +310,16 @@ dicts (fixed-key-SipHash, record/cross-kind keys), structural `==`, the unwind f
 (try/rescue/with/parameter/cancel), exceptions-as-values (`Error` record), strings
 (grapheme-indexed, NFC, AD4 seam `+`/`*`/interpolation, bytes bridging), the R8 magnitude
 cap, the Callable/Procedure/Function split, and UCD 17.0 + determinism gates all ship.
-**Next: M5** (protocols + real Stringable/Hashable dispatch, the module system — see
-`implementation.md` §M5). One deliberate carry-forward: the S-37 type-value *spellings*
-stay provisional (user's call).
+**★ MILESTONE M5 — Modules, imports, protocols, prelude `[L]` — STARTED (2026-08-26).**
+Working plan written: **`plan/plan-m5.md`** (chunks M5.0 multi-module refactor → M5.1 load
+state machine → M5.2 imports/aliasing → M5.5 protocols/dispatch → … → M5.10 exit review;
+critical path + parallel tracks noted). **The one fact that dominates M5:** the front end
+already parses the full grammar (`Protocol`/`Implement`/`Exports`/`Import`/`Module` AST
+nodes exist), so M5 is a **resolve + machine + drive-layer** milestone whose real cost is
+the single-module → multi-module refactor (M5.0). **★ decisions pending (D-M5-1…D-M5-6):**
+Stringable/Hashable M5-vs-M9a split, resolver sync/async (E§6), S-44 native-module
+parameter cells, `extends` depth, `module`-block form, S-43 shadowing warning — none block
+M5.0. One M4 carry-forward: the S-37 type-value *spellings* stay provisional (user's call).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
