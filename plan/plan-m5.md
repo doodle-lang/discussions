@@ -155,19 +155,28 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   and the multi-module GC-rooting test. (`crates/doodle-core/tests/modules.rs` +
   machine unit tests.)
 
-### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical)
+### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical) — **M5.2a LANDED**
 - **Goal.** All import forms, with correct aliasing and read-only provenance.
-- **Lands.** Every `ImportTarget` (`import m`, `import m as x`, `import m.x`,
-  `import m.x as y`, `import m.*`) with **S-7** dotted-path resolution **at
-  load** (whole path as module first, else member; native name beats source);
-  **cell aliasing** (a wildcard aliases the exporter's cells, read-only);
-  **S-39** assignment-to-imported-name static error carrying the provenance name;
-  **S-13** wildcard collision → ambiguous mark, **error on use** naming both
-  modules; explicit/selective imports override a wildcard.
-- **Spec-delta.** close S-13 (wildcard) + S-39 (provenance-naming residue).
+- **Landed (M5.2a — the multi-module machine + bare-module form).** The
+  **module-table threading** (`step`/`dispatch`/the call path + the reentrant
+  nested drive take `&mut [LoadedModule]`; the executing module is derived from
+  `resolved.canonical_id`); the **cross-module call fix** — `apply` reads the
+  callee's parameters, defaults, slot layout, and body from **its own** module's
+  AST (`CalObj.module`), the caller's from the call site; **`import m` / `import m
+  as y`** binding (the module value, a new namespace cell added to the permanent
+  GC roots); **`m.x` member access** (L§4.11 — a member is one of `m`'s own
+  module-level definitions; prelude names in `m`'s namespace are not members;
+  reads the live cell). Tests: cross-module call + defaults + live member read;
+  `import`/`as`; missing-member and prelude-non-member raises; the bound cell
+  survives forced GC. All prior gates green (conformance 180, wasm 104).
+- **Still M5.2b / M5.2c.** **S-7** dotted-path resolution + **member imports**
+  (`import m.x` / `as`) + **cell aliasing** (importer's `x` → exporter's cell) +
+  `CellObj` **kind** (read-only enforcement, S-39) → M5.2b; **wildcard `import
+  m.*`** + provenance/ambiguity (S-13) → M5.2c.
+- **Spec-delta.** close S-13 (wildcard) + S-39 (provenance-naming residue) — M5.2c.
 - **Depends.** M5.0, M5.1.
-- **Tests.** exit criteria #2 and #3; each import form binds correctly; a
-  `with`-bind of an imported parameter cell reaches the exporter's reads.
+- **Tests.** exit criteria #2 and #3 (M5.2c); each import form binds correctly; a
+  `with`-bind of an imported parameter cell reaches the exporter's reads (M5.2b).
 
 ### M5.3 — `exports` + `module … end` corners `[S–M]` (parallel behind M5.1)
 - **Goal.** The public-surface declaration and the module-block form.

@@ -342,7 +342,20 @@ All gates green (conformance 180, wasm 104). **Deferred: cross-module call looku
 heap module value + name binding of every import form → M5.2** (the module value gets a
 consumer once binding exists). **Tracked obligation (rubric):** per-kind `details` schemas
 must be populated for every `Error` kind before M6 (the IDE consumes `details`); messages
-are never API. **Next: M5.2** (import forms + cell aliasing + provenance/ambiguity).
+are never API.
+**M5.2a DONE (2026-08-27): the multi-module machine + bare-module import.** The
+module-table threading (`step`/`dispatch`/call path/reentrant nested drive take `&mut
+[LoadedModule]`; executing module = `resolved.canonical_id`); the **cross-module call
+fix** (`apply` reads the callee's params/defaults/slots/body from *its* module's AST, the
+caller's from the call site — this was the M5.0-deferred "cross-module call lookup");
+**`import m` / `import m as y`** binding (module value → a new namespace cell, added to the
+permanent GC roots); **`m.x` member access** (L§4.11 — a member is one of `m`'s own
+module-level defs; prelude names are not members; reads the live cell). `Value::Module`
+was already present. Tests: cross-module call + defaults + live member read; `import`/`as`;
+missing-member + prelude-non-member raises; bound-cell-survives-GC. All gates green
+(conformance 180, wasm 104). **Still M5.2b** (S-7 dotted-path + member imports `import m.x`
++ cell aliasing + `CellObj` kind for S-39 read-only) **and M5.2c** (wildcard `import m.*` +
+provenance/ambiguity S-13). **Next: M5.2b.**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
