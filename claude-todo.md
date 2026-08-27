@@ -353,9 +353,17 @@ permanent GC roots); **`m.x` member access** (L§4.11 — a member is one of `m`
 module-level defs; prelude names are not members; reads the live cell). `Value::Module`
 was already present. Tests: cross-module call + defaults + live member read; `import`/`as`;
 missing-member + prelude-non-member raises; bound-cell-survives-GC. All gates green
-(conformance 180, wasm 104). **Still M5.2b** (S-7 dotted-path + member imports `import m.x`
-+ cell aliasing + `CellObj` kind for S-39 read-only) **and M5.2c** (wildcard `import m.*` +
-provenance/ambiguity S-13). **Next: M5.2b.**
+(conformance 180, wasm 104).
+**M5.2b DONE (2026-08-27): S-7 dotted-path + member imports + cell aliasing.** S-7: the
+loader tries the whole path as a module first; a path the host resolves `NotFound` (a
+`not_modules` cache) falls back to member (`import a.b` → member `b` of module `a`); a
+single-segment miss still raises `module-not-found`. Member imports (`import m.x` / `as`)
+bind by **aliasing the exporter's cell** (AD5) — the importer's name maps to `m`'s existing
+binding cell, so reads are live (read-only; assignment already a static error, S-39 core);
+a non-member raises `no-such-field` at the import. Split `drive.rs` → `drive/config.rs`
+(length). All gates green (conformance 180, wasm 104). **Still M5.2c:** wildcard `import
+m.*` + aliasing all exports + provenance/ambiguity (S-13) + the `CellObj` kind tag (AD5;
+also for later `with`-binding imported parameters + dispatchers). **Next: M5.2c.**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

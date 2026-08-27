@@ -155,7 +155,7 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   and the multi-module GC-rooting test. (`crates/doodle-core/tests/modules.rs` +
   machine unit tests.)
 
-### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical) — **M5.2a LANDED**
+### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical) — **M5.2a+b LANDED**
 - **Goal.** All import forms, with correct aliasing and read-only provenance.
 - **Landed (M5.2a — the multi-module machine + bare-module form).** The
   **module-table threading** (`step`/`dispatch`/the call path + the reentrant
@@ -169,10 +169,22 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   reads the live cell). Tests: cross-module call + defaults + live member read;
   `import`/`as`; missing-member and prelude-non-member raises; the bound cell
   survives forced GC. All prior gates green (conformance 180, wasm 104).
-- **Still M5.2b / M5.2c.** **S-7** dotted-path resolution + **member imports**
-  (`import m.x` / `as`) + **cell aliasing** (importer's `x` → exporter's cell) +
-  `CellObj` **kind** (read-only enforcement, S-39) → M5.2b; **wildcard `import
-  m.*`** + provenance/ambiguity (S-13) → M5.2c.
+- **Landed (M5.2b — S-7 + member imports + cell aliasing).** **S-7** dotted-path
+  resolution — the loader tries the **whole path as a module** first, and a path
+  the host resolves `NotFound` (a `not_modules` cache) **falls back to member**
+  (`import a.b` → member `b` of module `a`); a single-segment miss still raises
+  `module-not-found`. **Member imports** (`import m.x` / `import m.x as z`) bind
+  by **aliasing the exporter's cell** (AD5) — the importer's name maps to `m`'s
+  existing binding cell for the member, so reads see `m`'s live value (proven by a
+  cross-module-mutation liveness test); no new cell (the exporter's is already a
+  GC root). A member that is not one of `m`'s own definitions raises `no-such-field`
+  at the import. Tests: member const/fn/as, live alias, dotted-path-is-a-module,
+  missing-member, missing-prefix. (Assignment to an imported name is already a
+  static error, so S-39's core holds; its **provenance-naming** residue rides
+  M5.2c.) Split `drive.rs` → `drive/config.rs` to stay under the length limit.
+- **Still M5.2c.** **wildcard `import m.*`** + cell aliasing of all exports +
+  **provenance/ambiguity** (S-13) + the `CellObj` **kind** tag (AD5 — needed for
+  S-13 provenance + later dynamic-parameter `with`-binding / dispatchers).
 - **Spec-delta.** close S-13 (wildcard) + S-39 (provenance-naming residue) — M5.2c.
 - **Depends.** M5.0, M5.1.
 - **Tests.** exit criteria #2 and #3 (M5.2c); each import form binds correctly; a
