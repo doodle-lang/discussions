@@ -1636,7 +1636,25 @@ assigned"). **M5 residue narrows to wildcard provenance-naming polish
 only.** ·
 S-44 (E§5.5) Whether native modules may declare `parameter` cells, or
 whether dynamic parameters always live in Doodle wrapper modules over
-native primitives (the plan assumes the latter).
+native primitives (the plan assumes the latter). **RESOLVED (user,
+2026-08-27; plan-m5 D-M5-3): the latter, confirmed — and generalized.** A
+native module exports foreign functions, constants, foreign values, and
+records, and nothing else: no `parameter` cells, no protocol declarations
+or implementations. Language constructs are provided by a Doodle wrapper
+module over the native primitives (the M3.2/M5.9 turtle is the model); a
+native function that depends on dynamic state receives it as an argument
+from its wrapper. Grounds: no magic boundaries (a host-minted parameter
+would be a second way to make one, and a second place `with`'s
+dynamic-extent semantics must be right — plus a new S-15/S-46 boundary
+case); the boundary carries values, not binding machinery (nothing about
+dynamic extent enters the recordable boundary; S-39's `with`-binding of an
+imported parameter always targets a Doodle cell, so no native-cell
+aliasing path exists); E§4.5 already keeps protocol dispatch off foreign
+values. Cost: a few lines of Doodle per host library. Rejected: native
+parameter cells (a pre-heap cell-creation host API + `with` reaching
+across the boundary). **[spec landed with this entry: E§5.5 + App B.1.
+Code: M5.4 (native-module member kinds enforced at registration) / M5.9
+(the turtle wrapper declares `parameter pen_color`).]**
 
 **Engine/drive — resolve by M2b/M3/M6/M7.**
 **S-15 (E§5.4/§7.6/§7.2) RESOLVED (user, 2026-08-20, re-confirmed 2026-08-21;

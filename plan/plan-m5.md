@@ -60,9 +60,12 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
 3. **★ D-M5-3 · S-44 · May native modules declare `parameter` cells?** *Blocks
    M5.4/M5.9.* The plan **assumes not** — dynamic parameters live in **Doodle
    wrapper modules** over native primitives (the turtle wrapper declares
-   `parameter pen_color`). **Recommend:** confirm the assumption (native modules
-   export functions/consts/foreign/records, not parameter cells); the M5.9
-   turtle wrapper is built on it.
+   `parameter pen_color`). **RESOLVED (user, 2026-08-27; spec LANDED — App
+   C S-44): confirmed and generalized** — a native module exports foreign
+   functions/consts/foreign values/records and nothing else (no `parameter`
+   cells, protocols, or implementations); dynamic state reaches a native
+   function as an argument from its Doodle wrapper. M5.4 enforces the member
+   kinds at registration; M5.9's turtle wrapper is built on it.
 4. **★ D-M5-4 · `extends` semantics depth (L§10.1 under-specified).** *Blocks
    M5.5.* L§10.1 pins `extends` as a *requirement* relationship with parent
    defaults reaching child implementors "through the ordinary default-member
@@ -220,8 +223,9 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   **S-32** timing (before first drive); an `import` of a module whose platform
   primitive is absent **fails per E§13**; the S-43 intrinsic path kept working
   (or folded into a native prelude module).
-- **Spec-delta.** confirm S-32; ★ D-M5-3 (S-44 — no parameter cells in native
-  modules).
+- **Spec-delta.** confirm S-32; D-M5-3 (S-44 — **RESOLVED 2026-08-27, spec
+  landed**: no parameter cells/protocols/implementations in native modules;
+  enforce member kinds at registration).
 - **Depends.** M5.0, M5.1.
 - **Tests.** exit criterion #5; a native-module member resolves and calls;
   registration after load is a host-API error.

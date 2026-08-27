@@ -410,7 +410,14 @@ meanwhile (§10).
 ### 5.5 Native modules
 
 A host exposes a capability library as a **native module**: a module value whose
-members are foreign functions, constants, foreign values, or records. Native
+members are foreign functions, constants, foreign values, or records — and
+nothing else: a native module declares no dynamic `parameter` cells, protocols,
+or protocol implementations. Those are language constructs, provided by a
+Doodle wrapper module over the native primitives (the turtle library is the
+model); a native function that depends on dynamic state receives it as an
+argument from its wrapper, so `with`'s dynamic extent never crosses the
+boundary and `with`-binding an imported parameter always targets a Doodle
+module's cell. Native
 modules are registered with the instance and are found by module resolution (§6)
 ahead of source lookup. Their members honor L export semantics: a native module
 declares which members are public. `import`ing a native module and accessing its
@@ -1117,6 +1124,11 @@ provides the complete set plus the interactive facilities of §7–§11.
   loop (the trivial case), a browser fetching over the network resolves when the
   source arrives, and import resolutions enter the replay record. Resolves
   plan-m5 D-M5-2 / implementation-plan Appendix C S-60.
+- **Native modules carry no `parameter` cells, protocols, or implementations
+  (§5.5).** Language constructs live in Doodle wrapper modules over native
+  primitives; a native function receives dynamic state as an argument. Keeps
+  one implementation of `with` and keeps binding machinery off the boundary.
+  Resolves plan-m5 D-M5-3 / implementation-plan Appendix C S-44.
 
 ### B.2 Open issues, including cross-spec implications
 

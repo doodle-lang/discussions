@@ -1502,6 +1502,16 @@ identically. Spec landed: L§10.1 + §10.2 + §10.3 + App D.1; App C S-31;
 plan-m5 M5.5. Code: **M5.5** (protocol-level binding, the static checks,
 fixtures).
 
+**S-44 / D-M5-3 RESOLVED (user, 2026-08-27): native modules carry no
+`parameter` cells, protocols, or implementations.** A native module exports
+foreign functions/consts/foreign values/records only; language constructs
+live in Doodle wrapper modules (the turtle model); dynamic state reaches a
+native function as an argument. Grounds: one implementation of `with`; the
+boundary carries values, not binding machinery; S-39 always targets a
+Doodle cell. Spec landed: E§5.5 + App B.1; App C S-44; plan-m5 D-M5-3 +
+M5.4. Code: **M5.4** (member kinds enforced at registration), **M5.9**
+(turtle wrapper).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1814,6 +1824,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-27 — **S-44 / D-M5-3 resolved + spec landed: native modules carry
+  no `parameter` cells, protocols, or implementations.** Ruling in the queue
+  entry above. One discussions commit: E§5.5 (exhaustive member kinds + the
+  dynamic-state-as-argument idiom), App B.1; App C S-44; plan-m5 D-M5-3 +
+  M5.4; this file. Code: M5.4, M5.9.
 - 2026-08-27 — **S-31 resolved + spec landed: protocol calls bind first, then
   dispatch on the first declared parameter's value.** Ruling in the queue
   entry above. One discussions commit: L§10.1 (no-default first parameter;
