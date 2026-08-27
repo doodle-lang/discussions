@@ -123,6 +123,7 @@ parsing text. Two pins govern it:
 | `module-not-found` | `{path, importer}` |
 | `circular-import` | `{cycle}` — the import chain as a list of paths |
 | `module-load-error` | `{path, canonical_id, diagnostics}` — the full diagnostic list, so an IDE renders an imported module's errors exactly as it renders the main program's |
+| `ambiguous-import` | `{name, modules: [a, b]}` — the name and both wildcard sources, in import order (raised at *use*, S-13) |
 | *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
 
 ## Appendix B — provisional caret / column model

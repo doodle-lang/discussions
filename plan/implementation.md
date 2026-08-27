@@ -1550,9 +1550,14 @@ non-tail list amended 2026-07-17; tail marking emits a per-node `tail_calls`
 table (resolver `walk/tailmark.rs`), excluding block-arg calls.]**
 
 **Modules/protocols — resolve by M5.**
-S-13 (L§11.2) Wildcard-collision rule: second wildcard supplying an
-existing wildcard-bound name marks it ambiguous; use raises naming both
-modules; explicit/selective bindings override. ·
+**S-13 (L§11.2) RESOLVED (user, 2026-08-27; M5.2c code landed): wildcard-collision
+rule.** A name supplied by two wildcards is ambiguous; **using** it raises
+`ambiguous-import` naming both modules (import order); an explicit/selective import
+or a local declaration overrides. Implemented as **resolve-on-use** (AD5): a wildcard
+records its source module; a free name not in the namespace scans the wildcard
+sources' exports — 0 = undefined, 1 = a live alias of the exporter's cell, 2+ =
+ambiguous. Explicit bindings live in the namespace, so they win for free. **[Code:
+M5.2c. Slug `ambiguous-import` in the S-58 catalog.]** ·
 **S-8 (L§11.3/E§6) PINNED (user, 2026-08-27; M5.1 code landed): module
 load-failure state.** A module whose load fails is `failed` — its
 top-level raised, or its fetched source had static errors (a
@@ -1762,8 +1767,15 @@ runtime face of E's `LoadError` (E§3.2), scoped to *that* case only (a
 module whose top-level *raises* propagates that raise, and a re-import of a
 `failed` module re-raises its retained value — neither mints this slug);
 `details: {path, canonical_id, diagnostics}`, the full list so an IDE
-renders an imported module's errors as the main program's) and is API
-(replay artifacts, IDE
+renders an imported module's errors as the main program's. `ambiguous-import`
+(M5.2c, S-13; user-ratified 2026-08-27): a name supplied by **two wildcard
+imports** was **used** — raised at the *use* site (not the `import`: S-13's
+rule is that the second wildcard *marks* the name ambiguous and *touching* it
+raises; a selective import or alias of the name overrides the mark), its message
+naming the name and both source modules; `details: {name, modules: [a, b]}` —
+both sources in **import order** (deterministic, and the order the message
+uses). Sits in the module family with `module-not-found` / `circular-import` /
+`module-load-error`) and is API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts

@@ -155,7 +155,7 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   and the multi-module GC-rooting test. (`crates/doodle-core/tests/modules.rs` +
   machine unit tests.)
 
-### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical) — **M5.2a+b LANDED**
+### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical) — **DONE (a+b+c)**
 - **Goal.** All import forms, with correct aliasing and read-only provenance.
 - **Landed (M5.2a — the multi-module machine + bare-module form).** The
   **module-table threading** (`step`/`dispatch`/the call path + the reentrant
@@ -182,10 +182,18 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   missing-member, missing-prefix. (Assignment to an imported name is already a
   static error, so S-39's core holds; its **provenance-naming** residue rides
   M5.2c.) Split `drive.rs` → `drive/config.rs` to stay under the length limit.
-- **Still M5.2c.** **wildcard `import m.*`** + cell aliasing of all exports +
-  **provenance/ambiguity** (S-13) + the `CellObj` **kind** tag (AD5 — needed for
-  S-13 provenance + later dynamic-parameter `with`-binding / dispatchers).
-- **Spec-delta.** close S-13 (wildcard) + S-39 (provenance-naming residue) — M5.2c.
+- **Landed (M5.2c — wildcard + S-13).** **`import m.*`** records a wildcard source;
+  a free name not in the namespace **resolves on use** across the wildcard sources'
+  exports (AD5) — 0 = undefined, 1 = a live alias, **2+ = `ambiguous-import`** raised
+  at the use site naming both modules (import order). Explicit/selective imports and
+  local decls are in the namespace, so they win for free (S-13 override). Slug
+  `ambiguous-import` ratified (2026-08-27). Tests: wildcard-all-exports, live alias,
+  explicit-override, local-shadow, **two-wildcard ambiguity (exit #3)**, undefined.
+  (No `CellObj` kind tag needed for this — resolve-on-use handles provenance; the kind
+  tag rides M5.9's `with`-binding of imported parameters / M5.5 dispatchers.)
+- **Residue.** S-39's **wildcard-provenance-naming** for an *assignment* to a
+  wildcard-imported name (the selective case already names its source) — polish, not
+  gating; can slip to M5.8/M5.10.
 - **Depends.** M5.0, M5.1.
 - **Tests.** exit criteria #2 and #3 (M5.2c); each import form binds correctly; a
   `with`-bind of an imported parameter cell reaches the exporter's reads (M5.2b).

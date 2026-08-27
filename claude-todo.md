@@ -361,9 +361,19 @@ single-segment miss still raises `module-not-found`. Member imports (`import m.x
 bind by **aliasing the exporter's cell** (AD5) — the importer's name maps to `m`'s existing
 binding cell, so reads are live (read-only; assignment already a static error, S-39 core);
 a non-member raises `no-such-field` at the import. Split `drive.rs` → `drive/config.rs`
-(length). All gates green (conformance 180, wasm 104). **Still M5.2c:** wildcard `import
-m.*` + aliasing all exports + provenance/ambiguity (S-13) + the `CellObj` kind tag (AD5;
-also for later `with`-binding imported parameters + dispatchers). **Next: M5.2c.**
+(length). All gates green (conformance 180, wasm 104).
+**M5.2c DONE (2026-08-27): wildcard imports + S-13 ambiguity — M5.2 COMPLETE.** `import
+m.*` records a wildcard source (deduped) on the importer; a free name not in the namespace
+**resolves on use** across the wildcard sources' exports (AD5) — 0 = undefined, 1 = live
+alias of the exporter's cell, **2+ = `ambiguous-import`** raised at the use site naming both
+modules (import order). Explicit/selective imports + local decls sit in the namespace, so
+they win for free (S-13 override). Threaded `modules` into the read path (`step` →
+`eval::eval` → `read_ref`). Slug `ambiguous-import` **ratified** (App C S-58 + rubric App A:
+`details {name, modules:[a,b]}`, raised at use). Tests: wildcard-all-exports, live alias,
+explicit-override, local-shadow, two-wildcard ambiguity (**exit #3**), undefined-name. All
+gates green (conformance 180, wasm 104). **S-13 closed.** **Residue:** S-39
+wildcard-provenance-naming for *assignment* (polish, non-gating). **Next: the protocol track
+(M5.5) or M5.3/M5.4 per plan order.**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
