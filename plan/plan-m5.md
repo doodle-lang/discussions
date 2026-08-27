@@ -226,7 +226,7 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
 - **Tests.** exit criterion #5; a native-module member resolves and calls;
   registration after load is a host-API error.
 
-### M5.5 — Protocols: dispatch, defaults, extends, qualified, ambiguity `[L]` (parallel track; critical for accept) — **M5.5a + M5.5b LANDED (runtime); static guardrails pending**
+### M5.5 — Protocols: dispatch, defaults, extends, qualified, ambiguity `[L]` (parallel track; critical for accept) — **DONE (a+b+c)**
 - **Split.** **5.5a (LANDED):** `CellKind` tag (AD5, deferred since M2a) + protocol
   registry + `protocol`/`implement` load-time registration + dispatcher cells +
   single dispatch (S-31 bind-then-dispatch, positional **and** keyword) + defaults +
@@ -238,23 +238,27 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   dispatcher-value `is Procedure/Function` refinement (registry threaded into
   `types::callable_kind_of`). **Extends parent requirements enforced at runtime** (an
   unimplemented inherited required member raises `protocol-not-implemented` at the call).
-- **Finding (S-61 cycle rule is vacuous):** with parent-first load ordering an `extends`
-  target must already be a defined protocol; a forward/self reference reads an
-  uninitialized cell → `used-before-defined`/`name-not-defined`. So an `extends` **cycle is
-  unconstructable** — the "cycle = static error" rule can never fire (the neat proof, like
-  S-46's import-in-try). No explicit cycle detection built (it would be dead code).
-  *Open:* if the spec wants cycles *constructible* (static resolution of protocol names
-  with forward refs, then cycle detection), that is a different model — flagged to the user.
-- **Pending (the static guardrails — open decisions, flagged to the user):** the
-  **static conformance checks** — first-param-no-default, impl arity/block conformance,
-  impl-writes-no-defaults, missing-required-member at the `implement` — need (a) new stable
-  slugs and (b) a **static (resolver diagnostic) vs load-time (raise)** decision (the spec
-  says "static error"; a resolver cross-reference pass is the conformant path but sizable,
-  and does not cover cross-module protocols, which the spec routes to `module-load-error`).
-  **member-parameter defaults** (evaluate a member's non-first-param default during dispatch
-  binding) also deferred (an edge; needs the driven-default machinery). Until then: a member
-  first-param default is unenforced-but-safe; every ordinary param must be supplied; an
-  incomplete `implement` surfaces at the *call* as `protocol-not-implemented`.
+  **5.5c (LANDED):** the **static conformance checks** — a resolver post-pass
+  (`resolve/walk/protocols.rs`) over same-module protocols/implements, ratified slugs
+  (user 2026-08-27): `dispatch-parameter-default` (first param no default),
+  `protocol-signature-mismatch` (impl arity/block ≠ member; also a non-conforming
+  re-declaration), `implementation-parameter-default` (impl restates a default),
+  `incomplete-implementation` (missing required members of the chain, named + requiring
+  protocol), `not-a-protocol-member` (a method the protocol doesn't declare). A
+  cross-module `extends` parent / imported protocol is invisible to the resolver → its
+  completeness checks fall to load (`module-load-error`, per spec).
+- **Finding (S-61 cycle rule is vacuous — RESOLVED, spec reworded `8a11c06`):** with
+  parent-first load ordering an `extends` target must already be a defined protocol; a
+  forward/self reference reads an uninitialized cell → `used-before-defined` /
+  `name-not-defined`. So an `extends` **cycle is unconstructable** (the neat proof, like
+  S-46's import-in-try). The user reworded the spec sentence accordingly; no cycle
+  detection built. [Tests: `extends_of_an_undefined_protocol_raises`,
+  `a_forward_extends_reference_is_used_before_defined`.]
+- **Deferred (non-gating):** **member-parameter defaults** — evaluating a member's
+  *non-first* parameter default during dispatch binding (an edge; needs the driven-default
+  machinery). Until then dispatch requires every ordinary parameter supplied. The
+  dispatcher-value `is` kind uses the first declarer's kind (a name declared by protocols
+  of differing kinds is inherently ambiguous).
 - **Goal.** `protocol`/`implement` with real single dispatch.
 - **Lands.** Load-time registration of `implement P for T` into a
   `(type, member) → callable` table; **dispatcher cells** (a member name binds a

@@ -421,17 +421,25 @@ now 15. All gates green (conformance 180, wasm32, hygiene 6/6).
   needs a different model (static protocol-name resolution with forward refs). [Test:
   `extends_of_an_undefined_protocol_raises`.]
 
-- **★ Pending — the static guardrails (open decisions, flagged to the user).** Not yet built:
-  the **static conformance checks** (first-param-no-default; impl arity/block conformance;
-  impl-writes-no-defaults; missing-required-member at the `implement`) and **member-parameter
-  defaults**. The conformance checks need (a) **new stable slugs** and (b) a **static (resolver
-  diagnostic) vs load-time (raise)** decision — the spec says "static error," but a resolver
-  cross-reference pass is sizable and does not cover cross-module protocols (spec routes those
-  to `module-load-error`). Provisional meanwhile: a member first-param default is
-  unenforced-but-safe; every ordinary param must be supplied; an incomplete `implement`
-  surfaces at the *call*.
+**M5.5c DONE (2026-08-27): static conformance checks — M5.5 COMPLETE.** A resolver post-pass
+(`resolve/walk/protocols.rs`) over same-module protocols/implements, run after `globals` are
+collected (like `check_with_targets`). Five ratified static slugs (user 2026-08-27; rubric
+App A): **`dispatch-parameter-default`** (a member's first param may not have a default),
+**`protocol-signature-mismatch`** (an impl method's arity/block-param ≠ the member's; also a
+child re-declaring an ancestor member with a non-conforming shape), **`implementation-parameter-default`**
+(an impl restates a member's default), **`incomplete-implementation`** (an `implement` omits
+required members of the chain — names each + the requiring protocol), **`not-a-protocol-member`**
+(a method the protocol doesn't declare). Signature "shape" = ordinary-param count + block-param
+presence (names are the impl's own). Cross-module scope: an imported `extends` parent / imported
+protocol is invisible to the resolver, so its completeness checks (missing-member, not-a-member)
+fall to load (`module-load-error`, per spec); the local checks still apply. Tests: 7 new static
+cases (`resolve_diags` helper) + the two previously-runtime missing-member tests converted to
+static; `tests/protocols.rs` now 22. Decision made & flagged: static (resolver) over load-time,
+honoring the spec's "static error"; the S-61 cycle rule is vacuous (spec reworded `8a11c06`).
+Deferred (non-gating): member-parameter defaults (edge; needs driven-default machinery).
+All gates green (conformance 180, wasm32, hygiene 6/6).
 
-**Next: the static guardrails (pending the two decisions above), then M5.4/M5.3 per plan order.**
+**Next: M5.4 (native modules, ★ D-M5-3) or M5.3 (exports/module-block, ★ D-M5-5) per plan order.**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

@@ -92,7 +92,13 @@ enum only when their producer lands (M1.3–M1.11); each names an L rule.
 `unterminated-string` · `under-indented-line` (L§3) ·
 `keyword-as-identifier` · `reserved-word` · `invalid-identifier` ·
 `invalid-module-name` · `wildcard-import-rename` ·
-`positional-after-keyword` · `shadowing` (warning, L§5.1) ·
+`positional-after-keyword` ·
+`dispatch-parameter-default` · `protocol-signature-mismatch` ·
+`implementation-parameter-default` · `incomplete-implementation` ·
+`not-a-protocol-member` (L§10, S-31/S-61; the protocol/implement conformance
+family, user-ratified 2026-08-27 — same-module resolver diagnostics, a
+cross-module structural failure is a runtime `module-load-error` instead) ·
+`shadowing` (warning, L§5.1) ·
 `discarded-value` (warning, L§6.11).
 
 ### Runtime `Error` kinds — the `details` schema (tracked obligation)
