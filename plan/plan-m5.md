@@ -95,19 +95,27 @@ ambiguous; use raises naming both; explicit/selective override).
 
 Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–6wk).
 
-### M5.0 — Multi-module machine foundation `[L]` (critical)
+### M5.0 — Multi-module machine foundation `[L]` (critical) — **CORE DONE (`6815e45`)**
 - **Goal.** Turn the single-module machine into a multi-module one, with the
   current module as `ModuleId(0)`. No new language surface.
-- **Lands.** A loaded-module table (`ModuleId → {ResolvedModule, namespace,
-  state}`); **per-frame `ModuleId`** so a name read hits the right module's
-  namespace/AST; `step`/`control`/`read_ref`/`bind_decl` read the current
-  frame's module; GC roots **all** loaded modules' namespaces; `CellObj` gains a
-  **kind + provenance** tag (`value/const/parameter/dispatcher/module`, AD5) —
-  as a field or a parallel table.
-- **Depends.** M4. **Under-scoping this cascades into M5.1/M5.2 — do it fully.**
-- **Tests.** All existing conformance + determinism gates stay green with the
-  single module reframed as `ModuleId(0)`; a unit test proving two modules'
-  namespaces are independently rooted.
+- **Landed (core).** `Instance` holds `modules: Vec<LoadedModule>` (resolved +
+  namespace per module); **per-frame `Frame.module: ModuleId`** (callable →
+  `CalObj`'s module, block → defining frame's module, top level → loading
+  module, tail call updates it); `Instance::step` **derives** the executing
+  frame's module's resolved + namespace (disjoint field borrows), so every free
+  helper signature is unchanged; observe/lifecycle route through
+  `current_resolved()`. All existing gates green; the single module is
+  `ModuleId(0)`.
+- **Deliberately deferred (become live only with a 2nd module / their
+  consumers), each folded into the chunk that exercises it:** the **cross-module
+  call lookup** (a callee's info lives in *its* module's resolved) and
+  **multi-namespace GC rooting** (root all loaded modules during any module's
+  step) → **M5.1**; **`CellObj` kind + provenance** → **M5.2** (provenance) /
+  **M5.5** (dispatcher); the **module load-state machine** → M5.1.
+- **Depends.** M4.
+- **Tests.** All existing conformance (180) + determinism gates + wasm (104) stay
+  green with the single module reframed as `ModuleId(0)`. (A two-module
+  independent-rooting test lands with M5.1, when a second module can exist.)
 
 ### M5.1 — Resolver hook + load state machine + suspendable driving `[L]` (critical)
 - **Goal.** Load a second module on first reference, drivably.

@@ -317,9 +317,16 @@ critical path + parallel tracks noted). **The one fact that dominates M5:** the 
 already parses the full grammar (`Protocol`/`Implement`/`Exports`/`Import`/`Module` AST
 nodes exist), so M5 is a **resolve + machine + drive-layer** milestone whose real cost is
 the single-module → multi-module refactor (M5.0). **★ decisions pending (D-M5-1…D-M5-6):**
-Stringable/Hashable M5-vs-M9a split, resolver sync/async (E§6), S-44 native-module
-parameter cells, `extends` depth, `module`-block form, S-43 shadowing warning — none block
-M5.0. One M4 carry-forward: the S-37 type-value *spellings* stay provisional (user's call).
+Stringable/Hashable M5-vs-M9a split, resolver sync/async (E§6, blocks M5.1), S-44
+native-module parameter cells, `extends` depth, `module`-block form, S-43 shadowing warning.
+One M4 carry-forward: the S-37 type-value *spellings* stay provisional (user's call).
+**M5.0 CORE DONE** (`6815e45`): the machine is module-aware — `Instance.modules` table,
+per-frame `Frame.module: ModuleId`, `step` derives the executing frame's module's
+resolved+namespace; main module reframed as `ModuleId(0)`, all gates green (conformance
+180, wasm 104). Deferred to their exercising chunk: cross-module call lookup + multi-
+namespace GC rooting → M5.1; `CellObj` kind/provenance → M5.2/M5.5. **Next: M5.1** (resolver
+hook + load state machine + suspendable driving — needs the ★ D-M5-2 resolver sync/async
+ruling first).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
