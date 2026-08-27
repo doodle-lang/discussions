@@ -1622,9 +1622,26 @@ By convention the first parameter is named `self` and is the value the call
 dispatches on; `self` is not a keyword and any name may be used.
 
 `protocol Child extends Parent` declares that implementing `Child` requires also
-implementing `Parent` (a requirement relationship, not code inheritance). Default
-members of `Parent` are available to `Child` implementors through the ordinary
-default-member mechanism.
+implementing `Parent` (a requirement relationship, not code inheritance). A
+protocol has one parent, so `extends` forms a **chain** (`Child` → `Parent` →
+… → a root with no `extends`), and the chain resolves linearly:
+
+- **Requirements are transitive.** `Child`'s required members are its own plus
+  every ancestor's; `x is Child` therefore implies `x is Parent`.
+- **Re-declaration down the chain names the same member.** A child may
+  re-declare an ancestor's member either as required (removing the default —
+  strengthening) or with its own default (overriding); its signature must agree
+  with the ancestor's (the same conformance rule that binds an implementation
+  to its declaration), else the child protocol is a static error.
+- **Nearest default wins.** When a member is used on a type `T`, an explicit
+  definition in `T`'s `implement` beats any default; among defaults, the nearest
+  declaring protocol in the chain wins — the protocol itself, then its parent,
+  then the grandparent — and nothing outside the chain is consulted.
+- **An `extends` cycle is a static error**, reported where the chain closes.
+
+Members reached through one chain are one member and never ambiguous (§10.3);
+two implemented protocols sharing an ancestor contribute that ancestor's members
+once.
 
 ```doodle
 protocol Iterable
@@ -1658,8 +1675,10 @@ implement Iterable for Range
 end
 ```
 
-A type must implement all of a protocol's required members (and those of any
-protocol it `extends`); a partial or missing implementation is an error.
+A type must implement all of a protocol's required members and those of every
+protocol in its `extends` chain (§10.1) — one `implement P for T` block covers
+the whole chain; a partial or missing implementation is a static error naming
+each missing member and the protocol that requires it.
 
 ### 10.3 Dispatch
 
@@ -1674,7 +1693,9 @@ each(my_range) do(i) … end     # dispatches on my_range's type
   raises an error naming the missing implementation.
 - If the same member name is provided by two protocols both implemented by the
   argument's type (ambiguity), the unqualified call is an error; the caller
-  disambiguates with a qualified form `Protocol.member(args)`.
+  disambiguates with a qualified form `Protocol.member(args)`. Protocols related
+  by `extends` never create this ambiguity: a member reached through one chain
+  is one member (§10.1), and a shared ancestor's members count once.
 
 The qualified form `P.member(args)` selects protocol `P` explicitly and is always
 available.
@@ -2434,6 +2455,20 @@ likely to change.
   check its arguments up front with call-site blame. Rejected: keeping one
   umbrella (renamed `Callable`) with the split deferred to a §13 reflection
   property — a workaround for not having the types.
+- **`extends` chains resolve linearly, nearest default wins (§10.1, §10.2,
+  §10.3; resolves plan-m5 D-M5-4 / implementation-plan Appendix C S-61).**
+  The draft pinned `extends` as a requirement relationship but not multi-level
+  resolution, re-declaration, or cycles. Resolved: a protocol has one parent,
+  so the graph is a chain; requirements are transitive; a child may re-declare
+  an ancestor's member (strengthen or override) with a conforming signature;
+  an explicit implementation beats any default and the nearest declaring
+  protocol's default wins otherwise; a cycle is a static error; one `implement`
+  block covers the chain, with a missing member named together with the
+  protocol requiring it. Chains never create §10.3's cross-protocol ambiguity.
+  Rejected: forbidding multi-level `extends` in v0.1 — an arbitrary restriction
+  the single-parent grammar doesn't suggest, and it would keep a standard
+  library written in Doodle from expressing an `Iterable` → `Collection` →
+  `Sequence` ladder.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

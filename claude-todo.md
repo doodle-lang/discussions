@@ -1412,6 +1412,18 @@ the M7 C ABI; replay gains every module's source/identity in load order;
 S-15 never applies. Spec landed: E§6 rewrite + §7.5 + §11 + App B.1; App
 C S-60 + catalog; plan-m5 D-M5-2 + M5.1. Code: **M5.1**.
 
+**S-61 / D-M5-4 RESOLVED (user, 2026-08-27): `extends` chains resolve
+linearly, nearest default wins.** Transitive requirements (`is Child` ⇒
+`is Parent`); re-declaration down the chain strengthens or overrides
+(signature must conform — S-31); explicit impl beats default, then the
+nearest declaring protocol's default; cycle = static error; one
+`implement` block covers the chain (§10.2 already said so), missing
+members named with their requiring protocol; chains never trigger
+§10.3's ambiguity (shared ancestor counts once). Spec landed: L§10.1 +
+§10.2 + §10.3 + App D.1; App C S-61; plan-m5 D-M5-4 + M5.5. Code:
+**M5.5** (chain chase, conformance check, cycle/missing diagnostics,
+fixtures).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1724,6 +1736,12 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-27 — **S-61 / D-M5-4 resolved + spec landed: `extends` chains
+  resolve linearly, nearest default wins.** Ruling in the queue entry above.
+  One discussions commit: L§10.1 (the chain rules — transitive requirements,
+  re-declaration, nearest default, cycle), §10.2 (one block covers the chain;
+  diagnostic naming), §10.3 (chains never ambiguous), App D.1; App C S-61;
+  plan-m5 D-M5-4 + M5.5; this file. Code: M5.5.
 - 2026-08-27 — **S-60 / D-M5-2 resolved + spec landed: import is a
   suspension (async-capable resolver from v0.1).** Ruling in the queue entry
   above. One discussions commit: E§6 (rewritten around `ImportRequest` +

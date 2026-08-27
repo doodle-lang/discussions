@@ -1854,6 +1854,34 @@ buys the wrong ABI). **[spec landed with this entry: E§6 rewrite + §7.5
 (importer parked, resumes), `NotFound` → raise, `Raise(h)` → raise, plus
 the existing top-level-suspends case.]**
 
+**S-61 (L§10.1/§10.2/§10.3) RESOLVED (user, 2026-08-27; plan-m5 D-M5-4):
+`extends` chains resolve linearly, nearest default wins.** One parent per
+protocol (grammar), so the graph is a chain to a root. Requirements are
+transitive (`x is Child` ⇒ `x is Parent`); a child may re-declare an
+ancestor's member as required (strengthening) or with its own default
+(overriding), signature agreeing with the ancestor's (S-31's conformance
+rule, landing with M5.5); resolution of `m` on `T`: an explicit definition
+in `T`'s `implement` beats any default, then the nearest declaring
+protocol's default (self, parent, grandparent …), nothing outside the
+chain; an `extends` cycle is a static error where the chain closes (a
+resolver diagnostic within a module; `module-load-error` across modules).
+One `implement Child for T` block covers the chain's required members —
+§10.2 already said so ("and those of any protocol it `extends`"); the
+missing-member diagnostic names each member and the protocol requiring
+it. Interplay with §10.3's ambiguity rule preserved as written: only
+*unrelated* protocols providing the same member name make an unqualified
+call ambiguous (call-time error, `Protocol.member(args)` disambiguates);
+members reached through one chain are one member, and a shared ancestor
+counts once. Rejected: forbid multi-level in v0.1 (arbitrary; the grammar
+doesn't suggest it; kills `Iterable`→`Collection`→`Sequence` in a
+Doodle-written stdlib). **[spec landed with this entry: L§10.1 (chain
+rules) + §10.2 (one block covers the chain; diagnostic naming) + §10.3
+(chains never ambiguous) + App D.1. Code: M5.5 — chain chase in the
+dispatcher, the re-declaration conformance check, the cycle and
+missing-member diagnostics; fixtures: 3-deep chain with override and
+strengthening, cycle, missing-member naming, shared-ancestor
+non-ambiguity.]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

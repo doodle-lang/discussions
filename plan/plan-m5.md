@@ -67,9 +67,13 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
    M5.5.* L§10.1 pins `extends` as a *requirement* relationship with parent
    defaults reaching child implementors "through the ordinary default-member
    mechanism," but does not pin multi-level default-resolution order, diamond
-   legality, or `extends`-cycle handling. **Recommend:** linear chase to the
-   root (nearest override wins); an `extends` cycle is a static error; diamonds
-   either forbidden or the linear order pinned — user's call.
+   legality, or `extends`-cycle handling. **RESOLVED (user, 2026-08-27; spec
+   LANDED — App C S-61): linear chain, nearest wins.** Transitive requirements;
+   re-declaration (strengthen/override) with a conforming signature; an explicit
+   impl beats any default, else the nearest declaring protocol's default; cycle
+   = static error; diamonds impossible (single parent) — a shared ancestor
+   counts once and chains never trigger §10.3's ambiguity; one `implement`
+   block covers the chain. M5.5 implements.
 5. **★ D-M5-5 · `module … end` block form vs file-level module (S-14 / L§11.1
    provisional).** *Blocks M5.3.* L§11.1 marks the file-level/block-level
    interaction provisional. **Recommend:** a file-level `module Name` renames the
@@ -232,7 +236,9 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   **`P.member(args)`** qualified call always available; **not-implemented** and
   **ambiguity** errors (L§10.3); **S-31** signature conformance + which argument
   is "first" under keyword binding.
-- **Spec-delta.** ★ D-M5-4 (`extends` depth); S-31.
+- **Spec-delta.** D-M5-4 — **RESOLVED 2026-08-27, spec landed** (App C S-61:
+  chain rules in L§10.1–10.3); S-31 (signature conformance — still to land
+  here, and it also binds re-declarations along a chain).
 - **Depends.** M5.0 (dispatcher cells). Independent of the M5.1–M5.4 module
   track — the parallelizable second person's work.
 - **Tests.** dispatch picks the impl by first-arg type; a default is used when
