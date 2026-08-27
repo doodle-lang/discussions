@@ -237,8 +237,9 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   **ambiguity** errors (L§10.3); **S-31** signature conformance + which argument
   is "first" under keyword binding.
 - **Spec-delta.** D-M5-4 — **RESOLVED 2026-08-27, spec landed** (App C S-61:
-  chain rules in L§10.1–10.3); S-31 (signature conformance — still to land
-  here, and it also binds re-declarations along a chain).
+  chain rules in L§10.1–10.3); S-31 — **RESOLVED 2026-08-27, spec landed** (bind first,
+  dispatch on the first declared parameter's value; first param no default;
+  conformance = arity + block param; no implementation defaults; App C S-31).
 - **Depends.** M5.0 (dispatcher cells). Independent of the M5.1–M5.4 module
   track — the parallelizable second person's work.
 - **Tests.** dispatch picks the impl by first-arg type; a default is used when

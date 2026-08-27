@@ -1424,6 +1424,17 @@ members named with their requiring protocol; chains never trigger
 **M5.5** (chain chase, conformance check, cycle/missing diagnostics,
 fixtures).
 
+**S-31 RESOLVED (user, 2026-08-27): protocol calls bind first, then
+dispatch.** Bind per §8.3 against the member's declared signature
+(protocol's names/defaults/block param), dispatch on the value bound to
+the first declared parameter — positional or keyword; unbound first param
+→ `argument-error`; a member's first parameter may not default (static);
+implementations conform in arity + block param, names free, **no
+implementation defaults** (static error); qualified form binds
+identically. Spec landed: L§10.1 + §10.2 + §10.3 + App D.1; App C S-31;
+plan-m5 M5.5. Code: **M5.5** (protocol-level binding, the static checks,
+fixtures).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1736,6 +1747,13 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-27 — **S-31 resolved + spec landed: protocol calls bind first, then
+  dispatch on the first declared parameter's value.** Ruling in the queue
+  entry above. One discussions commit: L§10.1 (no-default first parameter;
+  defaults live on the member), §10.2 (implementation conformance: arity +
+  block parameter, names free, no defaults), §10.3 (bind-then-dispatch;
+  keyword names are the protocol's; qualified form binds identically), App
+  D.1; App C S-31; plan-m5 M5.5; this file. Code: M5.5.
 - 2026-08-27 — **S-61 / D-M5-4 resolved + spec landed: `extends` chains
   resolve linearly, nearest default wins.** Ruling in the queue entry above.
   One discussions commit: L§10.1 (the chain rules — transitive requirements,

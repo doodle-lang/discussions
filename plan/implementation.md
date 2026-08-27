@@ -1584,7 +1584,27 @@ S-14 (L§11.1/§11.3) `exports` corners (multiplicity, undeclared names,
 position); module-block semantics. ·
 S-31 (L§10) Protocol-implementation signature conformance (arity/defaults/
 block param must match declaration) and dispatch when the first argument
-arrives by keyword. ·
+arrives by keyword. **RESOLVED (user, 2026-08-27): bind first, dispatch
+second.** A member call binds per L§8.3 against the **member's declared
+signature** (its parameter names, defaults, block parameter — keyword names
+are the protocol's, since the caller can't know which implementation is
+selected), then dispatches on the runtime type of the value bound to the
+first declared parameter, positional or keyword; an unbound first parameter
+is an `argument-error`. A member's first parameter may not have a default
+(static error at the protocol). An implementation **conforms in arity and
+block parameter**; its parameter names are its own (it receives the bound
+arguments in declaration order); it **may not write defaults** — defaults
+live once, on the member (simpler than "must match", and implementation
+defaults would be dead code under this order). The qualified form
+`P.member(args)` binds identically. Also binds re-declarations along an
+`extends` chain (S-61). Rejected: dispatch on the first positional only
+(a positional-only distinction the language has nowhere else, L§8.2/App
+D). **[spec landed with this entry: L§10.1 (no-default first parameter;
+defaults on the member) + §10.2 (conformance) + §10.3 (bind-then-dispatch;
+qualified form) + App D.1. Code: M5.5 — protocol-level binding before
+dispatch; the two static checks; fixtures: first-param-by-keyword
+dispatch, unbound-first-param `argument-error`, implementation with a
+default → static error, arity/block-param mismatch → static error.]** ·
 S-32 (E§5.5) Native-module registration timing (before first drive;
 mid-run registration deferred). ·
 S-39 (L§11.2/§4.11/§5.3/§5.5) Imported names are live, **read-only**

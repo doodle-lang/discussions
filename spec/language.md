@@ -1619,7 +1619,10 @@ override it. (A deliberately no-op default is written with an explicit
 value-producing, exactly as for ordinary callables.
 
 By convention the first parameter is named `self` and is the value the call
-dispatches on; `self` is not a keyword and any name may be used.
+dispatches on; `self` is not a keyword and any name may be used. Because
+dispatch needs a supplied argument, a member's first parameter may not have a
+default (a static error at the protocol declaration). Defaults for the other
+parameters are written here, on the member, and nowhere else (§10.2).
 
 `protocol Child extends Parent` declares that implementing `Child` requires also
 implementing `Parent` (a requirement relationship, not code inheritance). A
@@ -1663,6 +1666,14 @@ impl-body      = ( to-decl | fn-decl )*
 members (and any overrides of defaults). It is a module-level declaration and
 registers the `(type, protocol member) → callable` associations at load time.
 
+An implementation's signature **conforms** to the member's declaration: the
+same arity and the same block parameter (present or not, last), else a static
+error at the `implement`. Parameter *names* are the implementation's own — the
+call binds against the declaration's names (§10.3) and the implementation
+receives the bound arguments in declaration order — and an implementation may
+not write parameter defaults: defaults live once, on the member (§10.1); a
+written default is a static error.
+
 ```doodle
 implement Iterable for Range
     to each(r, do body)
@@ -1682,8 +1693,14 @@ each missing member and the protocol that requires it.
 
 ### 10.3 Dispatch
 
-Protocol members are called like ordinary callables, dispatching on the
-**runtime type of the first argument** (single dispatch):
+Protocol members are called like ordinary callables. The call first binds its
+arguments per §8.3 against the **member's declared signature** — its parameter
+names, its defaults, its block parameter — and then dispatches on the **runtime
+type of the value bound to the member's first parameter** (single dispatch),
+however that argument arrived: positionally, or by the first parameter's
+keyword. Keyword names are the protocol's, since the caller cannot know which
+implementation will be selected; a call that leaves the first parameter unbound
+is an `argument-error`.
 
 ```doodle
 each(my_range) do(i) … end     # dispatches on my_range's type
@@ -1698,7 +1715,8 @@ each(my_range) do(i) … end     # dispatches on my_range's type
   is one member (§10.1), and a shared ancestor's members count once.
 
 The qualified form `P.member(args)` selects protocol `P` explicitly and is always
-available.
+available. It binds and dispatches identically; it only fixes which protocol's
+member is meant.
 
 ### 10.4 Built-in / well-known protocols
 
@@ -2469,6 +2487,21 @@ likely to change.
   the single-parent grammar doesn't suggest, and it would keep a standard
   library written in Doodle from expressing an `Iterable` → `Collection` →
   `Sequence` ladder.
+- **Protocol calls bind first, then dispatch; implementations conform in
+  arity and block parameter only (§10.1, §10.2, §10.3; resolves
+  implementation-plan Appendix C S-31).** The draft dispatched on "the first
+  argument" without saying what that is under keyword arguments, and left
+  implementation-signature conformance open. Resolved: a member call binds
+  against the member's declared signature (its names, defaults, block
+  parameter), then dispatches on the value bound to the first declared
+  parameter, positional or keyword — the language has no positional-only
+  distinction anywhere, and inventing one for protocol members would reject a
+  legal-looking call for no principle. A member's first parameter may not
+  have a default (dispatch needs a supplied argument). An implementation's
+  names are its own (it receives bound arguments in declaration order), it
+  conforms in arity and block parameter, and it may not write defaults —
+  defaults live once, on the member, which removes a class of drift entirely
+  (implementation defaults would be dead code under this binding order).
 
 ### D.2 Genuinely open (deferred by the discussion)
 
