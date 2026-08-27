@@ -399,10 +399,39 @@ not yet evaluated (every ordinary param must be supplied); a bare dispatcher val
 as `Function` under `is` (registry not threaded into `types::callable_kind_of`); an
 incomplete `implement` surfaces at the *call* (not statically).
 
-**Next: M5.5b** — the `extends` chain (transitive requirements, nearest-default-wins,
-cycle=static error, S-61) + static conformance checks (first-param-no-default, impl
-arity/block conformance, missing-required-member naming) + member-param defaults + the
-dispatcher-`is` kind refinement. Then M5.4/M5.3 per plan order.
+**M5.5b DONE (2026-08-27): the `extends` chain at runtime (S-61).** `ProtocolDef` gains
+`extends: Option<u32>`, resolved at load (parent-first — the parent must already be a defined
+protocol). Registry walks the chain: `transitively_declares` (requirements transitive),
+candidacy by **direct** `implement` block with **ancestor subsumption** (a directly-implemented
+ancestor is dropped when a directly-implemented descendant is present, so chain-related
+protocols never make each other ambiguous — only genuinely *unrelated* protocols do),
+**nearest-default-wins** (`nearest_default` walks self→parent→grandparent), and
+`type_implements` is **transitive** (`x is Child ⇒ x is Parent`). Dispatcher-value `is
+Procedure/Function` refined (registry threaded into `types::callable_kind_of`). Tests: 3-deep
+chain resolves each member along the chain; nearest default wins + impl beats all; `is`
+transitivity; an unimplemented inherited requirement raises `protocol-not-implemented` at the
+call (**extends parent requirements enforced**); extends-of-undefined raises. `tests/protocols.rs`
+now 15. All gates green (conformance 180, wasm32, hygiene 6/6).
+
+- **★ Finding — the S-61 `extends` cycle rule is vacuous.** Parent-first load ordering means
+  an `extends` target must already be defined; a forward/self reference reads an
+  uninitialized cell → `used-before-defined`/`name-not-defined`. So an `extends` **cycle
+  cannot be written** — the "cycle = static error" rule never fires. No cycle detection built
+  (dead code). **Flagged to the user:** if cycles should be *constructible* + detected, that
+  needs a different model (static protocol-name resolution with forward refs). [Test:
+  `extends_of_an_undefined_protocol_raises`.]
+
+- **★ Pending — the static guardrails (open decisions, flagged to the user).** Not yet built:
+  the **static conformance checks** (first-param-no-default; impl arity/block conformance;
+  impl-writes-no-defaults; missing-required-member at the `implement`) and **member-parameter
+  defaults**. The conformance checks need (a) **new stable slugs** and (b) a **static (resolver
+  diagnostic) vs load-time (raise)** decision — the spec says "static error," but a resolver
+  cross-reference pass is sizable and does not cover cross-module protocols (spec routes those
+  to `module-load-error`). Provisional meanwhile: a member first-param default is
+  unenforced-but-safe; every ordinary param must be supplied; an incomplete `implement`
+  surfaces at the *call*.
+
+**Next: the static guardrails (pending the two decisions above), then M5.4/M5.3 per plan order.**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
