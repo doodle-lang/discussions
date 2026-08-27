@@ -1731,7 +1731,10 @@ carries the same position, so the boundary and `decode` tell one story;
 `encode` cannot fail (a `String` is always valid NFC UTF-8, L§4.4);
 `decode` only raises — a lossy U+FFFD decode is a later stdlib function,
 never the default. First of the malformed-data family (future parsers
-get their own specific kinds); a foreign raise
+get their own specific kinds). `module-not-found` (M5.1, S-60): an
+`import` whose request the host resolved `NotFound` — raised in the
+importing program, `details: {path, importer}`; a failed fetch is instead
+`resolve(Raise(h))` carrying the host's own value; a foreign raise
 supplies its own value) and is API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
@@ -1780,6 +1783,34 @@ the bug-masking argument doesn't discriminate (a stray string "works"
 in one order under either rule). **[spec landed with this entry: L§4.4
 + App D.1. Code: M4.7 (string `*`) — fixtures for both orders, the
 Float/negative raises, zero, and the flag case.]**
+
+**S-60 (E§6/§7.5/§11) RESOLVED (user, 2026-08-27; plan-m5 D-M5-2): the
+module resolver is a suspension, async-capable from v0.1.** `import`
+suspends with `ImportRequest(module_path, importer)` — a capability-style
+request (identity = the dotted path) — resolved with `Source(text,
+canonical_id)` / `NotFound` (→ `module-not-found` raised in the importer)
+/ `Raise(h)`. Grounds: the drafted synchronous hook was the one host
+interaction in E that blocked the engine on host I/O — the anomaly, not
+the norm (§2, §5.3, §7.1's non-blockable-thread rationale); async-capable
+subsumes synchronous at zero host burden (a bundling host resolves
+immediately in the drive loop it already runs), while a synchronous hook
+excludes the browser's natural model and, once frozen into the M7 C ABI,
+would need a breaking change or a second mechanism; the engine delta is
+small (M2b.4's parking/resume + an `Import` request kind; the
+parse→resolve→push-`ModuleTopLevel` continuation is needed under either
+design); replay improves (import resolutions are recorded, so a recording
+carries every loaded module's source/identity in load order — E§11's
+"loaded program" generalizes to multi-module programs); S-15 never bites
+(imports are module-level statements in top-level frames, never inside a
+nested drive). Observation while suspended on an import: position at the
+`import` statement (S-17). The M5 prelude star-import may arrive through
+the same request or via instance config — the plan's call. Rejected:
+synchronous-for-v0.1 with async as a later delta (saves almost nothing,
+buys the wrong ABI). **[spec landed with this entry: E§6 rewrite + §7.5
++ §11 + App B.1; S-58 catalog +`module-not-found`. Code: M5.1 — the
+`Import` request kind; tests: immediate resolve, deferred resolve
+(importer parked, resumes), `NotFound` → raise, `Raise(h)` → raise, plus
+the existing top-level-suspends case.]**
 
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent

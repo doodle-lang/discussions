@@ -440,19 +440,34 @@ intrinsics run unchanged across the switch.
 
 The engine implements `import` (L§11); the host supplies the source. When top-level
 or imported code executes an `import` for a module path not already loaded and not
-a registered native module (§5.5), the engine calls the host's **module resolver**
-hook:
+a registered native module (§5.5), the engine **suspends with an import request** —
+a capability-style request (§7.5) whose identity is the dotted module path (with
+the importer's `canonical_id` for diagnostics) — and the host resolves it:
 
 ```
-resolve(module_path) -> Source(text, canonical_id) | NotFound
+Suspended(ImportRequest(module_path, importer))
+resolve(instance, Source(text, canonical_id))   # the module's source
+resolve(instance, NotFound)                      # raises `module-not-found` in the importer
+resolve(instance, Raise(h))                      # raises `h` in the importer (e.g. a failed fetch)
 ```
 
-The host owns the search path, virtual file system, and bundling; the engine never
-touches a file system. The `canonical_id` identifies the module for caching and
-diagnostics. On `Source`, the engine parses and then **drives** the module's
-top-level code (observable), caches the resulting module instance (**singleton**
-loading, L§11.3), and binds names per the import form. On `NotFound`, the engine
-raises an import error in the importing program.
+Import is a suspension rather than a synchronous hook so that it obeys the same
+law as every other host interaction (§2, §5.3): a host whose source fetch is
+asynchronous (a browser fetching over the network) resolves when the source
+arrives, and a host that has the source in hand — a bundling host — resolves
+immediately, inside the same drive loop it runs for capabilities. Nothing in the
+contract requires yielding to an event loop, so the synchronous host is the
+trivial case, not a different mode. The host owns the search path, virtual file
+system, and bundling; the engine never touches a file system. The `canonical_id`
+identifies the module for caching and diagnostics. On `Source`, the engine parses
+and then **drives** the module's top-level code (observable), caches the resulting
+module instance (**singleton** loading, L§11.3), and binds names per the import
+form; the importer stays parked beneath the module's frame throughout. Import
+requests are recorded and replayed like any capability resolution (§11), so a
+recording carries every loaded module's source or identity in load order.
+Because `import` is a module-level statement executed in a top-level frame, an
+import request never arises inside a nested drive, so the nested-drive
+suspension rule (§5.4) does not apply to it.
 
 The engine detects **circular imports** (L§11.3) and raises. Packages (directories,
 L§11.1) are the host's concern: the engine passes the dotted path through to the
@@ -592,7 +607,9 @@ fulfills it and resolves with `Value(h)` — which becomes the capability call's
 result — or `Raise(h)` — which raises `h` at the call site. A `to` capability is
 resolved with a `Value` of `nil` or an equivalent no-value resolution. The
 capability identity must be stable across runs so that resolutions can be recorded
-and replayed (§11).
+and replayed (§11). An `import` (§6) suspends with a request of the same kind — its
+identity the module path — resolved with `Source`/`NotFound`/`Raise` rather than
+`Value`.
 
 ### 7.6 Reentrant drives
 
@@ -906,7 +923,8 @@ a resolution to a capability request. (This is why the language core has no cloc
 RNG, L§14: those are capabilities, so they cross the recordable boundary.)
 
 **Recording.** A host records, for a run: the loaded program (or its identity), and, in
-order, each capability request's identity and the resolution supplied.
+order, each capability request's identity and the resolution supplied — import
+requests included (§6), so every loaded module's source or identity is in the record.
 
 **Replay.** To replay, the host creates a fresh instance, loads the same program, drives
 it, and — instead of performing effects — supplies the recorded resolutions in order for
@@ -1082,6 +1100,13 @@ provides the complete set plus the interactive facilities of §7–§11.
   message, details)` — engine-level type with a prelude-level name, forgeable by
   design (provenance is in the trace); `make_error` gives hosts the same shape.
   Resolves plan-m4 D-M4-2 / implementation-plan Appendix C S-58.
+- **Import is a suspension, not a synchronous hook (§6, §7.5).** `import`
+  suspends with an `ImportRequest`; the host resolves with `Source`/`NotFound`/
+  `Raise`. Chosen over a synchronous resolver so import obeys the same law as
+  every host interaction: a bundling host resolves immediately in its drive
+  loop (the trivial case), a browser fetching over the network resolves when the
+  source arrives, and import resolutions enter the replay record. Resolves
+  plan-m5 D-M5-2 / implementation-plan Appendix C S-60.
 
 ### B.2 Open issues, including cross-spec implications
 

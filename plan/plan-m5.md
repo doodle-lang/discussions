@@ -46,13 +46,17 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
    `<list>`/`<record>` placeholders); **M9a** lands the Doodle-written defaults
    (record-default `to_string`/`hash`, compound rendering). Matches M9a's "the
    M4/M5 carve-out clauses all green."
-2. **★ D-M5-2 · Can the host module resolver suspend?** *Blocks M5.1.* E§6 states
-   `resolve(module_path) → Source | NotFound` **synchronously**, and the demo
-   bundles all source. A browser host fetching module source over the network
-   would need async. **Recommend:** **synchronous resolve for v0.1** (the host
-   pre-bundles/pre-resolves source); a suspending source-fetch is a post-v0.1
-   spec-delta. (Distinct from "module top-level *driving* can suspend," which is
-   already settled, E§6.) New E§6 delta either way.
+2. **★ D-M5-2 · Can the host module resolver suspend?** *Blocks M5.1.* E§6 stated
+   `resolve(module_path) → Source | NotFound` **synchronously**; a browser host
+   fetching over the network needs async. **RESOLVED (user, 2026-08-27; spec
+   LANDED — App C S-60): async-capable from v0.1, as a SUSPENSION.** `import`
+   suspends with `ImportRequest(path, importer)`, resolved with `Source` /
+   `NotFound` (→ `module-not-found`) / `Raise(h)`; a bundling host resolves
+   immediately in its drive loop (the trivial case, not a mode). Reuses M2b.4's
+   parking/resume; import resolutions enter the replay record; S-15 never
+   applies (imports are top-level statements). Synchronous-for-v0.1 rejected:
+   it saved almost nothing and would have frozen the wrong shape into the M7
+   C ABI. M5.1 implements.
 3. **★ D-M5-3 · S-44 · May native modules declare `parameter` cells?** *Blocks
    M5.4/M5.9.* The plan **assumes not** — dynamic parameters live in **Doodle
    wrapper modules** over native primitives (the turtle wrapper declares
@@ -126,12 +130,17 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
   **circular-import diagnostic naming the cycle**; `failed` + re-raise (S-8); a
   real heap **module value** exposing name + source location + exported
   names/values + docstring (L§4.11, §13 reflection).
-- **Spec-delta.** ★ D-M5-2 (resolver sync/async).
+- **Spec-delta.** D-M5-2 — **RESOLVED 2026-08-27, spec landed** (E§6 rewrite:
+  import is a suspension; App C S-60; `module-not-found` slug). Implement the
+  `Import` request kind per E§6/§7.5.
 - **Depends.** M5.0.
 - **Tests.** load-once singleton (top-level effect runs once); a module raising
   at load → `failed`, re-import re-raises; a 2-module cycle → the naming
   diagnostic; a module whose top-level suspends (a capability at load) resumes
-  correctly with the importer parked.
+  correctly with the importer parked; **the import itself suspends** — host
+  resolves immediately (bundling), host resolves later (importer parked,
+  resumes), `NotFound` → `module-not-found` in the importer, `Raise(h)` →
+  raises `h` in the importer.
 
 ### M5.2 — Import forms + cell aliasing + provenance/ambiguity `[M–L]` (critical)
 - **Goal.** All import forms, with correct aliasing and read-only provenance.

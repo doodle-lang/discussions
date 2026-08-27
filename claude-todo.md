@@ -325,8 +325,8 @@ per-frame `Frame.module: ModuleId`, `step` derives the executing frame's module'
 resolved+namespace; main module reframed as `ModuleId(0)`, all gates green (conformance
 180, wasm 104). Deferred to their exercising chunk: cross-module call lookup + multi-
 namespace GC rooting → M5.1; `CellObj` kind/provenance → M5.2/M5.5. **Next: M5.1** (resolver
-hook + load state machine + suspendable driving — needs the ★ D-M5-2 resolver sync/async
-ruling first).
+hook + load state machine + suspendable driving — **D-M5-2 RESOLVED 2026-08-27:
+import is a suspension, async-capable from v0.1**; App C S-60).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
@@ -1354,6 +1354,17 @@ plan-m4 D-M4-5. Code: **M4.9** (`is` on `CalObj` kind + descriptor flag;
 BUILTINS +`Callable`/`Function`; M2a.5 tests flip). Spellings half +
 the Stringable-dispatcher pin: still M4.9.
 
+**S-60 / D-M5-2 RESOLVED (user, 2026-08-27): import is a suspension —
+the resolver is async-capable from v0.1.** `import` suspends with
+`ImportRequest(path, importer)`; host resolves `Source` / `NotFound` (→
+`module-not-found`, new S-58 slug) / `Raise(h)`; a bundling host resolves
+immediately in its drive loop (trivial case, not a mode). Grounds: the
+sync hook was E's one host interaction blocking on host I/O; async
+subsumes sync at zero host burden; sync would freeze the wrong shape into
+the M7 C ABI; replay gains every module's source/identity in load order;
+S-15 never applies. Spec landed: E§6 rewrite + §7.5 + §11 + App B.1; App
+C S-60 + catalog; plan-m5 D-M5-2 + M5.1. Code: **M5.1**.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1666,6 +1677,12 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-27 — **S-60 / D-M5-2 resolved + spec landed: import is a
+  suspension (async-capable resolver from v0.1).** Ruling in the queue entry
+  above. One discussions commit: E§6 (rewritten around `ImportRequest` +
+  `Source`/`NotFound`/`Raise`; the bundling host as the trivial case; replay
+  + S-15 notes), §7.5, §11, App B.1; App C S-60 + `module-not-found`;
+  plan-m5 D-M5-2 + M5.1 tests; this file. Code: M5.1.
 - 2026-08-25 — **S-37 `Procedure` half resolved + spec landed: the
   `Callable`/`Procedure`/`Function` split.** Ruling in the queue entry above.
   One discussions commit: L§4.12 (the list, the umbrella sentence, foreign
