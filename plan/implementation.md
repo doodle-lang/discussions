@@ -1267,8 +1267,12 @@ division-by-zero analog confirmed; S-12's huge-exponent resource half
 stays open. **[spec landed with this entry: L§4.2 (finite-result rule
 + inert injected values) + §3.6.2 (literal) + App D.1; E§4.3 note;
 machine-design §3 invariant (v0.2.3); S-12 entry updated. Code: the
-M2a.3 arithmetic finiteness check (+ conformance fixtures); the
-literal diagnostic in the front end (next front-end session).]** ·
+M2a.3 arithmetic finiteness check (+ conformance fixtures); **the literal
+diagnostic in the front end DONE (M4.10 exit review, doodle-rust
+`61ca2a2`): `lower_float` rejects an overflow-to-±∞ literal
+with the front-end code `float-literal-out-of-range` (not an S-58 runtime
+slug); underflow to `0.0`/a subnormal stays legal. Tripwire un-ignored;
+fixtures `L3.6.2/float-001` (static error) + `float-002` (underflow legal).**]** ·
 S-9 (L§7.10) `break`/`continue` inside `with` inside a loop: as written,
 loop control from a `with` body is impossible — almost certainly
 unintended; fix the interaction (and specify the `try`-body case).
@@ -1470,11 +1474,24 @@ Rejected: rename-only umbrella + §13 reflection later (a workaround for
 not having the types). **[spec landed: L§4.12 (list + provisional note
 narrowed to spellings) + App D spellings + App D.1. Code: M4.9 — `is` on
 `CalObj` kind + the descriptor flag; `types::BUILTINS` gains
-`Callable`/`Function`; the M2a.5 `fn is Procedure` tests flip.]** The
-spellings half + the Stringable-dispatcher pin remain due with M4.9. ·
+`Callable`/`Function`; the M2a.5 `fn is Procedure` tests flip.]**
+**Stringable-dispatcher pin RESOLVED (M4.9, doodle-rust `e805a4f`):**
+interpolation (`"{expr}"`) renders through a native placeholder dispatcher
+(`machine/stringify.rs`) invoked **directly** — a hidden binding, not the
+lexical name `to_string` — so a user's local `to_string` cannot change
+interpolation (verified: `interpolation_renders_joins_and_ignores_a_local_to_string`
++ conformance `L6.7/interp-007`); real protocol dispatch is M5, stdlib
+defaults M9a. **Spellings half:** the names stay **provisional** (the App D.1
+note narrowed to spellings, per the user's own `268c822`) — a deliberate
+hold, not an oversight; finalizing them is the one S-37 sub-item still open. ·
 S-38 (L§5.3/§4.14) Lvalue place chains: assignment targets evaluate as
 places (no intermediate value-record copies), so `a.inner.x = 5` mutates
-`a`; copies happen on binding, not place navigation. Resolve by M4. ·
+`a`; copies happen on binding, not place navigation. **RESOLVED (M4.3,
+doodle-rust `046b1a6`): the place-chain assignment conts (`AssignField*`/
+`AssignIndex*`) navigate `a.b.c`/`d[k]` to the final slot in place and
+mutate it, with `copy_on_bind` applied only at binding/store sites, not
+during navigation — a value record nested in a value record mutates the
+outer's copy; a `ref` field stays shared. Native + wasm fixtures (L5.3).** ·
 S-41 (E§3.1) **RESOLVED (M2a.11, user, 2026-08-01):** the `create(config)`
 target-Unicode-version field is **optional and validated** — the engine
 reports its build-pinned version and `create` fails on any other requested

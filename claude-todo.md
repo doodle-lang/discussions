@@ -16,6 +16,29 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
+**Three bugs found by the M4.10 multi-lens exit review — all FIXED (2026-08-26,
+doodle-rust `61ca2a2`).**
+1. **Unwind: the handling stack leaked on non-raise exits from a rescue body.**
+   `unwind/cleanup.rs::discard_cont` popped `WithRestore` but not `PopHandler`, so a
+   `break`/`continue`/`return` out of a rescue body left its handling entry — a later
+   bare `raise` re-raised the **stale** exception (and `machine.handling` grew
+   unbounded). Fix: `discard_cont` now pops `PopHandler` too, mirroring `raise_unwind`.
+   Regression: `L12.2/rescue-007`.
+2. **Dict: a value-record key was not copied on store.** `dict::insert` copied the
+   value but stored the key verbatim, so a value-record key **aliased its source**;
+   mutating the source (`k.n = 9`) desynced the stored key from its hash bucket →
+   `KeyNotFound` + a **determinism leak** (lookup depends on post-insert mutation). Fix:
+   `copy_on_bind` the key on the new-entry branch. Regression: `L4.8/key-005`.
+3. **Float literal overflowing f64 became `Float(∞)`** — the S-56 finite-float invariant
+   violated at the source boundary (`1e400`). This was the deferred L§3.6.2 front-end
+   item (M2a.3a's `#[ignore]`d tripwire). Fix: `lower_float` rejects an overflow-to-∞
+   literal with a new **front-end** diagnostic `float-literal-out-of-range` (not an S-58
+   runtime slug); underflow (`1e-999` → 0.0/subnormal) stays legal. Tripwire un-ignored;
+   regressions: `L3.6.2/float-001` (static error), `float-002` (underflow legal).
+   Non-bug flagged for M9a: `-0.0` renders as `"-0.0"` while `-0.0 == 0.0` (a `Stringable`
+   question). The hashing/seam lens found no bugs (hash/`==` coherence + the seam fix
+   verified solid).
+
 **`seam_concat` missed non-Hangul backward-composing starters → non-NFC results —
 FIXED (M4.10, 2026-08-26; found same day by the M4.10 UCD vectors).**
 `unicode::seam_concat` (the AD4 seam optimization behind string `+`, `*`, and
@@ -273,8 +296,23 @@ gate DONE** (`8463ebc`): two new GC-stress double-run gates — one over the M4 
 record/cross-kind keys; strings seam/repeat/interp/index; exceptions; with/parameter),
 one over the R8 magnitude faults (heap-estimate + step-budget-charge fault at the same
 step under GC pressure). Criterion #6 (hashing must not leak nondeterminism) covered.
-**M4.10 remaining:** M4 exit-criteria walk (#1–#6) + multi-lens review + close all M4
-App C entries → M4 COMPLETE.
+**Exit review DONE** (`61ca2a2`): the exit-criteria walk (#1–#6, all covered; +5 fixtures
+crisply stating #2/#3/#4 — `nfc-001`, `seam-005`, `rescue-006`), a 3-lens adversarial
+review (unwind/exceptions, place-chain, hashing/seam) that **found + fixed 3 MAJOR bugs**
+(see the MAJOR section: handling-stack leak, dict-key-not-copied, float-literal-∞), and
+App C reconciliation (S-38 closed; S-37 Procedure-half + Stringable-dispatcher pin closed,
+spellings stay provisional; S-56 front-end literal-diagnostic line closed; S-10/S-28/S-29/
+S-30/S-58 already resolved). Native conformance 180, wasm gate 104.
+
+**★ MILESTONE M4 — Language completion I (data, errors, strings) — COMPLETE
+(2026-08-26; M4.0–M4.10 all landed + exit-reviewed).** Records (value/ref, place chains),
+dicts (fixed-key-SipHash, record/cross-kind keys), structural `==`, the unwind foundation
+(try/rescue/with/parameter/cancel), exceptions-as-values (`Error` record), strings
+(grapheme-indexed, NFC, AD4 seam `+`/`*`/interpolation, bytes bridging), the R8 magnitude
+cap, the Callable/Procedure/Function split, and UCD 17.0 + determinism gates all ship.
+**Next: M5** (protocols + real Stringable/Hashable dispatch, the module system — see
+`implementation.md` §M5). One deliberate carry-forward: the S-37 type-value *spellings*
+stay provisional (user's call).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
