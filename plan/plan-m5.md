@@ -70,8 +70,9 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
    legality, or `extends`-cycle handling. **RESOLVED (user, 2026-08-27; spec
    LANDED — App C S-61): linear chain, nearest wins.** Transitive requirements;
    re-declaration (strengthen/override) with a conforming signature; an explicit
-   impl beats any default, else the nearest declaring protocol's default; cycle
-   = static error; diamonds impossible (single parent) — a shared ancestor
+   impl beats any default, else the nearest declaring protocol's default; a
+   would-be cycle is unwritable (forward `extends` → `used-before-defined` at
+   load; no detection); diamonds impossible (single parent) — a shared ancestor
    counts once and chains never trigger §10.3's ambiguity; one `implement`
    block covers the chain. M5.5 implements.
 5. **★ D-M5-5 · `module … end` block form vs file-level module (S-14 / L§11.1

@@ -1474,7 +1474,8 @@ C S-60 + catalog; plan-m5 D-M5-2 + M5.1. Code: **M5.1**.
 linearly, nearest default wins.** Transitive requirements (`is Child` ⇒
 `is Parent`); re-declaration down the chain strengthens or overrides
 (signature must conform — S-31); explicit impl beats default, then the
-nearest declaring protocol's default; cycle = static error; one
+nearest declaring protocol's default; a cycle is unwritable (forward
+`extends` → `used-before-defined` at load; corrected 2026-08-27); one
 `implement` block covers the chain (§10.2 already said so), missing
 members named with their requiring protocol; chains never trigger
 §10.3's ambiguity (shared ancestor counts once). Spec landed: L§10.1 +
@@ -1815,7 +1816,7 @@ instance is never re-polled). E§10.1 edit landed.
 - 2026-08-27 — **S-61 / D-M5-4 resolved + spec landed: `extends` chains
   resolve linearly, nearest default wins.** Ruling in the queue entry above.
   One discussions commit: L§10.1 (the chain rules — transitive requirements,
-  re-declaration, nearest default, cycle), §10.2 (one block covers the chain;
+  re-declaration, nearest default, cycle-unwritable), §10.2 (one block covers the chain;
   diagnostic naming), §10.3 (chains never ambiguous), App D.1; App C S-61;
   plan-m5 D-M5-4 + M5.5; this file. Code: M5.5.
 - 2026-08-27 — **S-60 / D-M5-2 resolved + spec landed: import is a

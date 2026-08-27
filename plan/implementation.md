@@ -1900,8 +1900,15 @@ ancestor's member as required (strengthening) or with its own default
 rule, landing with M5.5); resolution of `m` on `T`: an explicit definition
 in `T`'s `implement` beats any default, then the nearest declaring
 protocol's default (self, parent, grandparent …), nothing outside the
-chain; an `extends` cycle is a static error where the chain closes (a
-resolver diagnostic within a module; `module-load-error` across modules).
+chain; an `extends` cycle **cannot be written** (corrected 2026-08-27,
+user-ratified): a parent resolves when the `protocol` declaration
+executes — the TDZ model every top-level binding follows — so a would-be
+cycle or self-reference raises `used-before-defined` at its first forward
+reference at load; no detection pass exists or is needed (rejected:
+forward `extends` references + detection, the one construct exempt from
+declare-before-use, to enable a meaningless shape). Optional front-end
+nicety, filed: a same-module "`Parent` is declared below `Child`"
+diagnostic — statically certain since top level runs in order.
 One `implement Child for T` block covers the chain's required members —
 §10.2 already said so ("and those of any protocol it `extends`"); the
 missing-member diagnostic names each member and the protocol requiring
@@ -1916,7 +1923,8 @@ rules) + §10.2 (one block covers the chain; diagnostic naming) + §10.3
 (chains never ambiguous) + App D.1. Code: M5.5 — chain chase in the
 dispatcher, the re-declaration conformance check, the cycle and
 missing-member diagnostics; fixtures: 3-deep chain with override and
-strengthening, cycle, missing-member naming, shared-ancestor
+strengthening, a forward `extends` reference → `used-before-defined` at
+load (parent-first works), missing-member naming, shared-ancestor
 non-ambiguity.]**
 
 **Environment-driven engine additions — resolve by M9b.**

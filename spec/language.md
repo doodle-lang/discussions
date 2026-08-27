@@ -1640,7 +1640,10 @@ protocol has one parent, so `extends` forms a **chain** (`Child` → `Parent` �
   definition in `T`'s `implement` beats any default; among defaults, the nearest
   declaring protocol in the chain wins — the protocol itself, then its parent,
   then the grandparent — and nothing outside the chain is consulted.
-- **An `extends` cycle is a static error**, reported where the chain closes.
+- **An `extends` cycle cannot be written.** A protocol's parent must already be
+  declared, as with every top-level binding (§5.2, §11.3), so a would-be cycle —
+  or a self-reference — raises `used-before-defined` at its first forward
+  reference when the module loads; no cycle detection exists or is needed.
 
 Members reached through one chain are one member and never ambiguous (§10.3);
 two implemented protocols sharing an ancestor contribute that ancestor's members
@@ -2480,7 +2483,9 @@ likely to change.
   so the graph is a chain; requirements are transitive; a child may re-declare
   an ancestor's member (strengthen or override) with a conforming signature;
   an explicit implementation beats any default and the nearest declaring
-  protocol's default wins otherwise; a cycle is a static error; one `implement`
+  protocol's default wins otherwise; a would-be cycle is unwritable under
+  declare-before-use (a forward `extends` reference raises `used-before-defined`
+  at load — no detection pass); one `implement`
   block covers the chain, with a missing member named together with the
   protocol requiring it. Chains never create §10.3's cross-protocol ambiguity.
   Rejected: forbidding multi-level `extends` in v0.1 — an arbitrary restriction
