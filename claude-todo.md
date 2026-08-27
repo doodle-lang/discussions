@@ -267,10 +267,14 @@ DONE** (`8daeaeb`): official Unicode 17.0 `NormalizationTest.txt` + `GraphemeBre
 vendored under `crates/doodle-core/tests/data/ucd/` (~2.9 MB, Unicode license header
 kept); `tests/unicode_ucd.rs` checks `nfc`/`grapheme_offsets`/seam-law/version against
 them — the seam pass (~28k splits) **caught the MAJOR `seam_concat` NFC bug** above,
-now fixed (NFC_QuickCheck=Maybe backward-composer predicate). **M4.10 remaining:**
-full-suite determinism gate (add fixtures that trip the budget + the heap estimate, run
-twice — the "deterministic step" criterion now depends on the estimate function), M4
-exit review + close App C.
+now fixed (NFC_QuickCheck=Maybe backward-composer predicate). **Full-suite determinism
+gate DONE** (`8463ebc`): two new GC-stress double-run gates — one over the M4 feature set
+(records value/ref + place chains; dicts / fixed-key-SipHash hashing over string/50-int/
+record/cross-kind keys; strings seam/repeat/interp/index; exceptions; with/parameter),
+one over the R8 magnitude faults (heap-estimate + step-budget-charge fault at the same
+step under GC pressure). Criterion #6 (hashing must not leak nondeterminism) covered.
+**M4.10 remaining:** M4 exit-criteria walk (#1–#6) + multi-lens review + close all M4
+App C entries → M4 COMPLETE.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
