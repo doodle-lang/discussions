@@ -458,9 +458,25 @@ on a name clash. Files split for length: `machine/native.rs`, `machine/intrinsic
 (extracted `IntrinsicCtx` + `apply` out of `intrinsic/mod.rs`). Tests: `tests/native_modules.rs`
 (8). All gates green (conformance 180, wasm32, hygiene 6/6).
 
-**Next: M5.3 (exports + `module … end`, ★ D-M5-5) per plan order — then M5.7 (real
-Stringable/Hashable, ★ D-M5-1), M5.8 (prelude star-import), M5.9 (turtle 3-module
-integration), M5.10 (exit review). (M5.6 `is P` already absorbed into M5.5a.)**
+**M5.3a DONE (2026-08-27): `exports` enforcement.** The resolver builds
+`ResolvedModule.exports` (`None` = no `exports` statement = all public; union across multiple
+statements; each exported name must be a declared global, else the static **`undeclared-export`**
+`{module, name}`). Three cross-module membership sites — `m.member` (field_read), `import m.member`
+(bind_member), `import m.*` (wildcard_lookup) — consult `ResolvedModule::member_visibility` →
+`Membership::{Exported, Private, Absent}`. Private → **`not-exported`** `{module, member}` (loud-
+and-true, points at `exports`); absent → **`no-such-member`** `{module, member}` (the module
+container's access-miss kind — modules **no longer reuse `no-such-field`**, per user ruling); a
+wildcard's private name surfaces `not-exported` on the error path. `exports` is a runtime no-op
+(resolve-time surface only). Slugs ratified (user 2026-08-27; App C S-58 + rubric App A); also
+fixed the stale rubric row `assign-to-undeclared` → `undeclared-assignment`. Native modules stay
+all-public (`exports: None`; a native `exports` API is future). Files split: `machine/assign.rs`
+(assignment scheduling out of `control.rs`, which was at 495 and would exceed the limit). Tests:
+`tests/exports.rs` (7) + updated 3 module-miss assertions (`no-such-field` → `no-such-member`).
+All gates green (conformance 180, wasm32, hygiene 6/6).
+
+**Next: M5.3b** — the `module … end` file-level rename (★ D-M5-5 resolved: wrap-the-file rename,
+nesting deferred). Then M5.7 (real Stringable/Hashable, ★ D-M5-1), M5.8 (prelude star-import),
+M5.9 (turtle 3-module integration), M5.10 (exit review). (M5.6 `is P` already absorbed into M5.5a.)
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

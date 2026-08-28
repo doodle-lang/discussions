@@ -1830,7 +1830,18 @@ protocols and pointing at the qualified form `P.member(args)`; `details: {member
 protocols: [a, b], type}` — the two sources in **declaration/load order**
 (deterministic). Parallels `ambiguous-import` (one name, two sources, fix
 by qualifying); "member" is L§10.1's own term. Both sit in the protocol family.
-These runtime `kind`s are API (replay artifacts, IDE
+`not-exported` (M5.3a, L§11.1; user-ratified 2026-08-27): a cross-module access of a
+member that **exists but is not in the module's `exports`** — `m.private`,
+`import m.private`, or the wildcard error path — raised where the access executes, its
+message naming the module and member and pointing at the fix (add it to the module's
+`exports`); `details: {module, member}`. Loud-and-true over encapsulation-by-obscurity:
+there is no security boundary inside a program, so a message that says "doesn't exist"
+about a name the kid can see would be a lie. `no-such-member` (M5.3a, L§11.1;
+user-ratified 2026-08-27): a cross-module access of a member the module **does not
+declare** — the **module** container's access-miss kind, completing the by-container set
+(`key-not-found` dict, `index-out-of-range` sequence, `no-such-field` record,
+**`no-such-member` module**); modules never reuse `no-such-field`. `details: {module,
+member}`. These runtime `kind`s are API (replay artifacts, IDE
 help links) — pin the spellings in the rubric's Appendix A alongside the
 static codes; `message` is rubric-governed and snapshot-tested;
 `details` carries kind-specific structured data (`{}` if none) so hosts

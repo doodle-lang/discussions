@@ -206,15 +206,25 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
 - **Tests.** exit criteria #2 and #3 (M5.2c); each import form binds correctly; a
   `with`-bind of an imported parameter cell reaches the exporter's reads (M5.2b).
 
-### M5.3 — `exports` + `module … end` corners `[S–M]` (parallel behind M5.1)
-- **Goal.** The public-surface declaration and the module-block form.
-- **Lands.** `exports a, b` restricting the public surface; **S-14** corners
-  (multiplicity, an undeclared name in an `exports` list, position); the
-  `module … end` block-form semantics.
-- **Spec-delta.** ★ D-M5-5 (S-14).
+### M5.3 — `exports` + `module … end` corners `[S–M]` (parallel behind M5.1) — **M5.3a LANDED (exports)**
+- **5.3a (LANDED).** `exports a, b` restricts the public surface: the resolver builds
+  `ResolvedModule.exports` (`None` = no `exports` statement = all public; union across
+  multiple statements), and the three cross-module membership sites — `m.member` field
+  access, `import m.member`, `import m.*` — consult it via `member_visibility` →
+  {Exported, Private, Absent}. A private access raises **`not-exported`** `{module,
+  member}` (loud-and-true, points at the fix); an absent one raises **`no-such-member`**
+  `{module, member}` (the module container's access-miss kind — modules no longer reuse
+  `no-such-field`); a wildcard's private name surfaces `not-exported` on the error path
+  (not bare `name-not-defined`). An `exports` naming an undeclared name is the static
+  **`undeclared-export`** `{module, name}` (adjective-first; the stale rubric row
+  `assign-to-undeclared` → `undeclared-assignment` fixed while there). Files split:
+  `machine/assign.rs` (assignment scheduling out of `control.rs`). Tests:
+  `tests/exports.rs` (7). All gates green.
+- **5.3b (next).** The `module … end` block form — **★ D-M5-5 RESOLVED 2026-08-27:
+  file-level `module Name … end` wrapping the file renames it (body = the file module's
+  top level, `Name` should equal the base name); a nested or second `module` block is a
+  static error (sub-namespaces deferred past v0.1).**
 - **Depends.** M5.1.
-- **Tests.** a non-exported name is not reachable as `m.x`; an `exports` naming
-  an undeclared name is a static error.
 
 ### M5.4 — Native modules + missing-primitive failure `[M]` (parallel w/ M5.5) — **DONE (a+b)**
 - **Landed (a+b).** Host registration API: `Registry::register_module(NativeModule)` with a

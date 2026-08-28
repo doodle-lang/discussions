@@ -82,7 +82,7 @@ ever wanted, is a future spec delta. The reserved slugs below are added to the
 enum only when their producer lands (M1.3–M1.11); each names an L rule.
 
 `chained-comparison` (L§6.5) · `const-reassignment` (L§5.2) ·
-`assign-to-undeclared` (L§5.3) · `duplicate-declaration` (L§5.2) ·
+`undeclared-assignment` (L§5.3) · `duplicate-declaration` (L§5.2) ·
 `return-outside-callable` · `break-outside-loop` · `continue-outside-block`
 (L§7) · `function-missing-value` · `procedure-in-expression` (L§6.11) ·
 `if-expression-missing-else` (L§6.8) · `non-producing-branch` (L§6.8/§6.9) ·
@@ -98,6 +98,8 @@ enum only when their producer lands (M1.3–M1.11); each names an L rule.
 `not-a-protocol-member` (L§10, S-31/S-61; the protocol/implement conformance
 family, user-ratified 2026-08-27 — same-module resolver diagnostics, a
 cross-module structural failure is a runtime `module-load-error` instead) ·
+`undeclared-export` (L§11.1, S-14; an `exports` names a name the module never
+declares — adjective-first like `undeclared-assignment`, user-ratified 2026-08-27) ·
 `shadowing` (warning, L§5.1) ·
 `discarded-value` (warning, L§6.11).
 
@@ -132,6 +134,8 @@ parsing text. Two pins govern it:
 | `ambiguous-import` | `{name, modules: [a, b]}` — the name and both wildcard sources, in import order (raised at *use*, S-13) |
 | `protocol-not-implemented` | `{type, protocol, member}` — the value's runtime type, a supplying protocol, and the member; the message points at `implement P for T` (L§10.3) |
 | `ambiguous-member` | `{member, protocols: [a, b], type}` — the member, both *unrelated* protocols supplying it (declaration/load order), and the type; raised at *use*, points at `P.member(args)` (L§10.3, S-31) |
+| `not-exported` | `{module, member}` — a member that exists but isn't in the module's `exports`; the message points at the fix (add it to `exports`) (L§11.1) |
+| `no-such-member` | `{module, member}` — a member the module doesn't declare; the **module** container's access-miss kind (never `no-such-field`) (L§11.1) |
 | *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
 
 ## Appendix B — provisional caret / column model
