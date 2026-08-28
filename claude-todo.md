@@ -504,10 +504,31 @@ same-module resolver, the same gap as any cross-module `implement`, whose S-31 s
 to a load-time `module-load-error` that is not yet built. Not a new defect (pre-existing category); no
 memory/determinism impact. Discharge when cross-module `implement` conformance lands.
 
-**Next: M5.8** (prelude star-import, retires S-43 seeding — folds in the M5.7 `Stringable`/`Hashable`/
-`to_string` seeding too), then M5.9 (turtle 3-module cell-aliasing integration — the M5 acceptance
-headliner), M5.10 (exit review + carve-out green + conformance). (M5.6 `is P` already absorbed into
-M5.5a.)
+**M5.8 (prelude as a star-import) — DONE (2026-08-28).** The S-43 per-module seeding is retired: the
+built-in type values, `Error`, the well-known protocols + `to_string`, and the flat intrinsics now live
+in **one shared pre-loaded prelude module** (id after the natives, path `prelude`, registered `Loaded`).
+`seed_namespace` binds only a module's own globals; every source module implicitly wildcard-imports the
+prelude (`machine.prelude`, main set in `load_full`, imports in `import.rs`). Free-name resolution goes
+through `control::lookup_free` (own namespace → wildcards); protocol `implement`/`extends`/type-name
+resolution uses it too. Per the 2026-08-28 ruling (2f17007), the prelude is an **ordinary wildcard** (no
+special tier): a prelude/user-wildcard **distinct-binding** collision is `ambiguous-import` at use
+(naming "prelude"); `wildcard_lookup` now dedups hits **by cell identity** (M5.2c marked by name — this
+is the S-13 refinement the ruling asked for), so same-cell aliases are one binding. Assignment to a
+prelude name stays a static `undeclared-assignment`, so the shared prelude is read-only. No-observable-
+change gate holds: full native suite + conformance (180) unchanged. Tests `tests/prelude.rs` (5). All
+gates green (21 suites, conformance 180, wasm32, hygiene 6/6). doodle-rust `<pending>`.
+
+**FOLLOW-UP (tracked, due before M6): D-M5-6 shadowing warning.** A declaration that hides a prelude
+name (`let print = 5` … `print("hi")` → not-callable) must warn per L§5.1 (ratified 5c627fb; semantics
+pinned, implementation slipped). Approach (no resolver-API change): a **post-resolve load-time pass**
+diffs a module's `ResolvedModule.globals` against the prelude's export set and emits the L§5.1
+shadowing warning at each colliding declaration's span (the prelude is registered before first load, so
+its exports are known at load). User-wildcard shadowing is the linter's/import-time job (exports known
+only at import execution) — the consistent end-state, not part of this follow-up. IDE (M6) is the consumer.
+
+**Next: M5.9** (Doodle turtle wrapper + 3-module cell-aliasing integration — the M5 acceptance
+headliner, exit criterion #1), then M5.10 (exit review + carve-out green + conformance). (M5.6 `is P`
+already absorbed into M5.5a.)
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

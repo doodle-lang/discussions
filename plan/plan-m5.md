@@ -382,7 +382,19 @@ green.
   drive-aware or route through the driven dispatcher. `to_string` that
   suspends/raises mid-render (esp. during *error* rendering) is the nasty corner.
 
-### M5.8 — Prelude as a host-configured star-import `[M]`
+### M5.8 — Prelude as a host-configured star-import `[M]` — **DONE**
+The prelude is one shared pre-loaded module (id after the native modules, path
+`prelude`) holding the built-in type values, `Error`, the well-known protocols +
+`to_string`, and the flat intrinsics; `seed_namespace` now binds only a module's
+own globals, and every **source** module implicitly wildcard-imports the prelude
+(`machine.prelude`). Free-name resolution routes through `control::lookup_free`
+(own namespace → wildcards); protocol `implement`/`extends`/type resolution uses
+it too, so `implement Stringable for Int` finds prelude names. `wildcard_lookup`
+now dedups hits **by cell identity** (M5.2c marked by name) — same-cell aliases
+are one binding, distinct bindings ambiguous. `x is Stringable` etc. unchanged.
+No-observable-change gate: full native suite + conformance (180) pass unchanged.
+Tests in `tests/prelude.rs` (5). The D-M5-6 shadowing **warning** is the tracked
+post-M5.8 follow-up (below), not in this chunk.
 - **Goal.** Replace the S-43 seeding with a real implicit prelude import.
 - **Lands.** An implicit prelude **wildcard-import** of native module(s), with
   **no program-observable change** — same names, read-only, shadowed the same
