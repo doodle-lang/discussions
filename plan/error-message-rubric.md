@@ -100,6 +100,8 @@ family, user-ratified 2026-08-27 — same-module resolver diagnostics, a
 cross-module structural failure is a runtime `module-load-error` instead) ·
 `undeclared-export` (L§11.1, S-14; an `exports` names a name the module never
 declares — adjective-first like `undeclared-assignment`, user-ratified 2026-08-27) ·
+`nested-module` (L§11.1, D-M5-5; a `module … end` block that is not the sole
+file-wrapping statement — **provisional**, retired when nested sub-namespace modules land) ·
 `shadowing` (warning, L§5.1) ·
 `discarded-value` (warning, L§6.11).
 

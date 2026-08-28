@@ -474,9 +474,19 @@ all-public (`exports: None`; a native `exports` API is future). Files split: `ma
 `tests/exports.rs` (7) + updated 3 module-miss assertions (`no-such-field` → `no-such-member`).
 All gates green (conformance 180, wasm32, hygiene 6/6).
 
-**Next: M5.3b** — the `module … end` file-level rename (★ D-M5-5 resolved: wrap-the-file rename,
-nesting deferred). Then M5.7 (real Stringable/Hashable, ★ D-M5-1), M5.8 (prelude star-import),
-M5.9 (turtle 3-module integration), M5.10 (exit review). (M5.6 `is P` already absorbed into M5.5a.)
+**M5.3b DONE (2026-08-27): the `module … end` file-level rename — M5.3 COMPLETE.** The resolver
+unwraps a **sole file-wrapping** `module Name … end` (its body becomes the file module's top
+level, its docstring the module's; `Name` is documentation — no runtime effect), and the machine
+runs the wrapper's body in the module frame (a `Node::ModuleDecl` reaching the machine is always a
+valid wrapper). Any `module` block that is **not** the sole top-level statement — alongside other
+statements, or nested inside a wrapper — is the static **`nested-module`** (provisional slug,
+retired when sub-namespace modules land, D-M5-5). Tests in `tests/exports.rs`. Spec note: L§11.1's
+"provisional interaction" wording should be updated to this resolution by the spec author.
+
+**Next: M5.7** (real Stringable/Hashable dispatch through the M5.5 registry, ★ D-M5-1), then M5.8
+(prelude star-import, retires S-43 seeding), M5.9 (turtle 3-module cell-aliasing integration — the
+M5 acceptance headliner), M5.10 (exit review + carve-out green + conformance). (M5.6 `is P` already
+absorbed into M5.5a.)
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
