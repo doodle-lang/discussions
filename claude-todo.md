@@ -1580,6 +1580,16 @@ Doodle cell. Spec landed: E§5.5 + App B.1; App C S-44; plan-m5 D-M5-3 +
 M5.4. Code: **M5.4** (member kinds enforced at registration), **M5.9**
 (turtle wrapper).
 
+**S-13 refined (user, 2026-08-28): the prelude is an ordinary wildcard.**
+Precedence at a bare use: own declarations → selective imports → all
+wildcards, prelude included (no special tier); a prelude/wildcard
+distinct-binding collision is `ambiguous-import` at use (names "prelude";
+fix: selective import or qualified call); two wildcards aliasing the same
+exporter cell are one binding (required for prelude re-exports). Rejected:
+prelude-wins, wildcard-wins. Spec landed: L§11.2 (the S-13 rule itself,
+previously App-C-only) + §11.4 + App D.1; App C S-13; plan-m5 M5.8. Code:
+**M5.8** (+ cell-identity dedup if needed).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1892,6 +1902,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-28 — **Name precedence pinned: the prelude is an ordinary wildcard
+  (S-13 refined).** Ruling in the queue entry above. One discussions commit:
+  L§11.2 (precedence + the collision rule + same-binding dedup), §11.4, App
+  D.1; App C S-13; plan-m5 M5.8; this file. Code: M5.8.
 - 2026-08-27 — **L§11.1 module-block form pinned per D-M5-5; S-14 closed.**
   Spec-author follow-up to M5.3: L§11.1 (file-wrapping block only — body =
   top level, docstring = module's, `Name` documentation-only; `nested-module`

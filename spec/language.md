@@ -1824,6 +1824,15 @@ per module:
   members — and defer observable effects to explicitly invoked entry points.
 - Imports do **not** cascade: `import a` binds only `a` (or its selected
   members); it does not re-export names that `a` itself imported.
+- **Name precedence and wildcard collisions.** At a bare use of a name, the
+  module's own declarations win, then explicit selective imports, then the
+  wildcard imports — **the prelude (§11.4) among them, with no special
+  precedence**. A name supplied by two wildcards is **ambiguous**: using it
+  raises `ambiguous-import`, naming both sources; resolve it with a selective
+  import (`import shapes.draw`) or a qualified call (`shapes.draw(…)`). Two
+  wildcards that alias the *same* exporter binding (a module and a prelude
+  that re-exports it, say) supply one binding, not a collision — ambiguity
+  requires distinct bindings.
 - **Circular imports are an error.** If loading module `a` requires loading `b`,
   and loading `b` requires `a` before `a` has finished loading, loading fails
   with a diagnostic. Refactor the shared portion into a third module.
@@ -1855,6 +1864,12 @@ bindings behind the program's own declarations, so a program that declares
 its own `print` shadows the host's — the same relationship a prelude
 star-import will have. Nothing about the previous paragraph changes: the
 names remain host/library-supplied, never language built-ins.
+
+The prelude is an ordinary wildcard import in every respect (§11.2): a
+program's own declarations and selective imports shadow it, and a name it
+supplies that another wildcard also supplies — as a distinct binding — is
+ambiguous at use, exactly as between two user wildcards. It is implicit, not
+privileged.
 
 ---
 
@@ -2518,6 +2533,18 @@ likely to change.
   conforms in arity and block parameter, and it may not write defaults —
   defaults live once, on the member, which removes a class of drift entirely
   (implementation defaults would be dead code under this binding order).
+- **The prelude is an ordinary wildcard; collisions need distinct bindings
+  (§11.2, §11.4; refines implementation-plan Appendix C S-13).** Which wins
+  when `import foo.*` supplies a name the prelude also supplies was open.
+  Resolved with no special tier: own declarations, then selective imports,
+  then all wildcards, the prelude among them — a distinct-binding collision
+  is ambiguous at use (`ambiguous-import`, naming the prelude as a source),
+  fixed by a selective import or a qualified call. Rejected: prelude-wins (an
+  explicit import silently ignored for one name — the worst surprise of the
+  three) and wildcard-wins (silent shadowing of a prelude name, which S-13
+  refuses between peers). Two wildcards aliasing the same exporter binding
+  are one binding — required so a prelude that re-exports library members
+  never collides with a direct wildcard of that library.
 
 ### D.2 Genuinely open (deferred by the discussion)
 

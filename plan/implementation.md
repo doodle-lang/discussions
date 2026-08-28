@@ -1664,7 +1664,21 @@ values. Cost: a few lines of Doodle per host library. Rejected: native
 parameter cells (a pre-heap cell-creation host API + `with` reaching
 across the boundary). **[spec landed with this entry: E§5.5 + App B.1.
 Code: M5.4 (native-module member kinds enforced at registration) / M5.9
-(the turtle wrapper declares `parameter pen_color`).]**
+(the turtle wrapper declares `parameter pen_color`).]** **Refined (user, 2026-08-28) — the prelude is an ordinary wildcard, and
+ambiguity requires distinct bindings.** Precedence at a bare use: own
+declarations, then explicit selective imports, then all wildcards with the
+prelude among them (no special tier — rejected: prelude-wins, an explicit
+`import foo.*` silently ignored for one name; wildcard-wins, silent
+shadowing of a prelude name). A prelude/wildcard distinct-binding
+collision is `ambiguous-import` at use, `details: {name, modules:
+["prelude", "foo"]}`, message offering `import foo.x` / `foo.x(…)`. Two
+wildcards that alias the **same** exporter cell are one binding, not a
+collision — load-bearing, since the prelude will re-export library
+members and a direct `import iter.*` must not flag every name; if M5.2c's
+resolve-on-use marks by name alone, dedup by cell identity at M5.8. The
+S-43 "no observable change" gate is not implicated (no seeded-era program
+could import a module). **[spec landed: L§11.2 (the collision rule itself,
+which had lived only here) + §11.4 + App D.1.]**
 
 **Engine/drive — resolve by M2b/M3/M6/M7.**
 **S-15 (E§5.4/§7.6/§7.2) RESOLVED (user, 2026-08-20, re-confirmed 2026-08-21;

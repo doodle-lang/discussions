@@ -382,7 +382,11 @@ green.
 - **Lands.** An implicit prelude **wildcard-import** of native module(s), with
   **no program-observable change** — same names, read-only, shadowed the same
   way; the type-value + `Error` shadowing preserved; the linear-scan shadowing
-  semantics preserved.
+  semantics preserved. **Precedence (user, 2026-08-28; L§11.2/§11.4, App C
+  S-13):** the prelude is an ordinary wildcard — no special tier; a
+  prelude/user-wildcard distinct-binding collision is `ambiguous-import` at
+  use (naming "prelude"); same-cell aliases are one binding (dedup by cell
+  identity if the M5.2c mark is by name).
 - **Spec-delta.** ★ D-M5-6 (shadowing warning, non-gating).
 - **Depends.** M5.2 (wildcard), M5.4 (native modules).
 - **Tests.** every `expect-out` fixture written against the seeded `print`
