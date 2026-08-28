@@ -483,10 +483,31 @@ statements, or nested inside a wrapper — is the static **`nested-module`** (pr
 retired when sub-namespace modules land, D-M5-5). Tests in `tests/exports.rs`. Spec note: L§11.1 + App D.1 updated by the spec
 author (2026-08-27) — App C S-14 closed whole (module-block half + the M5.3a `exports` corners).
 
-**Next: M5.7** (real Stringable/Hashable dispatch through the M5.5 registry, ★ D-M5-1), then M5.8
-(prelude star-import, retires S-43 seeding), M5.9 (turtle 3-module cell-aliasing integration — the
-M5 acceptance headliner), M5.10 (exit review + carve-out green + conformance). (M5.6 `is P` already
-absorbed into M5.5a.)
+**M5.7 (real Stringable/Hashable dispatch) — DONE (2026-08-27; ★ D-M5-1 resolved).** The engine
+natively registers `Stringable{to_string}` and `Hashable{hash}` at instance load, each with a
+**native default** (renderer / structural hasher); the names `Stringable`/`Hashable`/`to_string`
+seed every module's prelude (`hash` is not a bare name). **Interpolation** drives an explicit
+`implement Stringable`'s `to_string` (a real, can-raise call — `protocol::enter_unary` +
+`Cont::StrInterpRendered`), else the native renderer; the member is invoked by id (hidden binding,
+S-37). **Dict keys** drive an explicit `implement Hashable`'s `hash` at insert/lookup/literal
+(`dict::hash_plan` + `Cont::{DictBuildHashed,IndexReadHashed,IndexAssignHashed}`, which GC-root the
+in-flight dict), else the native `check_hashable`+`hash_value`. `x is Stringable` is total; `x is
+Hashable` = natively-hashable-or-explicit-impl. Decisions Q1 (compound/records → M9a) and Q2 (both
+user-implementable now); riders: `print`/error-rendering stay native, `is` reflects native coverage
+(all in D-M5-1). Files split for length (protocol/{mod,load,dispatch,dtype}, dict/{mod,index}). Tests
+`tests/wellknown.rs` (16). All gates green (20 suites, conformance 180, wasm32, hygiene 6/6).
+doodle-rust `<pending>`.
+
+**Known gap (track with S-31 cross-module conformance):** a malformed `implement Stringable/Hashable
+for T` (wrong arity, stray method) is **silently registered** — a native protocol is invisible to the
+same-module resolver, the same gap as any cross-module `implement`, whose S-31 structural check routes
+to a load-time `module-load-error` that is not yet built. Not a new defect (pre-existing category); no
+memory/determinism impact. Discharge when cross-module `implement` conformance lands.
+
+**Next: M5.8** (prelude star-import, retires S-43 seeding — folds in the M5.7 `Stringable`/`Hashable`/
+`to_string` seeding too), then M5.9 (turtle 3-module cell-aliasing integration — the M5 acceptance
+headliner), M5.10 (exit review + carve-out green + conformance). (M5.6 `is P` already absorbed into
+M5.5a.)
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

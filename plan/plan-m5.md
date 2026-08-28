@@ -37,15 +37,41 @@ M5 carries the plan's widest error bars (Appendix A).
 Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
 (a pure internal refactor). Already-resolved deltas M5 rides on are listed after.
 
-1. **★ D-M5-1 · Stringable/Hashable — the M5 vs M9a split.** *Blocks M5.7.* The
-   plan reads two ways: M5 = "real Stringable/Hashable **dispatch**"; M9a =
-   "well-known protocols with **built-in + record defaults** (replacing the M4
-   placeholders)." **Recommend (a):** M5 lands the **dispatch machinery** +
-   protocol-`is` + just enough native built-in `to_string`/`hash` to green the
-   carve-outs (scalars final; compound render text stays the provisional
-   `<list>`/`<record>` placeholders); **M9a** lands the Doodle-written defaults
-   (record-default `to_string`/`hash`, compound rendering). Matches M9a's "the
-   M4/M5 carve-out clauses all green."
+1. **★ D-M5-1 · Stringable/Hashable — the M5 vs M9a split.** *Blocked M5.7.*
+   **RESOLVED (user, 2026-08-27; implemented in M5.7).** The engine natively
+   **defines** `Stringable`/`Hashable` at instance load — each a single member
+   (`to_string`/`hash`) with a **native default** (the renderer / the structural
+   hasher) — and binds the names `Stringable`, `Hashable`, and the `to_string`
+   dispatcher into every module's prelude (folded into the M5.8 prelude import;
+   `hash` is *not* a bare name — the engine hash isn't build-stable). The two
+   decisions taken:
+   - **(Q1) Compound/records → M9a.** Scalars render/hash finally; a `list`/`dict`/
+     `record` with no explicit `implement` keeps the provisional `<list>`/
+     `<record>` render placeholder and the native structural record hash. The
+     Doodle-written record-default `to_string`/`hash` and real compound rendering
+     land at **M9a**.
+   - **(Q2) Both are real user-implementable dispatch NOW.** Interpolation drives
+     an explicit `implement Stringable`'s `to_string` (a real, can-raise call,
+     resumed by a `StrInterpRendered` continuation); dict insert/lookup drive an
+     explicit `implement Hashable`'s `hash` (resumed by the `*Hashed`
+     continuations). Absent an explicit impl, both fall to the native default.
+   - **Provisional riders (documented, revisited at M9a):**
+     - **Interpolation-only driven render.** `print(x)` and error/host-raised-value
+       rendering keep the native seam (never drive user code mid-error; `print` is
+       a demo intrinsic). So `print(point)` shows `<record>` while `"{point}"` shows
+       the user's text.
+     - **`is` reflects native coverage.** `x is Stringable` is **true for every
+       value** (the native renderer is total); `x is Hashable` is true iff the
+       value is natively hashable (`check_hashable`) **or** has an explicit impl —
+       so `[1,2] is Hashable` is `false`. Built-in types are not *registered*
+       `Stringable`/`Hashable` implementors (their L§15 stdlib impls land at M9a),
+       but the native default makes `to_string(5)` and `"{5}"` agree.
+     - **Native-protocol `implement` conformance is unchecked.** `implement
+       Stringable/Hashable for T` is invisible to the same-module resolver (the
+       protocol isn't in the AST), so a malformed one (wrong arity, stray method)
+       is silently registered — the same gap as any cross-module `implement`,
+       whose S-31 structural check routes to a load-time `module-load-error` and
+       is not yet built. Track with the S-31 cross-module conformance discharge.
 2. **★ D-M5-2 · Can the host module resolver suspend?** *Blocks M5.1.* E§6 stated
    `resolve(module_path) → Source | NotFound` **synchronously**; a browser host
    fetching over the network needs async. **RESOLVED (user, 2026-08-27; spec
@@ -324,7 +350,16 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
 - **Tests.** exit criterion #6 (protocol-`is` half); `x is P` true iff `x`'s type
   implements every required member of `P`.
 
-### M5.7 — Real Stringable/Hashable dispatch `[M]`
+### M5.7 — Real Stringable/Hashable dispatch `[M]` — **DONE**
+Native-registered `Stringable`/`Hashable` protocols with native defaults (D-M5-1
+above). Interpolation drives an explicit `implement Stringable` (via `enter_unary`
++ `StrInterpRendered`); dict insert/lookup/literal drive an explicit `implement
+Hashable` (via `hash_plan` + the `DictBuildHashed`/`IndexReadHashed`/
+`IndexAssignHashed` continuations, GC-rooting the in-flight dict). `x is
+Stringable`/`is Hashable` reflect native coverage. `print`/error-rendering stay
+native. Scalars final; compound render/hash and record defaults deferred to M9a.
+Tests in `tests/wellknown.rs` (16). Native + wasm + conformance (180) + hygiene
+green.
 - **Goal.** Retire the placeholder render/hash seams.
 - **Lands.** `stringify::render` → dispatch through the **`Stringable`**
   dispatcher (a driven call; **keep the direct hidden-binding call site** so
