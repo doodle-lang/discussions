@@ -80,9 +80,11 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
    block covers the chain. M5.5 implements.
 5. **★ D-M5-5 · `module … end` block form vs file-level module (S-14 / L§11.1
    provisional).** *Blocks M5.3.* L§11.1 marks the file-level/block-level
-   interaction provisional. **Recommend:** a file-level `module Name` renames the
-   file's module; nested `module` sub-namespaces deferred past v0.1 unless the
-   user wants them now.
+   interaction provisional. **RESOLVED (user, 2026-08-27; landed M5.3b; L§11.1 +
+   App D.1 updated by the spec author):** a sole file-wrapping `module Name …
+   end` is unwrapped (`Name` documentation-only; identity = path); any other
+   `module` block is the static `nested-module`; in-file sub-namespace modules
+   deferred past v0.1. S-14 closed.
 6. **★ D-M5-6 · S-43 parked shadowing warning (non-gating).** *M5.8 polish.*
    Should declaring a name that hides a prelude name (`let print = 5` then
    `print("hi")` → NotCallable) fire the L§5.1 shadowing warning? Applies to

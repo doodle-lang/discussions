@@ -1753,7 +1753,8 @@ exports-stmt = 'exports' IDENT sep-by ','
 ```
 
 listing the names other modules may see; names not listed are private to the
-module.
+module. Several `exports` statements combine (their union); naming a member the
+module does not declare is a static error.
 
 An explicit `module Name … end` block form is also provided:
 
@@ -1761,11 +1762,16 @@ An explicit `module Name … end` block form is also provided:
 module-decl = 'module' IDENT body 'end'
 ```
 
-It may be used to wrap a file's contents under an explicit name (in which case
-`Name` should equal the file's base name) or to declare a nested module. The
-implicit "file is a module" model is primary; the explicit form is available for
-documentation and nesting. (The precise interaction of file-level and block-level
-modules is provisional; see Appendix D.)
+In this version it has exactly one use: a **file-wrapping** `module Name … end`
+that is the file's sole top-level statement. Its body is the module's top level
+and its docstring the module's docstring; `Name` is documentation — it should
+equal the file's base name, but the module's identity is its path, and the name
+has no runtime effect (an editor may warn on a mismatch). The implicit "file is
+a module" model is primary; the block form only makes the name explicit. A
+`module` block anywhere else — alongside other top-level statements, or nested
+inside a wrapper — is a static error (`nested-module`): sub-namespace modules
+declared inside a file are deferred past v0.1, and the error reserves the syntax
+for them (see Appendix D).
 
 ### 11.2 Import forms
 
@@ -2220,12 +2226,17 @@ likely to change.
   to avoid churn if they return; `open` and `from` are **not** reserved. This
   mildly contradicts the discussion's "nothing reserved for future use" note and
   can be reversed.
-- **Module block vs. file module (§11.1).** The discussion asserted "one file =
-  one module" and also showed a file wholly wrapped in `module Name … end`. This
-  spec makes the implicit file-module primary and keeps `module … end` for
-  explicit naming/nesting, with the constraint that a file-wrapping `module`
-  name match the file. The precise semantics of nested modules are thin and may
-  need revisiting.
+- **Module block vs. file module (§11.1; resolves plan-m5 D-M5-5 and the
+  module-block half of implementation-plan Appendix C S-14).** The discussion
+  asserted "one file = one module" and also showed a file wholly wrapped in
+  `module Name … end`. Resolved: the implicit file-module is primary, and the
+  block form's only v0.1 use is wrapping the whole file — its body becomes the
+  module's top level, its docstring the module's, and `Name` is documentation
+  with no runtime effect (identity is the path; an editor may warn on a
+  mismatch, but the language does not tie source text to host naming). A
+  `module` block anywhere else is a static error (`nested-module`), reserving
+  the syntax for in-file sub-namespace modules, deferred past v0.1 rather than
+  specified thinly.
 - **Parameter/argument model (§8.2, §8.3).** The discussion adopted keyword
   arguments and mentioned optional parameters but never fixed the declaration
   syntax or the positional/keyword distinction. This spec: ordinary parameters

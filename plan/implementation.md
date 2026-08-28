@@ -1581,7 +1581,17 @@ GC root); `module-load-error` for static-error source; re-import re-raises
 the retained value. Slugs `circular-import` + `module-load-error` land in
 the S-58 catalog.]** ·
 S-14 (L§11.1/§11.3) `exports` corners (multiplicity, undeclared names,
-position); module-block semantics. ·
+position); module-block semantics. **RESOLVED (2026-08-27).** Module-block
+half (user, plan-m5 D-M5-5): a sole file-wrapping `module Name … end` is
+unwrapped — body = the module's top level, docstring = the module's, `Name`
+documentation-only (identity = path; an editor may warn on a mismatch —
+the language does not tie source text to host naming); any other `module`
+block is the static `nested-module` (provisional slug, retired when
+in-file sub-namespace modules land, deferred past v0.1). `exports`
+corners as shipped at M5.3a: `exports` is a module-level declaration;
+several statements union; naming an undeclared member is the static
+`undeclared-export`. **[spec landed: L§11.1 + App D.1 (spec author,
+2026-08-27). Code: M5.3a/b, `tests/exports.rs`.]** ·
 S-31 (L§10) Protocol-implementation signature conformance (arity/defaults/
 block param must match declaration) and dispatch when the first argument
 arrives by keyword. **RESOLVED (user, 2026-08-27): bind first, dispatch

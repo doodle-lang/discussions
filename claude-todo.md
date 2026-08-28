@@ -480,8 +480,8 @@ level, its docstring the module's; `Name` is documentation — no runtime effect
 runs the wrapper's body in the module frame (a `Node::ModuleDecl` reaching the machine is always a
 valid wrapper). Any `module` block that is **not** the sole top-level statement — alongside other
 statements, or nested inside a wrapper — is the static **`nested-module`** (provisional slug,
-retired when sub-namespace modules land, D-M5-5). Tests in `tests/exports.rs`. Spec note: L§11.1's
-"provisional interaction" wording should be updated to this resolution by the spec author.
+retired when sub-namespace modules land, D-M5-5). Tests in `tests/exports.rs`. Spec note: L§11.1 + App D.1 updated by the spec
+author (2026-08-27) — App C S-14 closed whole (module-block half + the M5.3a `exports` corners).
 
 **Next: M5.7** (real Stringable/Hashable dispatch through the M5.5 registry, ★ D-M5-1), then M5.8
 (prelude star-import, retires S-43 seeding), M5.9 (turtle 3-module cell-aliasing integration — the
@@ -1871,6 +1871,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-27 — **L§11.1 module-block form pinned per D-M5-5; S-14 closed.**
+  Spec-author follow-up to M5.3: L§11.1 (file-wrapping block only — body =
+  top level, docstring = module's, `Name` documentation-only; `nested-module`
+  elsewhere; `exports` union + `undeclared-export`), App D.1; App C S-14;
+  plan-m5 D-M5-5; this file.
 - 2026-08-27 — **S-44 / D-M5-3 resolved + spec landed: native modules carry
   no `parameter` cells, protocols, or implementations.** Ruling in the queue
   entry above. One discussions commit: E§5.5 (exhaustive member kinds + the
