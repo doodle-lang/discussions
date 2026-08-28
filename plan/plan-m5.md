@@ -216,7 +216,21 @@ Ordering is by dependency. Sizes per Appendix A (S ≤ ~1wk, M ~1–3wk, L ~3–
 - **Tests.** a non-exported name is not reachable as `m.x`; an `exports` naming
   an undeclared name is a static error.
 
-### M5.4 — Native modules + missing-primitive failure `[M]` (parallel w/ M5.5)
+### M5.4 — Native modules + missing-primitive failure `[M]` (parallel w/ M5.5) — **DONE (a+b)**
+- **Landed (a+b).** Host registration API: `Registry::register_module(NativeModule)` with a
+  builder (`.function` / `.constant` / `.foreign` / `.record`) — the **full member set**
+  (foreign functions, constants, foreign values, records; no `parameter`/protocol/implement,
+  per S-44). Native modules are **pre-loaded** into the module table at instance creation
+  (ids `1..=k`, replay-order) as synthetic modules (member-name `globals` + namespace cells
+  of materialized values); `import`ing one finds it via the `by_path` cache and binds it
+  through the existing M5.2 machinery — `m.member`, wildcard, cross-module call, record
+  construction + `is`. Function members join the flat intrinsics in one `CallableTarget::
+  Intrinsic` id space (appended after the prelude, seeding no module's prelude). A native
+  module the host didn't register isn't in `by_path` → the import suspends → host `NotFound`
+  → `module-not-found` (E§13 "primitives absent → fail to load"). S-32 is structural (the
+  registry is consumed at load; `DuplicateModule` host error on a name clash). Tests:
+  `tests/native_modules.rs` (8). Files split for length: `machine/native.rs`,
+  `machine/intrinsic/ctx.rs` (extracted `IntrinsicCtx` + `apply`). All gates green.
 - **Goal.** Host-provided native modules, consulted before source.
 - **Lands.** Native-module registration (a member is a foreign function / const
   / foreign value / record), consulted **before** source lookup (E§5.5, §6);

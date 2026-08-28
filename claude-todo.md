@@ -439,7 +439,28 @@ honoring the spec's "static error"; the S-61 cycle rule is vacuous (spec reworde
 Deferred (non-gating): member-parameter defaults (edge; needs driven-default machinery).
 All gates green (conformance 180, wasm32, hygiene 6/6).
 
-**Next: M5.4 (native modules, ★ D-M5-3) or M5.3 (exports/module-block, ★ D-M5-5) per plan order.**
+**M5.4 DONE (2026-08-27): native modules — the full member set (a+b).** Host API:
+`Registry::register_module(NativeModule)` + a builder (`.function`/`.constant`/`.foreign`/
+`.record`), all four E§5.5 member kinds (functions, consts, foreign values, records — **no**
+`parameter`/protocol/implement, per **S-44** ratified `fdd7473`). Native modules **pre-load**
+into the module table at instance creation (ids `1..=k` in registration order — replay input,
+MD §6) as synthetic modules: an empty-`Module` AST, member-name `globals` (so `m.member` +
+wildcard resolve through the M5.2 machinery), and namespace cells of materialized values.
+`import`ing one finds it via `by_path` (never suspends) and binds it like a Doodle module —
+`m.member`, `import n.*`, cross-module call, `m.Point(...)` construction + `x is m.Point`, and
+a foreign value with an exactly-once finalizer (E§4.5). Function members join the flat
+intrinsics in one `CallableTarget::Intrinsic` id space, appended after the prelude
+(`prelude_count` gates what seeds each module's namespace, so a native fn is bound only in its
+own module). A native module the host didn't register isn't in `by_path` → the import suspends
+→ host `NotFound` → `module-not-found` (E§13 "primitives absent ⇒ fail to load" — the existing
+not-found path). S-32 is structural (registry consumed at load); `DuplicateModule` host error
+on a name clash. Files split for length: `machine/native.rs`, `machine/intrinsic/ctx.rs`
+(extracted `IntrinsicCtx` + `apply` out of `intrinsic/mod.rs`). Tests: `tests/native_modules.rs`
+(8). All gates green (conformance 180, wasm32, hygiene 6/6).
+
+**Next: M5.3 (exports + `module … end`, ★ D-M5-5) per plan order — then M5.7 (real
+Stringable/Hashable, ★ D-M5-1), M5.8 (prelude star-import), M5.9 (turtle 3-module
+integration), M5.10 (exit review). (M5.6 `is P` already absorbed into M5.5a.)**
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
