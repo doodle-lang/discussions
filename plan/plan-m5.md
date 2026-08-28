@@ -115,8 +115,13 @@ Recommendation first; each blocks only the chunk(s) noted. **None block M5.0**
    Should declaring a name that hides a prelude name (`let print = 5` then
    `print("hi")` → NotCallable) fire the L§5.1 shadowing warning? Applies to
    type values and intrinsics alike; needs the front end to know the prelude
-   name set (natural once the prelude is an import). **Recommend:** yes, warn —
-   but it is non-gating and can land with M5.8 or slip.
+   name set (natural once the prelude is an import). **RESOLVED (user, 2026-08-28; L§5.1
+   landed): yes, warn** — wildcard-supplied names, prelude included, are outer
+   bindings for the shadowing warning. Implementation **slips deliberately** to
+   a post-M5.8 follow-up, **due before M6**: a post-resolve load-time diff of
+   `ResolvedModule.globals` against the prelude's exports (registered before
+   first `load`) — no resolver-API change. User-wildcard shadowing: import-time
+   or linter, later.
 
 **Already RESOLVED — M5 rides on these (cite, don't re-decide):**
 **S-39** (imported names are live **read-only** aliases; assignment is a static
@@ -387,7 +392,8 @@ green.
   prelude/user-wildcard distinct-binding collision is `ambiguous-import` at
   use (naming "prelude"); same-cell aliases are one binding (dedup by cell
   identity if the M5.2c mark is by name).
-- **Spec-delta.** ★ D-M5-6 (shadowing warning, non-gating).
+- **Spec-delta.** D-M5-6 — **RESOLVED 2026-08-28** (L§5.1 landed; the warning
+  itself is the tracked post-M5.8 follow-up, due before M6).
 - **Depends.** M5.2 (wildcard), M5.4 (native modules).
 - **Tests.** every `expect-out` fixture written against the seeded `print`
   passes unchanged (the "no observable change" gate); a user `let print = 5`

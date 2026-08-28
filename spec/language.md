@@ -752,7 +752,10 @@ and are introduced only by the `parameter`/`with` forms.
 Scopes nest. A name introduced in an inner scope shadows the same name in an
 outer scope for the remainder of the inner scope. An implementation should warn
 when an inner declaration shadows an outer binding, but shadowing is not an
-error.
+error. Names supplied by wildcard imports — the prelude (§11.4) included —
+count as outer bindings for this purpose: declaring `let print = 5` in a
+module hides the prelude's `print` and warns, since the later `print("hi")`
+would otherwise fail with no pointer to the cause.
 
 ### 5.2 `let` and `const`
 

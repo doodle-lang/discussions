@@ -1537,7 +1537,18 @@ the L§5.1 shadowing *warning* (`let print = 5` then `print("hi")`
 raises NotCallable — a kid trap)? Applies to type values and
 intrinsics alike; needs the front end to know the prelude name set —
 natural once the prelude is an import, not worth front-end coupling
-for the stopgap. **[spec landed with this entry: E§5.5
+for the stopgap. **Closed (user, 2026-08-28; plan-m5 D-M5-6): yes, warn.**
+L§5.1 now says wildcard-supplied names — the prelude included — count as
+outer bindings for the shadowing warning. Implementation is a deliberate
+post-M5.8 follow-up, **due before M6** (the IDE is the consumer), and
+needs no resolver-API change: the prelude is registered before the first
+`load` (S-43/S-60), so a post-resolve load-time pass diffs
+`ResolvedModule.globals` (and `slot_names` for locals) against the
+prelude's exports and emits the `shadowing` warning at each declaration's
+span. User wildcards (`import shapes.*` then `let draw = …`) warn by the
+same rule in principle, but their export sets are known only when the
+import executes — an import-time check or the AD5 linter; the consistent
+end state, not part of this follow-up. **[spec landed with this entry: E§5.5
 provisional-registration block + L§11.4 note. Code: M2b.2 implements
 (registration API + seeding; S-42-lite descriptor shape and the S-19
 sync-FF determinism note land there too, as planned).]** ·

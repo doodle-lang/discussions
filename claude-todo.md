@@ -1590,6 +1590,15 @@ prelude-wins, wildcard-wins. Spec landed: L§11.2 (the S-13 rule itself,
 previously App-C-only) + §11.4 + App D.1; App C S-13; plan-m5 M5.8. Code:
 **M5.8** (+ cell-identity dedup if needed).
 
+**D-M5-6 RESOLVED (user, 2026-08-28): hiding a prelude name warns.** L§5.1
+now counts wildcard-supplied names (prelude included) as outer bindings for
+the shadowing warning. **Follow-up (post-M5.8, due before M6):** a
+post-resolve load-time pass diffing `ResolvedModule.globals` (+
+`slot_names`) against the prelude's exports → `shadowing` warning at the
+declaration span; no resolver-API change (the prelude is registered before
+first `load`). User-wildcard shadowing: import-time or linter, later. Spec
+landed: L§5.1; App C S-43 (parked question closed); plan-m5 D-M5-6 + M5.8.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1902,6 +1911,9 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-28 — **D-M5-6 resolved: hiding a prelude name warns (L§5.1); the
+  warning itself is a tracked post-M5.8 follow-up, due before M6.** One
+  discussions commit: L§5.1; App C S-43; plan-m5 D-M5-6 + M5.8; this file.
 - 2026-08-28 — **Name precedence pinned: the prelude is an ordinary wildcard
   (S-13 refined).** Ruling in the queue entry above. One discussions commit:
   L§11.2 (precedence + the collision rule + same-binding dedup), §11.4, App
