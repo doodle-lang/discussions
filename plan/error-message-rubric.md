@@ -121,6 +121,14 @@ parsing text. Two pins govern it:
   sequencing, not the end state). The per-kind schema below is the **checklist**
   for that pass — so it is a table, not a vibe. New raising kinds add a row when
   they land.
+- **(c) One rule, one slug across both catalogs.** A rule enforced **statically
+  where lexically determinable and at run time otherwise** carries the **same
+  slug** in the static `DiagnosticCode` catalog *and* the runtime `ExceptionKind`
+  catalog — the slug names the *rule violated*; the stage is context, and a kid's
+  explanation and the IDE's help page are identical either way. The pair today:
+  `procedure-in-expression` (L§6.11, S-6) and `with-target-not-parameter` (L§5.5,
+  S-39 — static for a same-module target, runtime for an imported one whose kind
+  the resolver cannot see).
 
 | kind | `details` schema |
 | --- | --- |
@@ -138,6 +146,7 @@ parsing text. Two pins govern it:
 | `ambiguous-member` | `{member, protocols: [a, b], type}` — the member, both *unrelated* protocols supplying it (declaration/load order), and the type; raised at *use*, points at `P.member(args)` (L§10.3, S-31) |
 | `not-exported` | `{module, member}` — a member that exists but isn't in the module's `exports`; the message points at the fix (add it to `exports`) (L§11.1) |
 | `no-such-member` | `{module, member}` — a member the module doesn't declare; the **module** container's access-miss kind (never `no-such-field`) (L§11.1) |
+| `with-target-not-parameter` | `{name, module, kind}` — the `with` target, the module it was imported from, and what it actually is (`constant`/…); the **runtime** face (imported target) of the static diagnostic of the same slug (L§5.5, S-39; raised when the `with` executes, before any binding) |
 | *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
 
 ## Appendix B — provisional caret / column model

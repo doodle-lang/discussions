@@ -526,9 +526,26 @@ shadowing warning at each colliding declaration's span (the prelude is registere
 its exports are known at load). User-wildcard shadowing is the linter's/import-time job (exports known
 only at import execution) — the consistent end-state, not part of this follow-up. IDE (M6) is the consumer.
 
-**Next: M5.9** (Doodle turtle wrapper + 3-module cell-aliasing integration — the M5 acceptance
-headliner, exit criterion #1), then M5.10 (exit review + carve-out green + conformance). (M5.6 `is P`
-already absorbed into M5.5a.)
+**M5.9 (turtle wrapper + 3-module cell-aliasing — the M5 acceptance headliner, exit #1) — DONE
+(2026-08-28).** A native `turtle_native.pen` primitive, a Doodle `turtle` wrapper (`parameter
+pen_color` + `to forward() pen(pen_color) end`), and a user module: `with pen_color = "red"` rebinds
+the wrapper's own parameter cell (S-39 live alias), changing the color drawn inside the imported
+`forward` — `black → red → black`. **Cross-module `with` (ratified 2026-08-28):** a `with` target now
+resolves like any free name via `control::param_cell` (own namespace → wildcards, `wildcard_cell`
+returning the exporter's cell), so an imported parameter is `with`-bindable through a **selective or
+wildcard** import; two distinct wildcard bindings raise `ambiguous-import` (a `with` target is a use).
+`param_cell` checks the resolved cell is a `parameter`, else the runtime **`with-target-not-parameter`**
+— a NEW `ExceptionKind` sharing the **same slug** as the static `DiagnosticCode` (S-58 dual-catalog rule,
+like `procedure-in-expression`; rubric App A updated). The resolver defers a free `with` target to
+runtime only when a selective import or a wildcard could supply it (`has_wildcard_import` flag), else
+still static (typo caught). Tests `tests/cross_module_with.rs` (6 fixtures — all the ratified cases).
+All gates green (22 suites, conformance 180, wasm32, hygiene 6/6). doodle-rust `<pending>`. **Details
+`{name, module, kind}` are `{}` today (the pre-M6 details pass populates them).**
+
+**Next: M5.10** (exit review + carve-out green + conformance) — the milestone gate: all six M5 accept
+clauses green on native + wasm, L§10–§11 conformance chapters, the determinism gate over module
+loading + dispatch, a multi-lens adversarial exit review, and discharge the M5 App C entries
+(S-8/S-13/S-14/S-31/S-32/S-39/S-44). This CLOSES milestone M5.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

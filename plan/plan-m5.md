@@ -411,7 +411,20 @@ post-M5.8 follow-up (below), not in this chunk.
   passes unchanged (the "no observable change" gate); a user `let print = 5`
   shadows the prelude `print`.
 
-### M5.9 — Doodle turtle wrapper + 3-module integration `[M]`
+### M5.9 — Doodle turtle wrapper + 3-module integration `[M]` — **DONE**
+A native `turtle_native.pen` primitive, a Doodle `turtle` wrapper (`parameter
+pen_color` + `to forward()` threading it into `pen`), and a user module: `with
+pen_color = …` rebinds the very cell the wrapper reads (S-39 live alias), so it
+changes the color drawn inside the imported `forward` (exit #1). Cross-module
+`with` (ratified 2026-08-28): a `with` target resolves like any free name (own →
+wildcards), so an **imported** parameter is `with`-bindable through a selective
+**or** wildcard import; `param_cell` checks the resolved cell is a `parameter`,
+raising the runtime **`with-target-not-parameter`** (same slug as the static
+diagnostic, S-58 dual-catalog rule) for an imported non-parameter. The resolver
+defers a free `with` target to runtime only when a selective import or a wildcard
+could supply it, else still a static error (typo caught). Tests in
+`tests/cross_module_with.rs` (6: selective, wildcard, two-wildcard-ambiguous,
+static typo, runtime typo-under-wildcard, imported-const). All gates green.
 - **Goal.** The cell-aliasing acceptance program.
 - **Lands.** A Doodle-side turtle wrapper module declaring `parameter pen_color`
   over the native turtle primitives (the **S-44** shape); the **three-module**
