@@ -542,10 +542,23 @@ still static (typo caught). Tests `tests/cross_module_with.rs` (6 fixtures — a
 All gates green (22 suites, conformance 180, wasm32, hygiene 6/6). doodle-rust `<pending>`. **Details
 `{name, module, kind}` are `{}` today (the pre-M6 details pass populates them).**
 
-**Next: M5.10** (exit review + carve-out green + conformance) — the milestone gate: all six M5 accept
-clauses green on native + wasm, L§10–§11 conformance chapters, the determinism gate over module
-loading + dispatch, a multi-lens adversarial exit review, and discharge the M5 App C entries
-(S-8/S-13/S-14/S-31/S-32/S-39/S-44). This CLOSES milestone M5.
+**M5.10 (the milestone gate that CLOSES M5) — IN PROGRESS**, run as three landable sub-chunks:
+
+- **M5.10a — conformance chapters — DONE (2026-08-28).** Extended the conformance runner for
+  **multi-module vectors** (directory-as-fixture: a dir with `main.doodle` + sibling `<name>.doodle`
+  modules; `import name` → `<name>.doodle`, else `module-not-found`; `drive_to_terminal` resolves
+  imports from the fixture dir). Wrote behavioral fixtures: **L§10** protocols (default member,
+  single-dispatch, qualified `P.member`, protocol-not-implemented, extends-transitive `is`), **L§11**
+  modules (exports-reachable, not-exported, selective/wildcard import, two-wildcard `ambiguous-import`),
+  **§4.12** type values (`is` over built-ins + the callable trio). Conformance 180 → **191**; README
+  documents the directory form (native-module/capability scenarios stay `doodle-core` integration
+  tests). doodle-rust `<pending>`.
+- **M5.10b — determinism gate:** module-loading + dispatch determinism vectors on the existing harness.
+- **M5.10c — exit review + close:** audit all 6 accept clauses green (native + wasm-build, per AD8),
+  multi-lens adversarial read-only review, discharge App C (S-8/S-13/S-14/S-31/S-32/S-39/S-44), close M5.
+
+wasm here = the build gate (Node-executed wasm tests are deferred per AD8); the accept behaviors run
+as native tests + the six conformance/integration suites.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
