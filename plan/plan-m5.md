@@ -433,7 +433,29 @@ static typo, runtime typo-under-wildcard, imported-const). All gates green.
 - **Depends.** M5.2, M5.4, M5.8.
 - **Tests.** exit criterion #1.
 
-### M5.10 — Exit review + carve-out green + conformance `[M]`
+### M5.10 — Exit review + carve-out green + conformance `[M]` — **DONE (M5 CLOSED)**
+Landed as three sub-chunks. **M5.10a:** the conformance runner gained multi-module
+vectors (directory-as-fixture) + behavioral L§10/§11/§4.12 fixtures (180→191).
+**M5.10b:** the GC-stress determinism gate extended over module loading + dispatch
+(and, after the review, the actual M5.7/M5.9 driven paths). **M5.10c:** a 4-lens
+adversarial read-only review (module-load×suspend/resume, cell-aliasing/GC,
+dispatch/ambiguity, prelude/name-resolution). Findings, all fixed + tested:
+- MAJOR: qualified `P.member` (and `member_signature`) ignored the `extends` chain
+  → `Child.greet(q)` failed/panicked for an inherited member; now walk the chain.
+- MAJOR: `drive::resolve()` on an import-suspended instance hit `unreachable!`
+  (release panic, reachable via the WASM facade); guard now also requires
+  `!is_import_suspended()`, mirroring `resolve_import`.
+- MAJOR: well-known-protocol (`Stringable`/`Hashable`) `implement` blocks got no
+  conformance checking (typo'd/mis-shaped method silently no-op'd); now checked
+  against a synthetic fixed shape + an `enter_unary` arity backstop.
+- MEDIUM: `Registry::register` didn't reserve the fixed prelude names; now does.
+- MEDIUM (documented, not changed — touches the ratified M5.9 static typo-catch):
+  `check_with_targets` doesn't count the implicit prelude wildcard, so `with print`
+  in an import-less module says "none is declared" rather than "is a constant";
+  sound (the prelude holds no `parameter`, D-M5-3), a diagnostic-precision limit.
+- No CRITICAL / determinism / memory-safety findings; cell-aliasing, driven-hash/
+  render GC-rooting, load-state across suspend/resume, cycle detection, S-8, and
+  prelude precedence all verified correct.
 - **Goal.** The milestone gate.
 - **Lands.** All six M5 accept clauses green on **native + wasm**; L§10–§11 +
   §4.11–§4.12 conformance chapters; the determinism gate over module loading +

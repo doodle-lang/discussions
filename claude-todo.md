@@ -542,23 +542,44 @@ still static (typo caught). Tests `tests/cross_module_with.rs` (6 fixtures — a
 All gates green (22 suites, conformance 180, wasm32, hygiene 6/6). doodle-rust `<pending>`. **Details
 `{name, module, kind}` are `{}` today (the pre-M6 details pass populates them).**
 
-**M5.10 (the milestone gate that CLOSES M5) — IN PROGRESS**, run as three landable sub-chunks:
+**★ MILESTONE M5 — Modules, imports, protocols, prelude — COMPLETE (2026-08-28).** M5.10 closed it,
+run as three landable sub-chunks:
 
-- **M5.10a — conformance chapters — DONE (2026-08-28).** Extended the conformance runner for
-  **multi-module vectors** (directory-as-fixture: a dir with `main.doodle` + sibling `<name>.doodle`
-  modules; `import name` → `<name>.doodle`, else `module-not-found`; `drive_to_terminal` resolves
-  imports from the fixture dir). Wrote behavioral fixtures: **L§10** protocols (default member,
-  single-dispatch, qualified `P.member`, protocol-not-implemented, extends-transitive `is`), **L§11**
-  modules (exports-reachable, not-exported, selective/wildcard import, two-wildcard `ambiguous-import`),
-  **§4.12** type values (`is` over built-ins + the callable trio). Conformance 180 → **191**; README
-  documents the directory form (native-module/capability scenarios stay `doodle-core` integration
-  tests). doodle-rust `<pending>`.
-- **M5.10b — determinism gate:** module-loading + dispatch determinism vectors on the existing harness.
-- **M5.10c — exit review + close:** audit all 6 accept clauses green (native + wasm-build, per AD8),
-  multi-lens adversarial read-only review, discharge App C (S-8/S-13/S-14/S-31/S-32/S-39/S-44), close M5.
+- **M5.10a — conformance chapters — DONE.** Conformance runner gained **multi-module vectors**
+  (directory-as-fixture: a dir with `main.doodle` + sibling `<name>.doodle`; `import name` →
+  `<name>.doodle`, else `module-not-found`). Behavioral L§10 / L§11 / §4.12 fixtures; 180 → **191**;
+  README documents the directory form (native-module/capability scenarios stay integration tests).
+  doodle-rust `70f1908`.
+- **M5.10b — determinism gate — DONE.** GC-stress determinism extended over module loading + dispatch,
+  and (after the review) the actual M5.7/M5.9 driven paths (driven `hash`/`to_string`, cross-module
+  `with`) under `collect_at_every_safe_point`. doodle-rust `bd016cc`.
+- **M5.10c — exit review + close — DONE.** 4-lens adversarial read-only review (module-load×suspend/
+  resume, cell-aliasing/GC, dispatch/ambiguity, prelude/name-resolution). Findings fixed + tested
+  (doodle-rust `a0f0884`): qualified `P.member`/`member_signature` now walk the `extends` chain (was a
+  panic on an inherited member); `drive::resolve()` on an import suspension faults instead of
+  `unreachable!` (was a release panic reachable via the WASM facade); well-known-protocol `implement`
+  blocks are now conformance-checked (a typo'd method was silently no-op'd) + an `enter_unary` arity
+  backstop; `Registry::register` reserves the fixed prelude names. No CRITICAL/determinism/memory-safety
+  findings — cell-aliasing, driven GC-rooting, load-state/cycle detection across suspend/resume, S-8, and
+  prelude precedence all verified correct.
 
-wasm here = the build gate (Node-executed wasm tests are deferred per AD8); the accept behaviors run
-as native tests + the six conformance/integration suites.
+**App C discharged:** S-8/S-13/S-14/S-31/S-32/S-39/S-44 all landed (code + tests, each annotated
+`[Code: M5.x]` in implementation.md App C). Accept clauses: #1 (cell-aliasing) `cross_module_with.rs`;
+#2 (assign-to-import static) `resolve.rs`; #3 (wildcard ambiguity) `prelude.rs`/conformance; #4 (failed
+module) — failed-state proven, the re-import **re-raise is the ratified M9b deferral** (S-8: reload is
+environment-level); #5 (missing platform primitive) covered generically by `module-not-found`; #6 (M4
+carve-outs) `wellknown.rs`/`protocols.rs`. wasm = the build gate (Node-executed wasm tests deferred per
+AD8). All gates green (22 native suites, conformance 191, wasm32, hygiene 6/6).
+
+**Open M5-adjacent follow-ups (tracked, not blocking):** (a) the **D-M5-6 shadowing warning** (a decl
+hiding a prelude name warns per L§5.1 — load-time globals∩prelude diff, due before M6); (b) the pre-M6
+**`details` population** for the runtime `Error` kinds (S-58 schema, currently `{}`); (c) a minor
+diagnostic-precision limit — `with <prelude-const>` in an import-less module says "none is declared"
+rather than "is a constant" (sound per D-M5-3; sharpening needs the resolver to know prelude names,
+D-M5-6 territory). None affect a running program.
+
+**Next milestone:** per the implementation plan, M6 (IDE/diagnostics consumer) or the next milestone the
+user directs. The pre-M6 obligations above (D-M5-6 warning, `details` population) land before/with M6.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
