@@ -115,12 +115,21 @@ parsing text. Two pins govern it:
 - **(a) Messages are not API.** No host may parse an `Error.message`, ever — it is
   rubric-governed prose, snapshot-tested, and free to change. Anything a host
   needs programmatically lives in `details` (or `kind`).
-- **(b) `details` must be populated for every kind before M6.** The M6 IDE
-  consumes `details`; until then `make_error` builds `details = {}` uniformly
-  (S-58 fixed the *shape*; populating per-kind data is a deliberate rubric-pass
-  sequencing, not the end state). The per-kind schema below is the **checklist**
-  for that pass — so it is a table, not a vibe. New raising kinds add a row when
-  they land.
+- **(b) `details` is populated for every kind (M6.0b, before the M6 IDE consumes it).**
+  Landed doodle-rust `af1fa38` (part i; the `argument-error` split is part ii): the raise
+  carries structured `details` (an ordered
+  `(key, DetailVal)` list on the `Raise`), `make_error` builds the dict, and each raise
+  helper supplies its kind's data (a `type-mismatch`'s operand type, an
+  `index-out-of-range`'s index/length, …). The per-kind schema below is the **checklist**;
+  new raising kinds add a row when they land. Values are ordinary Doodle values (strings,
+  ints, lists, small dicts) and type names are **display strings** spelled as the type
+  values (Int/String/List/a record's name/Callable, S-37) — so one `details` record is
+  inspectable from Doodle and from the host without a second schema, and the pin-(a) test
+  reads `e.details["…"]` (never the message). **A few optional sub-fields are deferred**
+  (each noted in the table and in code, a small follow-up needing cross-function threading):
+  `with-target-not-parameter`'s `module`, `unhashable-key`'s `field`, the boolean-context
+  `type-mismatch`'s `got`, `not-a-protocol`'s `got`, and `module-load-error`'s per-diagnostic
+  notes/suggestion.
 - **(c) One rule, one slug across both catalogs.** A rule enforced **statically
   where lexically determinable and at run time otherwise** carries the **same
   slug** in the static `DiagnosticCode` catalog *and* the runtime `ExceptionKind`
@@ -132,22 +141,27 @@ parsing text. Two pins govern it:
 
 | kind | `details` schema |
 | --- | --- |
-| `index-out-of-range` | `{index, length}` |
+| `type-mismatch` | `{operator, expected, got}` — the operation (`+`/`is`/`index`/`field-access`/…), the accepted type name(s) (a **list** — an operator often accepts several), and the offending operand's runtime type name. *Deferred:* the boolean-context sites (`if`/`while`/`and`/`or`/`not`) carry `{operator, expected}` only — the `as_bool` helper carries no `heap` for `got` |
+| `undefined-ordering` | `{operator, left, right, nan?}` — the comparison operator, both operands' type names, and (NaN case only, S-28) `nan: true`, so a host branches "not a real number" from "these kinds don't order" without parsing |
+| `not-callable` | `{type}` — the non-callable value's runtime type |
+| `unhashable-key` | `{type, field?}` — the key's runtime type; `field` (the offending value-record field, S-29) is *deferred* (needs `check_hashable` to return it structurally) |
+| `index-out-of-range` | `{index, length}` — a bignum index (always out of range by magnitude) rides `index` as a decimal string |
 | `invalid-utf8` | `{position, byte}` |
-| `key-not-found` | `{key}` |
+| `key-not-found` | `{key}` — the missing key value, verbatim |
 | `name-not-defined` / `used-before-defined` | `{name}` |
 | `no-such-field` | `{field, type}` |
 | `negative-count` | `{count}` |
 | `module-not-found` | `{path, importer}` |
 | `circular-import` | `{cycle}` — the import chain as a list of paths |
-| `module-load-error` | `{path, canonical_id, diagnostics}` — the full diagnostic list, so an IDE renders an imported module's errors exactly as it renders the main program's |
+| `module-load-error` | `{path, canonical_id, diagnostics}` — each diagnostic is `{severity, code, message, span?}` (the S-63 shape; notes/suggestion *deferred*), so an IDE renders an imported module's errors exactly as it renders the main program's |
 | `ambiguous-import` | `{name, modules: [a, b]}` — the name and both wildcard sources, in import order (raised at *use*, S-13) |
 | `protocol-not-implemented` | `{type, protocol, member}` — the value's runtime type, a supplying protocol, and the member; the message points at `implement P for T` (L§10.3) |
 | `ambiguous-member` | `{member, protocols: [a, b], type}` — the member, both *unrelated* protocols supplying it (declaration/load order), and the type; raised at *use*, points at `P.member(args)` (L§10.3, S-31) |
 | `not-exported` | `{module, member}` — a member that exists but isn't in the module's `exports`; the message points at the fix (add it to `exports`) (L§11.1) |
 | `no-such-member` | `{module, member}` — a member the module doesn't declare; the **module** container's access-miss kind (never `no-such-field`) (L§11.1) |
-| `with-target-not-parameter` | `{name, module, kind}` — the `with` target, the module it was imported from, and what it actually is (`constant`/…); the **runtime** face (imported target) of the static diagnostic of the same slug (L§5.5, S-39; raised when the `with` executes, before any binding) |
-| *(every other `ExceptionKind`)* | schema TBD at the rubric pass (`{}` today) |
+| `with-target-not-parameter` | `{name, kind}` — the `with` target and what it actually is (`constant`/`variable`/…); the **runtime** face (imported target) of the static diagnostic of the same slug (L§5.5, S-39). *Deferred:* `module` (the exporter) — the resolved cell has no import provenance |
+| `division-by-zero` · `non-finite-float` · `procedure-in-expression` · `no-value-destination` · `function-fell-off-end` · `host-raised` | `{}` — the kind, span, and trace carry these; no structured data beyond that |
+| `argument-error` → **splitting** (M6.0b-ii) | retiring into four flat slugs, one fact per slug: `missing-argument {callee, parameter}` · `unknown-keyword {callee, keyword, parameters}` · `duplicate-argument {callee, parameter}` · `too-many-arguments {callee, expected, got}`. Lands with the user's S-58 catalog rename (L§10.3, S-31/S-58) |
 
 ## Appendix B — provisional caret / column model
 
