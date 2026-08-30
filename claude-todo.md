@@ -578,8 +578,26 @@ diagnostic-precision limit — `with <prelude-const>` in an import-less module s
 rather than "is a constant" (sound per D-M5-3; sharpening needs the resolver to know prelude names,
 D-M5-6 territory). None affect a running program.
 
-**Next milestone:** per the implementation plan, M6 (IDE/diagnostics consumer) or the next milestone the
-user directs. The pre-M6 obligations above (D-M5-6 warning, `details` population) land before/with M6.
+**★ MILESTONE M6 — Full observation surface + IDE debugger — STARTED (2026-08-29).** Working plan
+written: **`plan/plan-m6.md`** (M6.0 ratified pre-M6 obligations → M6.1 value inspection / M6.2 rich
+frames → M6.3 host pause / M6.4 breakpoints / M6.5 raise-trap → M6.6 stepping+observation-mode / M6.7
+aux-eval → M6.8 drive-script conformance → M6.9 full IDE debugger → M6.10 close). **The fact that
+dominates M6:** the drive scaffolding already exists — `Directive` (all 6), `PauseReason`
+(`Breakpoint`/`RaiseTrap`/`HostPause`/`SliceEnd`), `BreakpointId`, depth-anchored `should_pause` for
+`Step*` — as **unwired shells** (`Continue` doesn't pause, no breakpoint index, no host-pause flag, no
+raise-trap). So M6 is fill-in-the-shells + complete the E§8 pull surface (record/dict inspection, frame
+locals + `with` bindings, callable reflection, aux-eval — today only scalars+lists are inspectable) +
+the browser debugger. Risk is **breadth, not depth**; the two tricky mechanisms are **raise-trap**
+(paused-mid-raise state) and **aux-eval** (nested `to_string` on a paused instance). **Three decisions
+RESOLVED (user, 2026-08-29):** **D-M6-1** fine observation mode → **S-62** (spec landed `8eed2e3`: fine
+safe points = completion of every non-leaf subexpression, by syntactic form; leaves excluded;
+observation-only — GC/limits/cancel/budget/fuel stay at statement safe points; part of replay identity);
+**D-M6-2** → **portable drive-script conformance format now** (not deferred to M8); **D-M6-3** → **fuller
+debugger in-gate** (watch-it-run, elided-history viz, expandable value trees, raise-trap UI). **D-M6-4**
+stated-not-asked: a minimal engine-level callable-reflection API in M6, Doodle `help` stdlib stays M9a.
+Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their future foundation). **M6.0
+pre-M6 obligations** (the M5-adjacent follow-ups above, a+b) land first. **Next: M6.0** (shadowing
+warning + `Error.details` population), then M6.1.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
