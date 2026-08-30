@@ -1611,7 +1611,7 @@ signature** (its parameter names, defaults, block parameter — keyword names
 are the protocol's, since the caller can't know which implementation is
 selected), then dispatches on the runtime type of the value bound to the
 first declared parameter, positional or keyword; an unbound first parameter
-is an `argument-error`. A member's first parameter may not have a default
+is a `missing-argument`. A member's first parameter may not have a default
 (static error at the protocol). An implementation **conforms in arity and
 block parameter**; its parameter names are its own (it receives the bound
 arguments in declaration order); it **may not write defaults** — defaults
@@ -1624,7 +1624,7 @@ D). **[spec landed with this entry: L§10.1 (no-default first parameter;
 defaults on the member) + §10.2 (conformance) + §10.3 (bind-then-dispatch;
 qualified form) + App D.1. Code: M5.5 — protocol-level binding before
 dispatch; the two static checks; fixtures: first-param-by-keyword
-dispatch, unbound-first-param `argument-error`, implementation with a
+dispatch, unbound-first-param `missing-argument`, implementation with a
 default → static error, arity/block-param mismatch → static error.]** ·
 S-32 (E§5.5) Native-module registration timing (before first drive;
 mid-run registration deferred). ·
@@ -1805,9 +1805,18 @@ kebab-case slug — the runtime half of the diagnostic-code catalog, 1:1
 with the engine's `ExceptionKind`s (`type-mismatch`, `division-by-zero`,
 `non-finite-float`, `undefined-ordering`, `procedure-in-expression`,
 `name-not-defined`, `used-before-defined`, `not-callable`,
-`argument-error`, `unhashable-key`, `key-not-found`,
+`unhashable-key`, `key-not-found`,
 `no-such-field`, `no-value-destination`, `function-fell-off-end`, and,
-added later, `negative-count` (S-59) and `index-out-of-range` (M4.8a,
+added later, the four **argument kinds** (user, 2026-08-30 — replacing
+the shipped `argument-error`, which retires: `missing-argument`
+`{callee, parameter}`, `unknown-keyword` `{callee, keyword, parameters}`
+— the valid names ride along for "did you mean", `duplicate-argument`
+`{callee, parameter}`, `too-many-arguments` `{callee, expected, got}`;
+four facts with four fixes, so four slugs rather than one slug with a
+`problem` sub-catalog — **one fact per slug; `details` carries data,
+never categories**, so the catalog stays one level; foreign-function
+(S-42-lite) and protocol-member (S-31) binding use the same four),
+`negative-count` (S-59) and `index-out-of-range` (M4.8a,
 user-approved 2026-08-25: a list/string/bytes index outside
 `0 <= k < length`, negative included — one slug for both directions,
 since either is "no such position"; `details: {index, length}` with
@@ -1822,7 +1831,7 @@ including a u32-overflowing exponent — is now a magnitude *fault*
 (`LimitExceeded`), not a catchable raise. One mechanism for "too big to
 store," not two (see S-12).]** `invalid-utf8`
 (M4.8b, user-approved 2026-08-25): `decode(bytes)` on malformed UTF-8 —
-a *data* error, not the call-shape `argument-error`; `details:
+a *data* error, not a call-shape kind (the `missing-argument` family); `details:
 {position, byte}` (first invalid sequence, per `Utf8Error`'s
 `valid_up_to`/`error_len`); the host-side `make_string` keeps S-30's
 error-return `ValueError::InvalidUtf8` (no drive to raise into) but
@@ -1903,7 +1912,19 @@ silently misses — is small: fixed short catalog, AD5's linter can flag
 unknown kind literals, kids rarely dispatch on engine kinds). **[spec
 landed with this entry: L§12.1 + §4.12 + App D (spellings + D.1); E§9 +
 §4.3 + App B.1. Code: M4.5b (the `Error` type, the slug catalog, message
-snapshots, `make_error`).]**
+snapshots, `make_error`).]** **Details schema (user, 2026-08-30 — the rubric App A column,
+executing the M5.1 obligation that every kind be populated before M6):**
+`type-mismatch` `{operator, expected, got}` (`expected` a list — the
+engine always knows the domain it checked); `undefined-ordering`
+`{operator, left, right}` + `nan: true` in the S-28 NaN case;
+`not-callable` `{type}`; `unhashable-key` `{type, field}` (`field` per
+S-29, absent when the type itself is unhashable). Conventions: type
+names are **strings** spelled as the type values (`Int`, `String`, a
+record's name, `Procedure`/`Function`) — display strings hosts render
+and localize by, never tokens to parse; `details` values are ordinary
+Doodle values, inspectable from Doodle and the host alike; a message is
+never the only carrier of a fact. Rejected: `{}` for these kinds (the
+IDE would have to parse messages — forbidden).
 
 **S-59 (L§4.4) RESOLVED (user, 2026-08-25): string repetition `*` is
 symmetric** — the `Int` count may be on either side (`"ab" * 3` ==

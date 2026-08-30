@@ -1731,6 +1731,17 @@ App B.1; App C S-63. Code: **M6** — plan-m6 should fold the accessor +
 imported-module accumulation + the D-M5-6 pass into the item that builds
 the IDE's diagnostics surface (the M6 session's call which).
 
+**S-58 catalog (user, 2026-08-30): `argument-error` → four kinds; details
+schema pinned.** `missing-argument` / `unknown-keyword` /
+`duplicate-argument` / `too-many-arguments` (one fact per slug; `details`
+carries data, never a sub-taxonomy — the catalog stays one level).
+Rich details ruled: `type-mismatch` `{operator, expected, got}`,
+`undefined-ordering` `{operator, left, right}` (+ `nan`), `not-callable`
+`{type}`, `unhashable-key` `{type, field?}`; type names are strings
+spelled as the type values. Spec: L§10.3 + S-31 mentions →
+`missing-argument`; App C S-58. Code: **M6.0b** (helpers pick a kind;
+S-42-lite + S-31 binding share the four; rubric App A column).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -2048,6 +2059,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-30 — **S-58 catalog: `argument-error` split into four kinds;
+  details schema pinned.** One discussions commit: L§10.3 (`missing-argument`),
+  App C S-58 (catalog + schema column) + S-31 mentions; this file. Code:
+  M6.0b.
 - 2026-08-29 — **S-63 resolved + spec landed: one instance load-diagnostics
   record (warnings channel + schema + ordering).** Ruling in the queue entry
   above; closes the three M1.1 discovered deltas and D-M5-6's channel. One

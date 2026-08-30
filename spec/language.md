@@ -1706,7 +1706,7 @@ type of the value bound to the member's first parameter** (single dispatch),
 however that argument arrived: positionally, or by the first parameter's
 keyword. Keyword names are the protocol's, since the caller cannot know which
 implementation will be selected; a call that leaves the first parameter unbound
-is an `argument-error`.
+is a `missing-argument` error (§12.1).
 
 ```doodle
 each(my_range) do(i) … end     # dispatches on my_range's type
