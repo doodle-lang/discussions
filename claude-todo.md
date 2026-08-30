@@ -1671,6 +1671,18 @@ declaration span; no resolver-API change (the prelude is registered before
 first `load`). User-wildcard shadowing: import-time or linter, later. Spec
 landed: L§5.1; App C S-43 (parked question closed); plan-m5 D-M5-6 + M5.8.
 
+**S-62 / D-M6-1 RESOLVED (user, 2026-08-29): fine observation mode =
+non-leaf subexpression completions, observation-only.** Defined by
+syntactic form in E§7.4 (operator applications, calls besides
+entry/return, field/index steps, if-expr branch results, interpolation
+pieces; leaves are not safe points), realized at existing continuation
+boundaries; the host sees the completed span + the value just produced
+(§8.4). GC/limits/cancellation/budget/fuel stay at statement safe points
+in every mode (S-20 extended) — same fault instant either way; the set is
+replay identity. Spec landed: E§7.4 + §8.8 + App B.1; App C S-62 + S-20.
+plan-m6 D-M6-1: mark resolved in the M6 session's (untracked) plan file.
+Code: **M6.6**.
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1983,6 +1995,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-29 — **S-62 / D-M6-1 resolved + spec landed: fine observation mode
+  = non-leaf subexpression completions, observation-only.** Ruling in the
+  queue entry above. One discussions commit: E§7.4 (statement safe points =
+  accounting; the fine set by syntactic form; value-at-safe-point), §8.8,
+  App B.1; App C S-62 + S-20 bracket; this file. Code: M6.6.
 - 2026-08-28 — **D-M5-6 resolved: hiding a prelude name warns (L§5.1); the
   warning itself is a tracked post-M5.8 follow-up, due before M6.** One
   discussions commit: L§5.1; App C S-43; plan-m5 D-M5-6 + M5.8; this file.

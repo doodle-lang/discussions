@@ -610,11 +610,29 @@ resumable state. The engine must place safe points at least:
 - between statements (L§7), and
 - at call entry and at return.
 
-These are the points at which the engine evaluates stop conditions (breakpoints,
-the current step target, a host pause request, and resource limits, §10). Between
-safe points the engine's internal state need not be inspectable. The default
-observation granularity is per-statement (§8.1); an instance may be configured for
-finer, per-subexpression safe points at additional cost.
+These **statement-level** safe points are where the engine evaluates stop
+conditions — breakpoints, the current step target, a host pause request — **and
+where resource accounting happens**: resource limits (§10), cancellation
+observation (§10.1), the step budget, and slice fuel are evaluated here and only
+here, in every observation mode. Between safe points the engine's internal state
+need not be inspectable. The default observation granularity is per-statement
+(§8.1).
+
+**Fine observation mode** (§8.8) adds **observation-only** safe points: one at the
+**completion of every non-leaf subexpression** — each operator application, each
+call (besides its entry and return), each field access and index step, each
+`if`-expression branch result, each interpolation piece. Leaves — literals and
+name reads — are not safe points: no engine state lies between them to observe,
+and their values are visible through inspection or as operands at the enclosing
+completion. At a fine safe point the host observes the completed subexpression's
+position (§8.1) and **the value it just produced** (§8.4) — the primitive for
+watching an expression evaluate. Fine safe points are only places a drive may
+return `Paused(Step)` or `Paused(HostPause)`; no accounting, GC, or limit check
+runs there, so a fault or budget exhaustion lands at the same instant in either
+mode (§7.7). The fine safe-point set is defined by syntactic form, above, and is
+part of the engine's replay identity: the same program and directives stop at
+the same positions in every run. Its cost — one check per subexpression
+completion — is paid only while fine mode is on; coarse mode pays nothing.
 
 ### 7.5 Capability requests
 
@@ -803,7 +821,8 @@ safe point. An instance's observation mode (per-statement vs. per-subexpression 
 points, and whether local-binding capture is eager) is set in `config` and may be
 adjustable, letting a host trade fidelity for speed — e.g. run `RunToCompletion` with
 coarse safe points when nobody is watching, and switch to fine stepping when the user
-opens the debugger.
+opens the debugger. Switching mode changes only where stepping may stop (§7.4); it
+never changes what the program computes or when a limit trips.
 
 ### 8.9 Live edit (optional)
 
@@ -1129,6 +1148,14 @@ provides the complete set plus the interactive facilities of §7–§11.
   primitives; a native function receives dynamic state as an argument. Keeps
   one implementation of `with` and keeps binding machinery off the boundary.
   Resolves plan-m5 D-M5-3 / implementation-plan Appendix C S-44.
+- **Fine observation mode = non-leaf subexpression completions, observation-only
+  (§7.4, §8.8).** Defined by syntactic form (so hosts and replay can depend on
+  it) and realized at the machine's existing continuation boundaries; leaves
+  are not safe points; accounting, GC, limits, cancellation, budget, and fuel
+  stay at statement safe points in every mode. Chosen over a safe point at
+  every node (leaves add nothing observable) and over a config knob with no
+  fine mode (an API that lies). Resolves plan-m6 D-M6-1 / implementation-plan
+  Appendix C S-62.
 
 ### B.2 Open issues, including cross-spec implications
 

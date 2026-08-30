@@ -1724,7 +1724,9 @@ units**, not just statement safe points — a result-growing op (`*`/`**`,
 repetition) pre-charges a size estimate on top of the flat per-statement
 one. Still mode-independent, which was S-20's actual point: a statement
 safe point costs one unit in every observation mode, and the operation
-charges are a pure function of operand values, mode-independent too.]** ·
+charges are a pure function of operand values, mode-independent too.]** **[Extended by S-62 (2026-08-29): all accounting — GC, limits,
+cancellation observation, budget, fuel — stays at statement safe points in
+every observation mode; fine-mode safe points are observation-only.]** ·
 S-21 (E§8.6) Breakpoint mapping details: span index, lines without code,
 multiple statements per line, pending breakpoints for unloaded modules,
 canonical-id reuse. ·
@@ -1990,6 +1992,35 @@ missing-member diagnostics; fixtures: 3-deep chain with override and
 strengthening, a forward `extends` reference → `used-before-defined` at
 load (parent-first works), missing-member naming, shared-ancestor
 non-ambiguity.]**
+
+**S-62 (E§7.4/§8.8) RESOLVED (user, 2026-08-29; plan-m6 D-M6-1): fine
+observation mode = the completion of every non-leaf subexpression,
+observation-only.** Option (b)'s engineering shape with option (a)'s
+specification discipline: the fine safe-point set is defined **by
+syntactic form** in E§7.4 — operator applications, calls (besides
+entry/return), field access and index steps, `if`-expression branch
+results, interpolation pieces — not by "wherever a continuation
+exists"; in a CESK machine the two coincide (every non-leaf completion
+is a continuation boundary), so the specified set is the cheap set.
+Leaves (literals, name reads) are not safe points: nothing observable
+lies between them. At a fine safe point the host sees the completed
+subexpression's span (§8.1) and the value just produced (the result
+register, §8.4) — the "watch your expression evaluate" primitive the M6
+IDE builds on. **Observation-only (load-bearing):** GC, limits,
+cancellation observation, step budget, and slice fuel stay at statement
+safe points in every mode (S-20's point extended — a fault landing at a
+different instant in fine mode would be a mode-dependent fault, a
+determinism-gate diff). The set is part of replay identity; the
+determinism gate runs a fine-mode stepping trace twice. Cost: one
+mode-gated check per subexpression completion, paid only in fine mode.
+Rejected: (a) full per-node (leaves add nothing observable; more
+overhead for no fidelity); (c) knob-only (a mode that does nothing is
+an API that lies, and the IDE track needs the primitive). **[spec
+landed with this entry: E§7.4 + §8.8 + App B.1. Code: M6.6 — the mode
+flag gating expression-continuation pops; value-at-fine-safe-point
+exposure; fixtures: a fine-mode stepping trace over operators / calls /
+field+index / if-expr / interpolation, leaves not stopped at, and the
+same fault instant in both modes.]**
 
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
