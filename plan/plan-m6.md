@@ -154,7 +154,7 @@ Two ratified follow-ups from M5, done first because the IDE consumes them.
   raise sites — enumerate them **repo-wide** by grepping the `Raise::new`/raise
   helpers, not a guessed subset.
 
-### M6.1 — Structural value inspection: records + dicts + callable reflection `[M]` (foundation)
+### M6.1 — Structural value inspection: records + dicts + callable reflection `[M]` (foundation) — **DONE (`9be1b18`)**
 
 Complete the **pure** inspection surface (E§4.4/§8.4) — the debugger renders program
 state from this, **without running Doodle code**. Today `boundary.rs` inspects only

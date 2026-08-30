@@ -630,8 +630,17 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   (a) proven by conformance `details-001..008` (read `e.details["…"]`, never the message). Rubric App A
   column updated. Gates: native 519, conformance 199, wasm32, hygiene 6/6. **Deferred optional sub-fields**
   (noted in code + rubric): with-target `module`, unhashable `field`, boolean-context type-mismatch `got`,
-  not-a-protocol `got`, module-load-error per-diagnostic notes/suggestion. **Next: M6.1** (value inspection
-  — the E§4.4/§8.4 pull surface for the debugger).
+  not-a-protocol `got`, module-load-error per-diagnostic notes/suggestion.
+
+- **M6.1 DONE (2026-08-30, doodle-rust `9be1b18`): structural value inspection (E§4.4/§8.4).** The pure,
+  Doodle-code-free reads the debugger's value tree + stack panel render from — completing E§4.4/§8.4
+  beyond scalars+lists. New `machine/inspect.rs`: records (`record_type_name`/`record_length`/
+  `record_field_name`/`record_field`), dicts (`dict_length`/`dict_key`/`dict_value`, insertion order),
+  callable reflection (D-M6-4 minimal: `callable_name`/`callable_is_function` (S-37 Procedure/Function)/
+  `callable_position`/`callable_docstring`), `type_name`, `module_member_names`. Handle-minting readers
+  host-owned (list_get discipline); wrong-kind is a `ValueError`, never a panic. Native 520, conformance
+  199, wasm32, hygiene 6/6. **Next: M6.2** (rich frame observation — per-frame locals + `with` dynamic
+  bindings + host-facing tail-elided history, E§8.2/§8.3).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
