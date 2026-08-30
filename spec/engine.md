@@ -187,6 +187,26 @@ at load such as surrogate escapes, L§3.6.3) surface here as a structured
 `LoadError` carrying positions. `load` does not itself resolve `import`s; imports
 are resolved lazily when top-level code runs (§6).
 
+**Load diagnostics.** A successful load may still produce **warnings** (L§5.1
+shadowing, including of prelude names). The engine keeps an instance-scoped,
+monotonic **load-diagnostics record** to which it appends every diagnostic the
+front end produces for every module the instance loads or attempts to load —
+the entry module at `load`, and each imported module as its load executes
+mid-drive (§6) — errors included. Errors keep their control-flow channels
+(`LoadError` here; `module-load-error` raised in the importer, §6); the record
+is the one *display* surface, read by the host with
+`load_diagnostics(instance, since?)` after `load` or at any stopped state (§8),
+never mid-drive. Each entry is a structured diagnostic — severity, code (the
+static diagnostic slug), message, module (`canonical_id`), span, notes,
+suggestion — the same shape `module-load-error` carries in its `details`. Order
+is deterministic: by load order across modules, and within a module the
+producer order (nondecreasing span start, production order on ties); a renderer
+never re-sorts. The record is a pure function of the run's inputs (sources and
+prelude exports), so it is replay-stable; it is engine-owned and host-facing —
+not program data, not charged to the program's heap, not visible to Doodle code
+— and lives as long as the instance (a REPL's per-chunk loads append like any
+load).
+
 A program is started by loading its entry module and then **driving** it (§7).
 Running a module's top-level code is ordinary driven execution and is therefore
 observable and steppable like any other code.
@@ -722,7 +742,8 @@ All of the following are available on a **paused** or **suspended** instance, at
 safe point, without running Doodle code (except where noted). They are **pull**
 operations: the host inspects a stopped instance rather than receiving callbacks
 mid-evaluation, which avoids reentrancy hazards. Event-like behavior is obtained by
-driving in a `Step*` directive.
+driving in a `Step*` directive. The load-diagnostics record (§3.2) is additionally
+readable on a `ready` instance, immediately after `load`.
 
 ### 8.1 Current position
 
@@ -1156,6 +1177,16 @@ provides the complete set plus the interactive facilities of §7–§11.
   every node (leaves add nothing observable) and over a config knob with no
   fine mode (an API that lies). Resolves plan-m6 D-M6-1 / implementation-plan
   Appendix C S-62.
+- **One load-diagnostics record per instance (§3.2, §8).** Warnings on a
+  successful load (prelude shadowing, L§5.1) and every imported module's
+  load-time diagnostics accumulate in an instance-scoped, monotonic,
+  deterministically ordered record with a pinned structured schema, read by
+  pull like every observation; errors keep `LoadError`/`module-load-error` as
+  control flow. Chosen over threading prelude names into the resolver (splits
+  the mechanism) and over a main-module-only channel (a known gap). Resolves
+  plan-m5 D-M5-6's channel question and the M1.1 discovered deltas (warnings
+  channel, diagnostic schema, diagnostic ordering); implementation-plan
+  Appendix C S-63.
 
 ### B.2 Open issues, including cross-spec implications
 

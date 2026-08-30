@@ -2022,6 +2022,38 @@ exposure; fixtures: a fine-mode stepping trace over operators / calls /
 field+index / if-expr / interpolation, leaves not stopped at, and the
 same fault instant in both modes.]**
 
+**S-63 (E§3.2/§8) RESOLVED (user, 2026-08-29): one instance
+load-diagnostics record — the warnings channel, the diagnostic schema,
+and diagnostic ordering pinned together.** Motivated by D-M5-6 (the
+prelude-shadowing warning is inherently load-time and needs the prelude's
+exports) and owed since M1.1's three discovered deltas. The engine keeps
+an instance-scoped, **monotonic** record appending every front-end
+diagnostic for every module loaded or attempted — the entry module at
+`load`, each imported module as its load executes mid-drive — **errors
+included**; errors keep their control-flow channels (`LoadError`;
+`module-load-error` raised in the importer with the diagnostics also in
+`details`, S-58), the record is the one *display* surface. Read by pull:
+`load_diagnostics(instance, since?)` after `load` (a `ready` instance) or
+at any stopped state, never mid-drive; the `since` cursor keeps IDE
+polling linear. **Schema** (the M1.1 item): severity, code (static slug),
+message, module (`canonical_id`), span, notes, suggestion — the shape the
+M1.1 renderer consumes. **Ordering** (the M1.1 item): load order across
+modules, then the producer contract within a module (nondecreasing span
+start, production order on ties; the renderer never re-sorts). The record
+is a pure function of the run's inputs (sources + prelude exports) —
+replay-stable; engine-owned, host-facing, not program data (not heap-
+charged, not visible to Doodle code); lives with the instance (M9b REPL
+chunk loads append). Rejected: threading the prelude name set into a
+resolver pass (splits the mechanism across resolver and engine;
+contradicts D-M5-6's no-resolver-API-change design) and a
+main-module-only channel (a known gap the IDE would re-open). **[spec
+landed with this entry: E§3.2 (the record) + §8 intro + App B.1. Code:
+M6 — the accessor, imported-module accumulation (currently dropped), the
+D-M5-6 prelude-shadowing pass feeding it; fixtures: main-module warning
+after `load`, an imported module's warning appearing after its load
+executes, a failed import's diagnostics present in the record, stable
+order across two runs.]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

@@ -1701,6 +1701,17 @@ replay identity. Spec landed: E§7.4 + §8.8 + App B.1; App C S-62 + S-20.
 plan-m6 D-M6-1: mark resolved in the M6 session's (untracked) plan file.
 Code: **M6.6**.
 
+**S-63 RESOLVED (user, 2026-08-29): one instance load-diagnostics record.**
+Monotonic, instance-scoped; every front-end diagnostic for every module
+loaded or attempted (entry at `load`, imports mid-drive), errors included
+(errors keep `LoadError`/`module-load-error` as control flow); pull-read
+`load_diagnostics(since?)` after `load` or at any stopped state; schema +
+deterministic ordering pinned; replay-stable; not program data. Closes the
+three M1.1 discovered deltas + D-M5-6's channel. Spec landed: E§3.2 + §8 +
+App B.1; App C S-63. Code: **M6** — plan-m6 should fold the accessor +
+imported-module accumulation + the D-M5-6 pass into the item that builds
+the IDE's diagnostics surface (the M6 session's call which).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -1894,6 +1905,11 @@ code, nothing shipped that contradicts a future spec pin):
 - **Diagnostic ordering** — multi-diagnostic order is a producer contract
   (nondecreasing `span.start`, tie-break production order); the renderer
   never re-sorts. Pin in E Appendix B.
+  **All three RESOLVED (user, 2026-08-29; App C S-63):** E§3.2's
+  instance load-diagnostics record pins the warnings channel, the
+  structured schema, and the ordering; read via `load_diagnostics(since?)`
+  after `load` or at any stopped state. Code: M6 (the accessor +
+  imported-module accumulation + the D-M5-6 pass feeding it).
 - **Line endings (CRLF→LF)** — **RESOLVED (user, 2026-07-10): normalize
   CRLF→LF at load.** A CRLF (CR immediately before LF, §3.2) is replaced by a
   single LF before NFC, so the source model, spans, columns, and the lexer see
@@ -2013,6 +2029,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-29 — **S-63 resolved + spec landed: one instance load-diagnostics
+  record (warnings channel + schema + ordering).** Ruling in the queue entry
+  above; closes the three M1.1 discovered deltas and D-M5-6's channel. One
+  discussions commit: E§3.2 + §8 intro + App B.1; App C S-63; this file.
+  Code: M6.
 - 2026-08-29 — **S-62 / D-M6-1 resolved + spec landed: fine observation mode
   = non-leaf subexpression completions, observation-only.** Ruling in the
   queue entry above. One discussions commit: E§7.4 (statement safe points =
