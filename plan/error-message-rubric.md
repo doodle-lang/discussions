@@ -116,8 +116,8 @@ parsing text. Two pins govern it:
   rubric-governed prose, snapshot-tested, and free to change. Anything a host
   needs programmatically lives in `details` (or `kind`).
 - **(b) `details` is populated for every kind (M6.0b, before the M6 IDE consumes it).**
-  Landed doodle-rust `af1fa38` (part i; the `argument-error` split is part ii): the raise
-  carries structured `details` (an ordered
+  Landed doodle-rust `af1fa38` (part i) + `addaa9d` (part ii, the `argument-error` split):
+  the raise carries structured `details` (an ordered
   `(key, DetailVal)` list on the `Raise`), `make_error` builds the dict, and each raise
   helper supplies its kind's data (a `type-mismatch`'s operand type, an
   `index-out-of-range`'s index/length, …). The per-kind schema below is the **checklist**;
@@ -161,7 +161,10 @@ parsing text. Two pins govern it:
 | `no-such-member` | `{module, member}` — a member the module doesn't declare; the **module** container's access-miss kind (never `no-such-field`) (L§11.1) |
 | `with-target-not-parameter` | `{name, kind}` — the `with` target and what it actually is (`constant`/`variable`/…); the **runtime** face (imported target) of the static diagnostic of the same slug (L§5.5, S-39). *Deferred:* `module` (the exporter) — the resolved cell has no import provenance |
 | `division-by-zero` · `non-finite-float` · `procedure-in-expression` · `no-value-destination` · `function-fell-off-end` · `host-raised` | `{}` — the kind, span, and trace carry these; no structured data beyond that |
-| `argument-error` → **splitting** (M6.0b-ii) | retiring into four flat slugs, one fact per slug: `missing-argument {callee, parameter}` · `unknown-keyword {callee, keyword, parameters}` · `duplicate-argument {callee, parameter}` · `too-many-arguments {callee, expected, got}`. Lands with the user's S-58 catalog rename (L§10.3, S-31/S-58) |
+| `missing-argument` | `{callee, parameter}` — the callable (a named `to`/`fn`, a record type, absent for an anonymous `fn`/block) and the unbound parameter (S-58, one of the four that replaced `argument-error`) |
+| `unknown-keyword` | `{callee, keyword, parameters}` — the bad keyword and the callee's valid parameter names (for "did you mean?") |
+| `duplicate-argument` | `{callee, parameter}` — a parameter bound more than once |
+| `too-many-arguments` | `{callee, expected, got}` — the parameter count and the positional count given |
 
 ## Appendix B — provisional caret / column model
 

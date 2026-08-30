@@ -576,7 +576,8 @@ AD8). All gates green (22 native suites, conformance 191, wasm32, hygiene 6/6).
 instance load-diagnostics record; also closes M1.1's three discovered deltas — warnings channel, schema,
 ordering) and the code built it (`load::prelude_shadowing` feeding `Machine.load_diagnostics`, read via
 `Instance::load_diagnostics(since)`); (b) the pre-M6
-**`details` population** for the runtime `Error` kinds (S-58 schema, currently `{}`) — **next (M6.0b)**; (c) a minor
+**`details` population** for the runtime `Error` kinds — **DONE (M6.0b, doodle-rust `af1fa38` + `addaa9d`)**:
+every kind carries its S-58 schema (a few optional sub-fields deferred, noted in code + rubric); (c) a minor
 diagnostic-precision limit — `with <prelude-const>` in an import-less module says "none is declared"
 rather than "is a constant" (sound per D-M5-3; sharpening needs the resolver to know prelude names,
 D-M5-6 territory). None affect a running program.
@@ -615,8 +616,22 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   deltas** (warnings channel, diagnostic schema, diagnostic ordering) and D-M5-6's channel question.
   `machine.rs` crossed the 500-line soft limit with the new field, so its six `#[cfg(test)]` `Instance`
   helpers moved to the length-exempt `machine/tests.rs`. Tests `tests/load_diagnostics.rs` (7). Gates:
-  native 519, conformance 191, wasm32 build, hygiene 6/6. **Next: M6.0b** (`Error.details` population),
-  then M6.1.
+  native 519, conformance 191, wasm32 build, hygiene 6/6.
+
+- **M6.0b DONE (2026-08-30): `Error.details` populated for every kind (rubric pin (b)).** The raise
+  carries a structured `(key, DetailVal)` list; `make_error` builds the dict; `value_type_name` gives
+  S-37 display type names. **Part i (doodle-rust `af1fa38`):** every non-argument kind — the ratified Q1
+  schemas (type-mismatch `{operator, expected, got}`, undefined-ordering `{operator, left, right, nan?}`,
+  not-callable `{type}`, unhashable-key `{type}`, …) + the `{}` thin kinds; split `control.rs` →
+  `control/names.rs`. **Part ii (doodle-rust `addaa9d`):** the **`argument-error` split** (user S-58
+  catalog `5fd99df`) into `missing-argument`/`unknown-keyword`/`duplicate-argument`/`too-many-arguments`
+  — one fact per slug, `details` carrying data; each binding site (call/record/dispatch/block/intrinsic)
+  picks the kind + fills details (`callee` threaded where named); split `call.rs` → `call/frame.rs`. Pin
+  (a) proven by conformance `details-001..008` (read `e.details["…"]`, never the message). Rubric App A
+  column updated. Gates: native 519, conformance 199, wasm32, hygiene 6/6. **Deferred optional sub-fields**
+  (noted in code + rubric): with-target `module`, unhashable `field`, boolean-context type-mismatch `got`,
+  not-a-protocol `got`, module-load-error per-diagnostic notes/suggestion. **Next: M6.1** (value inspection
+  — the E§4.4/§8.4 pull surface for the debugger).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
