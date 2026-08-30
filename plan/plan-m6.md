@@ -111,20 +111,31 @@ builds is their eventual foundation).
 
 ## The work items
 
-### M6.0 — Pre-M6 obligations (ratified; no decisions) `[S–M]`
+### M6.0 — Pre-M6 obligations (ratified; no decisions) `[M]`
 
 Two ratified follow-ups from M5, done first because the IDE consumes them.
 
-- **M6.0a — D-M5-6 shadowing warning `[S]`.** A declaration that hides a **prelude**
-  name warns per **L§5.1** (ratified `5c627fb`; semantics pinned, implementation
-  slipped). Approach with **no resolver-API change**: a **post-resolve load-time**
-  pass diffs a module's `ResolvedModule.globals` against the prelude's export set and
-  emits the `shadowing` warning at each colliding declaration's span (the prelude is
-  registered before first load, so its exports are known). User-wildcard shadowing is
-  the linter's/import-time job (exports known only at import execution) — the
-  consistent end-state, **not** part of this follow-up. Tests: a decl named for a
-  prelude built-in warns; a non-colliding decl does not; the warning points at the
-  decl span.
+- **M6.0a — Load-diagnostics record (S-63) + D-M5-6 shadowing warning `[M]` — DONE
+  (doodle-rust `b3a9eb3`).** The D-M5-6 warning (a declaration hiding a **prelude** name
+  warns per **L§5.1**, ratified `5c627fb`) is inherently **load-time** (it needs the
+  prelude's exports), and E§3.2 had no channel for warnings on a *successful* load — so
+  the user pinned **S-63** (spec `4be2fa7`), which also closes M1.1's three discovered
+  deltas (warnings channel, diagnostic schema, diagnostic ordering). Built: the
+  instance-scoped, monotonic **load-diagnostics record** (`Machine.load_diagnostics`),
+  appending every front-end diagnostic for every module loaded or attempted — the entry
+  module's prelude-shadowing at `load_full`; each imported module's parse+resolve
+  diagnostics (previously dropped) plus its prelude-shadowing in `import.rs` — **errors
+  included**; the pull accessor `Instance::load_diagnostics(since)`; the D-M5-6 pass
+  `load::prelude_shadowing` (globals∩prelude-names diff, no resolver-API change);
+  deterministic order (load order, then span order), replay-stable, engine-owned.
+  Errors keep their control-flow channels (`LoadError`; a broken import's
+  `module-load-error`); the record is the one display surface. `machine.rs` crossed the
+  500-line soft limit with the new field, so its six `#[cfg(test)]` `Instance` helpers
+  moved to the length-exempt `machine/tests.rs`. Tests `tests/load_diagnostics.rs` (7);
+  gates native 519 / conformance 191 / wasm32 / hygiene 6/6. **Deferred (small, M6.9
+  facade wiring):** seeding the *entry* module's host-resolve **lexical** diagnostics
+  into the record — the host holds them from its own `resolve()`, and the display
+  merge is natural where the facade calls `load`.
 
 - **M6.0b — `Error.details` population `[M]`.** Populate the per-kind `details` dict
   for **every** raising `ExceptionKind` (today `make_error` builds `{}` uniformly).
