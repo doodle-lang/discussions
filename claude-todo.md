@@ -571,9 +571,12 @@ environment-level); #5 (missing platform primitive) covered generically by `modu
 carve-outs) `wellknown.rs`/`protocols.rs`. wasm = the build gate (Node-executed wasm tests deferred per
 AD8). All gates green (22 native suites, conformance 191, wasm32, hygiene 6/6).
 
-**Open M5-adjacent follow-ups (tracked, not blocking):** (a) the **D-M5-6 shadowing warning** (a decl
-hiding a prelude name warns per L§5.1 — load-time globals∩prelude diff, due before M6); (b) the pre-M6
-**`details` population** for the runtime `Error` kinds (S-58 schema, currently `{}`); (c) a minor
+**Open M5-adjacent follow-ups (tracked, not blocking):** (a) the **D-M5-6 shadowing warning** —
+**DONE (M6.0a, doodle-rust `b3a9eb3`)**: it needed a load-time channel, so the user pinned **S-63** (the
+instance load-diagnostics record; also closes M1.1's three discovered deltas — warnings channel, schema,
+ordering) and the code built it (`load::prelude_shadowing` feeding `Machine.load_diagnostics`, read via
+`Instance::load_diagnostics(since)`); (b) the pre-M6
+**`details` population** for the runtime `Error` kinds (S-58 schema, currently `{}`) — **next (M6.0b)**; (c) a minor
 diagnostic-precision limit — `with <prelude-const>` in an import-less module says "none is declared"
 rather than "is a constant" (sound per D-M5-3; sharpening needs the resolver to know prelude names,
 D-M5-6 territory). None affect a running program.
@@ -595,9 +598,25 @@ observation-only — GC/limits/cancel/budget/fuel stay at statement safe points;
 **D-M6-2** → **portable drive-script conformance format now** (not deferred to M8); **D-M6-3** → **fuller
 debugger in-gate** (watch-it-run, elided-history viz, expandable value trees, raise-trap UI). **D-M6-4**
 stated-not-asked: a minimal engine-level callable-reflection API in M6, Doodle `help` stdlib stays M9a.
-Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their future foundation). **M6.0
-pre-M6 obligations** (the M5-adjacent follow-ups above, a+b) land first. **Next: M6.0** (shadowing
-warning + `Error.details` population), then M6.1.
+Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their future foundation).
+
+- **M6.0a DONE (2026-08-30, doodle-rust `b3a9eb3`): the S-63 load-diagnostics record + D-M5-6 warning.**
+  A successful load may produce warnings — a module global hiding a prelude name (built-in type, `Error`,
+  a well-known protocol, or a host intrinsic) shadows it (L§5.1). E§3.2 had no channel for warnings on a
+  successful load, so the user pinned **S-63** (spec `4be2fa7`): one instance-scoped, monotonic
+  **load-diagnostics record** appending every front-end diagnostic for every module loaded or attempted
+  (entry module at load; imports as they load mid-drive; errors included), read by pull —
+  `Instance::load_diagnostics(since)` — on a `Ready`/stopped instance. Errors keep their control-flow
+  channels (`LoadError`; a broken import's `module-load-error`); the record is the one display surface.
+  Code: `Machine.load_diagnostics`; `load::prelude_shadowing` (globals∩prelude-names diff, no
+  resolver-API change) feeding the entry module at `load_full` and each import in `import.rs` (which also
+  now accumulates imports' front-end diagnostics — previously dropped); deterministic order (load order,
+  then span order), replay-stable, engine-owned/not-program-data. **Closes the three M1.1 discovered
+  deltas** (warnings channel, diagnostic schema, diagnostic ordering) and D-M5-6's channel question.
+  `machine.rs` crossed the 500-line soft limit with the new field, so its six `#[cfg(test)]` `Instance`
+  helpers moved to the length-exempt `machine/tests.rs`. Tests `tests/load_diagnostics.rs` (7). Gates:
+  native 519, conformance 191, wasm32 build, hygiene 6/6. **Next: M6.0b** (`Error.details` population),
+  then M6.1.
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
