@@ -1715,7 +1715,14 @@ violations (already faulted, E§7.6). ·
 S-17 (E§7.5/§8) Observation while Suspended: capability call sits at an
 implicit safe point; request-argument handles are host-owned. ·
 S-18 (E§8.7) Raise-trap unified across `raise`/foreign-raise/
-`resolve(Raise)` (trap fires before any unwind in all three). ·
+`resolve(Raise)` (trap fires before any unwind in all three).
+**[Sharpened (user, 2026-08-31): raise-trap is directive-gated —
+`RunToCompletion` ignores it, as it ignores breakpoints; E§7.3's stop
+list already implied it (`Paused(RaiseTrap)` is not among
+`RunToCompletion`'s outcomes), and an unconditional trap would pause a
+fast run at raises a `rescue` was about to catch. E§8.7 sentence
+landed; matches the shipped M6 drive-loop gate + the exit-criteria
+matrix.]** ·
 S-19 (E§11) Determinism obligation on synchronous foreign functions
 (host contract: sync FFs must be deterministic or become capabilities). ·
 S-20 (E§7.7/§10.2) Step-budget unit is mode-independent regardless of

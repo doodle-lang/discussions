@@ -845,11 +845,14 @@ Doodle code.
 
 ### 8.7 Trap on raise
 
-The host may enable **raise-trapping**. When enabled, the engine stops with
-`Paused(RaiseTrap)` at the point an exception is raised (L§12.1), *before* the stack
-unwinds, so the debugger can inspect the raising frame with the stack intact. Resuming
-continues the unwind (the exception propagates normally). Raise-trapping is independent
-of whether the exception is later caught.
+The host may enable **raise-trapping**. When enabled, and under a `Continue` or
+`Step*` directive, the engine stops with `Paused(RaiseTrap)` at the point an exception
+is raised (L§12.1), *before* the stack unwinds, so the debugger can inspect the raising
+frame with the stack intact. Resuming continues the unwind (the exception propagates
+normally). Raise-trapping is independent of whether the exception is later caught.
+`RunToCompletion` ignores raise-trapping, as it ignores breakpoints (§8.6) — it stops
+only for the outcomes §7.3 lists; enabling a trap says *which* stops interest the host,
+the directive says whether debug stops fire at all.
 
 ### 8.8 Host-requested pause and observation mode
 

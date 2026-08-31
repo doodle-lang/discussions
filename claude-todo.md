@@ -2134,6 +2134,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-31 — **E§8.7 sharpened: raise-trap is directive-gated
+  (`RunToCompletion` ignores it, like breakpoints).** E§7.3's stop list
+  already implied it; §8.7 now says it. One discussions commit: E§8.7;
+  App C S-18 bracket; this file. Matches the shipped M6 gate.
 - 2026-08-30 — **S-21 resolved + spec landed: breakpoints address
   `(canonical_id, line)`, pending + re-resolve-on-load.** Ruling in the
   queue entry above. One discussions commit: E§8.6 (canonical addressing,
