@@ -190,7 +190,7 @@ Extends `FrameObservation`; keep the cheap `call_site_spans` path for the live l
 highlight. Tests: locals visible at a `Paused` point; a `with` body exposes its
 binding; a tail loop shows `tail_count` climbing + a bounded elided history.
 
-### M6.3 — Host-requested pause `[S]`
+### M6.3 — Host-requested pause `[S]` — **DONE (`7dd490f`)**
 
 A pending-pause flag (thread-safe, an atomic polled at safe points — the same
 carve-out as cancel, S-23) → `Paused(HostPause)` at the next safe point. Wire into
@@ -199,6 +199,17 @@ per E§8.8 the host *requests* a pause and the engine stops at the next safe poi
 **regardless of directive** (it is a host control, like cancel, not a debug stop
 gated by the directive). Confirm against E§8.8 wording; test both under `Continue`
 and `RunToCompletion`.
+
+**As built.** `PauseToken` (a `machine/pause.rs` sibling of `CancelToken`) over a new
+`Machine.host_pause: Arc<AtomicBool>`; `Instance::pause_token()` hands out clones.
+Unlike cancel, a pause is **resumable, not a fault**, and **one-shot**: the drive loop
+consumes it with `Instance::take_host_pause()` (an atomic read-and-clear) at the next
+safe point — gated on `safe_point.is_some()` so it never fires mid-expression — and
+returns `Paused(HostPause)` with state intact, **before** the `should_pause` directive
+decision so it wins over (and is independent of) any `Step*`. No unwind is armed. A
+pause requested while suspended is not consumed until the resumed drive's next safe
+point (the host already holds control while suspended). Confirmed against E§8.8; tested
+under both `RunToCompletion` and `Continue`, plus the mid-drive/one-shot paths.
 
 ### M6.4 — Breakpoints `[M]` (E§8.6, S-21)
 

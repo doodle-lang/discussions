@@ -649,8 +649,19 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   current value), `Instance::tail_elided_history()` (the ring buffer of tail-overwritten callers,
   most-recent-first: callable handle + decl span). New `Binding`/`ElidedFrameObservation`; handle-minting
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
-  hygiene 6/6. **Next: M6.3** (host-requested pause → `Paused(HostPause)`, a thread-safe pending-pause
-  flag like cancel), then M6.4 (breakpoints), M6.5 (raise-trap).
+  hygiene 6/6.
+
+- **M6.3 DONE (2026-08-30, doodle-rust `7dd490f`): host-requested pause (E§8.8).** `PauseToken` (new
+  `machine/pause.rs`, sibling of `CancelToken`) over `Machine.host_pause: Arc<AtomicBool>`;
+  `Instance::pause_token()` hands out thread-safe clones. Unlike cancel, a pause is **resumable, not a
+  fault**, and **one-shot**: the drive loop consumes it at the next safe point via
+  `Instance::take_host_pause()` (atomic read-and-clear), gated on `safe_point.is_some()` so it never fires
+  mid-expression, and returns `Paused(HostPause)` with state intact — checked **before** `should_pause` so
+  it stops **regardless of directive** (E§8.8: a host control, not a `Step*` decision) and wins over a
+  Step pause reason. No unwind armed. A pause requested while suspended fires on the resumed drive's next
+  safe point. Tests: stops+resumes under both `RunToCompletion` and `Continue`; mid-drive request preempts
+  the Step reason; one-shot. Native 523, conformance 199, wasm32, hygiene 6/6. **Next: M6.4** (breakpoints,
+  S-21 — the first real `Continue` content), then M6.5 (raise-trap).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at
