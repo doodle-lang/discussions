@@ -249,7 +249,7 @@ pausable/resumable (the same limitation as capability-suspend-in-native-consumer
 foreign-yield); the **intrinsics-carrying** load path (the wasm facade) still defaults the
 entry canonical to `"main"` — wiring the real filename is M6.9 (doodle-web).
 
-### M6.5 — Raise-trap `[M–L]` (E§8.7, S-18) — *the tricky mechanism*
+### M6.5 — Raise-trap `[M–L]` (E§8.7, S-18) — **DONE (`e5b23db`)** — *the tricky mechanism*
 
 When raise-trapping is enabled, stop `Paused(RaiseTrap)` at the point an exception is
 raised, **before the stack unwinds**, so the debugger inspects the raising frame with
@@ -268,6 +268,25 @@ continues the unwind" — confirm that a `Step*`/`Continue` directive on resume 
 honored). Test: raise-trap under `Continue` pauses at the raise with the pre-unwind
 stack; resume propagates normally; the same program under `RunToCompletion` runs
 straight through (the directive-semantics matrix).
+
+**As built.** No separate paused-mid-raise *state* was needed: the pending raise already
+lives in `Unwind::Raise` (armed but not yet stepped), so the mechanism is a one-shot
+`trapped: bool` on that variant plus a drive-loop check **before** `step` (which is where
+the unwind runs). Every raise funnels through one arming chokepoint (`arm_raise` for
+program/engine raises, `arm_raise_value` for a foreign `resolve(Raise)`), so S-18's
+unification is structural — `Instance::take_raise_trap()` sets `trapped` and returns true
+once per armed raise; the resumed drive sees it set and steps into the unwind unchanged. A
+new `machine/raise_trap.rs`: `Machine.raise_trap_enabled` (off by default) + the API
+`set_raise_trapping(bool)` / `raise_trapping()` / `trapped_raise() -> Option<Handle>` (the
+raised value) / `trapped_raise_position() -> Option<Position>` (the raise site from the
+in-flight trace). `PauseReason::RaiseTrap` is now wired. **Directive-gated** (ratified,
+E§8.7 sharpened `6adb616`): fires under `Continue`/`Step*`, `RunToCompletion` ignores it —
+E§7.3's outcome list already excluded `Paused(RaiseTrap)`, so §8.7's silence was the gap.
+Tests: pre-unwind stack intact (a `with` binding still live at the trap, restored only on
+resume), trap-fires-even-when-caught, engine-raise unified, off-by-default,
+RunToCompletion-ignores. `machine.rs` crossed the 500-line soft limit; split the cancel +
+pause host-control `impl Instance` methods into `machine/controls.rs`. Native 533,
+conformance 199, wasm32, hygiene 6/6.
 
 ### M6.6 — Stepping refinement + observation mode `[M]` (S-62)
 

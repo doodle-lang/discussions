@@ -651,6 +651,24 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
   hygiene 6/6.
 
+- **M6.5 DONE (2026-08-31, doodle-rust `e5b23db`): raise-trap (E§8.7, S-18; E§8.7 sharpened `6adb616`).**
+  Pauses `Paused(RaiseTrap)` at each raise **before the stack unwinds**, so the debugger sees the raising
+  frame intact; resuming continues the unwind. No separate paused-mid-raise *state* was needed — the pending
+  raise already lives in `Unwind::Raise` (armed, not yet stepped), so the mechanism is a one-shot
+  `trapped: bool` on that variant + a drive-loop check **before** `step` (where the unwind runs). All raises
+  funnel through one arming chokepoint (`arm_raise` for program/engine, `arm_raise_value` for foreign
+  `resolve(Raise)`), so S-18's unification is structural: `Instance::take_raise_trap()` sets `trapped` and
+  returns true once per armed raise; the resumed drive sees it set and steps into the unwind unchanged. New
+  `machine/raise_trap.rs`: `Machine.raise_trap_enabled` (off by default) + `set_raise_trapping(bool)` /
+  `raise_trapping()` / `trapped_raise() -> Option<Handle>` (raised value) / `trapped_raise_position() ->
+  Option<Position>` (raise site from the in-flight trace); `PauseReason::RaiseTrap` now wired. **Directive-
+  gated** (ratified): fires under `Continue`/`Step*`, `RunToCompletion` ignores it (E§7.3's outcome list
+  already excluded `Paused(RaiseTrap)`; §8.7's silence was the gap). Tests: pre-unwind stack intact (a `with`
+  binding still live at the trap, restored only on resume), trap-fires-even-when-caught, engine-raise
+  unified, off-by-default, RunToCompletion-ignores. `machine.rs` crossed the 500-line soft limit; split the
+  cancel+pause host-control `impl Instance` methods into `machine/controls.rs`. Native 533, conformance 199,
+  wasm32, hygiene 6/6. **Next: M6.6** (stepping refinement + observation mode, S-62 fine safe points).
+
 - **M6.4 DONE (2026-08-30, doodle-rust `94fa7ef`): breakpoints (E§8.6, S-21 ratified `45e1bca`).**
   Addressed by the host-owned **canonical id** (not an engine module index). New `machine/breakpoint.rs`:
   `Breakpoints` on the `Machine`, `Instance::{set_breakpoint(canonical, line) -> BreakpointId,
