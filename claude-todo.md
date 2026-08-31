@@ -639,8 +639,18 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   callable reflection (D-M6-4 minimal: `callable_name`/`callable_is_function` (S-37 Procedure/Function)/
   `callable_position`/`callable_docstring`), `type_name`, `module_member_names`. Handle-minting readers
   host-owned (list_get discipline); wrong-kind is a `ValueError`, never a panic. Native 520, conformance
-  199, wasm32, hygiene 6/6. **Next: M6.2** (rich frame observation — per-frame locals + `with` dynamic
-  bindings + host-facing tail-elided history, E§8.2/§8.3).
+  199, wasm32, hygiene 6/6.
+
+- **M6.2 DONE (2026-08-30, doodle-rust `d27dadf`): rich frame observation (E§8.2/§8.3).** Extends the
+  frame surface beyond callable/call_site/tail_count: `Instance::frame_locals(index)` (a frame's
+  params + `let`/`const` names→value, via `CallableInfo.slot_names` + the frame's slots; `None` = TDZ
+  slot; callable + module-top frames, a block reports none), `Instance::frame_dynamic_bindings(index)`
+  (the `with` bindings the frame opened — its `dyn_stack` range, cell→name via reverse namespace scan,
+  current value), `Instance::tail_elided_history()` (the ring buffer of tail-overwritten callers,
+  most-recent-first: callable handle + decl span). New `Binding`/`ElidedFrameObservation`; handle-minting
+  host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
+  hygiene 6/6. **Next: M6.3** (host-requested pause → `Paused(HostPause)`, a thread-safe pending-pause
+  flag like cancel), then M6.4 (breakpoints), M6.5 (raise-trap).
 
 **Milestone M3 — WASM binding + first public demo — COMPLETE (2026-08-23; M3.1–
 M3.9 all landed + exit-reviewed; demo live at

@@ -172,7 +172,7 @@ All handle-minting methods follow the `list_get` discipline (host owns, must
 `release`). Tests: round-trip inspection of a nested record/dict/list without
 driving; determinism of dict entry order.
 
-### M6.2 — Rich frame observation: locals + dynamic bindings + tail history `[M]`
+### M6.2 — Rich frame observation: locals + dynamic bindings + tail history `[M]`  — **DONE (`d27dadf`)**
 
 Extend the frame surface (E§8.2/§8.3) beyond today's `callable`/`call_site`/
 `tail_count`:
