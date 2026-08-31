@@ -181,7 +181,8 @@ load(instance, source, module_path) -> Module | LoadError
 ```
 
 `load` lexes and parses `source` (associated with the given module path for
-diagnostics and caching) and prepares it for execution, **without** running its
+diagnostics and caching — the `module_path` is the entry module's **canonical id**,
+the same identity imported modules get from the resolver, §6) and prepares it for execution, **without** running its
 top-level code. Lexical and syntactic errors (L§3, and static errors detectable
 at load such as surrogate escapes, L§3.6.3) surface here as a structured
 `LoadError` carrying positions. `load` does not itself resolve `import`s; imports
@@ -817,13 +818,28 @@ The host may set and clear **breakpoints** at a source position (module `canonic
 + line):
 
 ```
-set_breakpoint(instance, module_id, line) -> id
+set_breakpoint(instance, canonical_id, line) -> id
 clear_breakpoint(instance, id)
+breakpoints(instance) -> [{id, canonical_id, line, resolved}]
 ```
+
+The module is addressed by its **canonical id** — the host-owned identity the
+resolver mints (§6) and `load` records for the entry module (§3.2); engine-internal
+module indices are not part of the boundary. A breakpoint whose canonical id names a
+module not yet loaded — or a file never imported at all — is **pending**, not an
+error: the set-then-run flow (mark the gutter, press Run) must work for modules that
+load mid-drive. Breakpoints **re-resolve at every load of their canonical id**:
+resolution snaps forward to the first safe point at or after the line (first on the
+line wins); a line with no safe point at or after it leaves the breakpoint pending
+and unhittable. Re-resolution is also the canonical-id-reuse rule — a reloaded module
+(a REPL session) keeps its breakpoints, re-snapped against the new source. The
+listing reports each breakpoint as resolved or pending so a host can gray unhittable
+marks.
 
 Under a `Continue` or `Step*` directive the engine stops with `Paused(Breakpoint(id))`
 at the first safe point at or after a breakpointed position. Under `RunToCompletion`
-breakpoints are ignored. Conditional breakpoints (a Doodle predicate evaluated at the
+breakpoints are ignored. Breakpoints are host directives, like stepping: outside
+replay identity, covered by drive-directive determinism (§7.7). Conditional breakpoints (a Doodle predicate evaluated at the
 safe point) are a noted extension (Appendix B), since evaluating a condition runs
 Doodle code.
 
@@ -1187,6 +1203,12 @@ provides the complete set plus the interactive facilities of §7–§11.
   plan-m5 D-M5-6's channel question and the M1.1 discovered deltas (warnings
   channel, diagnostic schema, diagnostic ordering); implementation-plan
   Appendix C S-63.
+- **Breakpoints address (canonical_id, line); pending + re-resolve-on-load
+  (§8.6, §3.2).** The host-owned canonical id is the boundary identity (engine
+  module indices stay internal); an unloaded target is pending, not an error;
+  every load of a canonical re-resolves its breakpoints (snap-forward,
+  first-on-line) — which is also the reuse/reload rule. Resolves
+  implementation-plan Appendix C S-21.
 
 ### B.2 Open issues, including cross-spec implications
 

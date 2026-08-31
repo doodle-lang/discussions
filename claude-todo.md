@@ -1787,6 +1787,16 @@ spelled as the type values. Spec: L§10.3 + S-31 mentions →
 `missing-argument`; App C S-58. Code: **M6.0b** (helpers pick a kind;
 S-42-lite + S-31 binding share the four; rubric App A column).
 
+**S-21 RESOLVED (user, 2026-08-30): breakpoints address `(canonical_id,
+line)`; pending + re-resolve-on-load.** Canonical id is the boundary
+identity (ModuleIds internal); unloaded/never-imported targets are
+pending, not errors (set-then-run must work; reactive setting is racy);
+every load of a canonical re-resolves (snap-forward, first-on-line) —
+also the M9b reload rule; `breakpoints()` lists resolved/pending for
+gutter graying; entry module's canonical id = `load`'s `module_path`
+(E§3.2, owed to S-63 anyway). Spec landed: E§8.6 + §3.2 + App B.1; App C
+S-21. Code: **M6.4** (pending table, re-resolution, listing, fixtures).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -2104,6 +2114,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-30 — **S-21 resolved + spec landed: breakpoints address
+  `(canonical_id, line)`, pending + re-resolve-on-load.** Ruling in the
+  queue entry above. One discussions commit: E§8.6 (canonical addressing,
+  pending, the listing, re-resolution, replay note) + §3.2 (entry module's
+  canonical id) + App B.1; App C S-21; this file. Code: M6.4.
 - 2026-08-30 — **S-58 catalog: `argument-error` split into four kinds;
   details schema pinned.** One discussions commit: L§10.3 (`missing-argument`),
   App C S-58 (catalog + schema column) + S-31 mentions; this file. Code:

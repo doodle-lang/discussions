@@ -1729,7 +1729,29 @@ cancellation observation, budget, fuel — stays at statement safe points in
 every observation mode; fine-mode safe points are observation-only.]** ·
 S-21 (E§8.6) Breakpoint mapping details: span index, lines without code,
 multiple statements per line, pending breakpoints for unloaded modules,
-canonical-id reuse. ·
+canonical-id reuse. **RESOLVED (user, 2026-08-30): address by
+`(canonical_id, line)`; pending + re-resolve-on-load.** The canonical id
+is the boundary identity (E§8.6's prose always said so; engine ModuleIds
+are internal load-order indices, not stable across edits); the entry
+module's canonical id is `load`'s `module_path` (E§3.2 — owed to S-63's
+schema regardless). An unknown/unloaded canonical is **pending**, not an
+error — the set-then-run gutter flow must work for modules that load
+mid-drive (reactive setting is racy: the line may run before the mark
+lands). **Re-resolution at every load of the canonical** is one rule
+covering both S-21 corners: pending marks resolve when the module loads
+(snap forward to the first safe point at or after the line; first on the
+line wins; a line with none stays pending/unhittable, reported in the
+`breakpoints()` listing for gutter graying), and a reloaded module (M9b)
+keeps its breakpoints re-snapped against the new source. Lines without
+code and multiple-statements-per-line fall out of snap-forward +
+first-on-line. Host directives, outside replay identity (E§7.7).
+Rejected: ModuleId-addressed loaded-only (contradicts E's identity model;
+breaks set-then-run) and a second canonical-pending API beside it (two
+ways to set a breakpoint). **[spec landed with this entry: E§8.6 + §3.2 +
+App B.1. Code: M6.4 — the pending table keyed by `(canonical, line)`,
+re-resolution at load, the listing; fixtures: set-before-load resolves at
+load; set-into-never-imported stays pending; reload re-snaps; line-past-
+EOF pending; refire per iteration; RunToCompletion ignores.]** ·
 S-22 (E§8.4) Auxiliary evaluation (host-driven `to_string` on a paused
 instance): saved/restored debug context, own small budget, breakpoints and
 raise-trap suppressed. ·
