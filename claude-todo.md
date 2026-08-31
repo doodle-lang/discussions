@@ -651,6 +651,26 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
   hygiene 6/6.
 
+- **M6.4 DONE (2026-08-30, doodle-rust `94fa7ef`): breakpoints (E§8.6, S-21 ratified `45e1bca`).**
+  Addressed by the host-owned **canonical id** (not an engine module index). New `machine/breakpoint.rs`:
+  `Breakpoints` on the `Machine`, `Instance::{set_breakpoint(canonical, line) -> BreakpointId,
+  clear_breakpoint(id), breakpoints() -> [BreakpointInfo{id, canonical_id, line, resolved}]}`. The entry
+  module now carries a canonical id (E§3.2): `load` threads a `module_path` (default `"main"`, override
+  `Instance::create_with_module_path`), seeded into `by_canonical`. Resolution: the resolver's existing
+  `stmt_spans` + a new **line index on `Ast`** (`line_starts`, parser-built; omitted from `Ast`'s Debug so
+  golden snapshots are unchanged) → `resolve_line` snaps forward to the first statement at/after the line
+  (`min_by_key(line, span.start)` ⇒ first-on-line + code-less-line snap). **Unknown/unloaded canonical or
+  past-EOF line = pending, not an error**; `reresolve_breakpoints` re-snaps at every source-module load
+  (import.rs) — the set-then-run + reload rule. Runtime match is by the **statement node about to run**
+  (`machine.safe_point_stmt`, recorded in `step`, gated to the outer drive via `reentry_depth == 0`),
+  checked in the drive loop under `Continue`/`Step*` (never `RunToCompletion`), before the Step decision —
+  so a loop-body breakpoint refires each iteration. `ast.rs` crossed the 500-line soft limit, split
+  `ast/arena.rs` out. Native 529, conformance 199, wasm32, hygiene 6/6. **Known gaps (noted):** (a) a
+  breakpoint inside a native-invoked (reentrant) block does not fire — reentrant drives aren't
+  pausable/resumable (same E§5.4 limitation as capability-suspend-in-native-consumer; M7 foreign-yield);
+  (b) the intrinsics-carrying load path (wasm facade) defaults the entry canonical to `"main"` — the real
+  filename is wired in M6.9. **Next: M6.5** (raise-trap, E§8.7/S-18 — the paused-mid-raise mechanism).
+
 - **M6.3 DONE (2026-08-30, doodle-rust `7dd490f`): host-requested pause (E§8.8).** `PauseToken` (new
   `machine/pause.rs`, sibling of `CancelToken`) over `Machine.host_pause: Arc<AtomicBool>`;
   `Instance::pause_token()` hands out thread-safe clones. Unlike cancel, a pause is **resumable, not a

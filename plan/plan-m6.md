@@ -211,9 +211,11 @@ pause requested while suspended is not consumed until the resumed drive's next s
 point (the host already holds control while suspended). Confirmed against E§8.8; tested
 under both `RunToCompletion` and `Continue`, plus the mid-drive/one-shot paths.
 
-### M6.4 — Breakpoints `[M]` (E§8.6, S-21)
+### M6.4 — Breakpoints `[M]` (E§8.6, S-21) — **DONE (`94fa7ef`)**
 
-- **API** — `set_breakpoint(module_id, line) -> BreakpointId`, `clear_breakpoint(id)`.
+- **API** — `set_breakpoint(canonical_id, line) -> BreakpointId`, `clear_breakpoint(id)`,
+  `breakpoints() -> [BreakpointInfo{id, canonical_id, line, resolved}]` (S-21, ratified
+  `45e1bca`: addressing is by the host-owned **canonical id**, not an engine module index).
 - **Span index per loaded module** — line → the first statement-level safe point at
   or after that line. S-21 corners: **lines without code** snap to the next safe
   point; **multiple statements per line** resolve to the first; **pending
@@ -224,6 +226,28 @@ under both `RunToCompletion` and `Continue`, plus the mid-drive/one-shot paths.
   breakpoints**; **per-iteration refire** (a breakpoint inside a loop fires each
   iteration — falls out of "check at each safe point," but test it explicitly).
 - This is the first real content of the `Continue` directive (today a no-pause run).
+
+**As built.** A new `machine/breakpoint.rs` holds `Breakpoints` (on the `Machine`) +
+`BreakpointInfo` + the `Instance` API. Addressing is by **canonical id**; the entry module
+now carries one (E§3.2) — `load` threads a `module_path` (default `"main"`, overridable via
+`Instance::create_with_module_path`) and seeds it into `by_canonical`. Resolution reads the
+resolver's existing `stmt_spans` (every statement node) plus a new **line index on `Ast`**
+(`line_starts`, built by the parser) — `resolve_line` snaps forward to the first statement at
+or after the line (`min_by_key(line, span.start)`, so first-on-line and code-less-line snap
+fall out). An **unknown/unloaded canonical or a past-EOF line is pending**, not an error;
+`reresolve_breakpoints(canonical)` runs at each successful source-module load (import.rs), so
+a set-then-run breakpoint on a mid-drive import (and a reload's re-snap) works. Runtime
+matching is by the **statement node about to run** (`machine.safe_point_stmt`, recorded by
+`step` and gated to the outer drive via `reentry_depth == 0`), tested in the drive loop under
+`Continue`/`Step*` before the `Step*` decision — so a loop-body breakpoint re-fires each
+iteration. Breakpoints are host directives, outside replay identity (E§7.7). Tests:
+Continue-stops/RunToCompletion-ignores, snap-forward, per-iteration refire, clear,
+unknown+past-EOF pending, and pending→resolve-on-import-load. Native 529, conformance 199,
+wasm32, hygiene 6/6. **Known gaps (noted, not deferred silently):** a breakpoint inside a
+**native-invoked block** (a reentrant drive, E§5.4) does not fire — reentrant drives are not
+pausable/resumable (the same limitation as capability-suspend-in-native-consumer, M7
+foreign-yield); the **intrinsics-carrying** load path (the wasm facade) still defaults the
+entry canonical to `"main"` — wiring the real filename is M6.9 (doodle-web).
 
 ### M6.5 — Raise-trap `[M–L]` (E§8.7, S-18) — *the tricky mechanism*
 
