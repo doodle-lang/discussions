@@ -288,7 +288,7 @@ RunToCompletion-ignores. `machine.rs` crossed the 500-line soft limit; split the
 pause host-control `impl Instance` methods into `machine/controls.rs`. Native 533,
 conformance 199, wasm32, hygiene 6/6.
 
-### M6.6 — Stepping refinement + observation mode `[M]` (S-62)
+### M6.6 — Stepping refinement + observation mode `[M]` (S-62) — **DONE (`e895db2`)**
 
 - **Tail-aware `StepOver`/`StepOut`** (E§8.5) — a tail call reuses the frame (depth
   unchanged), so the current depth-anchored `should_pause` already keeps a
@@ -309,6 +309,29 @@ conformance 199, wasm32, hygiene 6/6.
   field+index / if-expr / interpolation; leaves not stopped at; **the same fault
   instant in both modes**; and a **fine-mode determinism double-run** (the set is part
   of replay identity).
+
+**As built.** One axis only — `ObservationMode { Statement, Subexpression }` on `Config`
+(kept `Copy`) + `Instance::set_observation_mode`/`observation_mode`; `create*` threads
+`config.observation_mode`. The **eager/lazy local-capture axis was removed from the spec**
+(ratified `aac6766`): pull-based inspection has no capture step. **No `SafePoint` enum or
+drive-loop change was needed** — the insight is that a fine safe point can reuse the existing
+`step → Some(depth)` channel: at a subexpression completion in `Subexpression` mode `step`
+emits `Some(depth)` **without any accounting** (no `limits::safe_point`/`poll_cancel`), so the
+step budget, slice fuel, GC, and cancellation observation stay at statement safe points — a
+fault lands at the same instant in both modes (S-62/S-20). The drive loop already does the
+right thing: `breakpoint_hit` returns `None` mid-statement (so no false breakpoints at fine
+points), `RunToCompletion` ignores `Step`, and host-pause/`Step*` work on the depth. Detection
+is a `fine_completion_span` predicate over the popped cont (`BinApply`/`UnaryApply`/`AssertBool`
+/`FieldRead`/`IndexApply`/`IndexReadHashed`/`StrInterp`/`StrInterpRendered`); an `and`/`or`
+that **short-circuits** completes in `logical_rhs`, which records the span there. **Value at a
+fine stop** = the result register (`result()`); **position** = `completed_position()` (the
+completed span, `None` at statement stops). **`if`-expression branch results** need no separate
+fine point — arms are blocks, so the branch value lands at the branch's final statement safe
+point. **List/dict literals are deliberately outside the fine set** (per E§7.4's enumeration).
+**Tail-aware `StepOver`** needed no code change: a test verifies constant depth **and** constant
+frame serial (identity) across tail reuse. `step.rs` crossed the 500-line soft limit; split the
+`dispatch` match into `machine/step/dispatch.rs`. Native 541, conformance 199, wasm32, hygiene
+6/6.
 
 ### M6.7 — Auxiliary evaluation `[M]` (S-22, E§8.4) — *the tricky mechanism*
 

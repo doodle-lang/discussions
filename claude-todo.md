@@ -651,6 +651,27 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
   hygiene 6/6.
 
+- **M6.6 DONE (2026-08-31, doodle-rust `e895db2`): stepping refinement + observation mode (E§7.4/§8.8,
+  S-62; E§8.8 one-axis `aac6766`).** `ObservationMode { Statement, Subexpression }` on `Config` (kept
+  `Copy`) + `Instance::set_observation_mode`/`observation_mode`; `create*` threads it. The eager/lazy
+  local-capture axis was **removed from the spec** (pull inspection has no capture step). **Fine safe
+  points reuse the existing `step → Some(depth)` channel** — no `SafePoint` enum, no drive-loop change: in
+  `Subexpression` mode `step` emits `Some(depth)` at each non-leaf subexpression completion **without
+  accounting** (no `limits::safe_point`/`poll_cancel`), so budget/fuel/GC/cancel stay at statement points
+  and a fault lands at the same instant in both modes (S-62). `breakpoint_hit` returns `None` mid-statement
+  (no false breakpoints at fine points); `RunToCompletion` ignores `Step`. Detection: a
+  `fine_completion_span` predicate over the popped cont (`BinApply`/`UnaryApply`/`AssertBool`/`FieldRead`/
+  `IndexApply`/`IndexReadHashed`/`StrInterp`/`StrInterpRendered`); an `and`/`or` short-circuit records its
+  span in `logical_rhs`. Value at a fine stop = `result()`; position = `completed_position()` (`None` at
+  statement stops). `if`-expression branch results land at the branch's final statement safe point (arms
+  are blocks) — no separate fine point; list/dict literals are outside the fine set (E§7.4). Tail-aware
+  `StepOver` needed no code change — a test verifies constant depth + frame serial across tail reuse.
+  `step.rs` crossed the 500-line soft limit; split the `dispatch` match into `machine/step/dispatch.rs`.
+  Tests: operator/field+index/if-expr/interpolation fine traces, leaves-not-stopped, coarse-has-none +
+  runtime switch, same-fault-instant under a budget, fine-trace determinism double-run, tail-StepOver.
+  Native 541, conformance 199, wasm32, hygiene 6/6. **Next: M6.7** (auxiliary evaluation, S-22 — the
+  nested-`to_string`-on-a-paused-instance mechanism).
+
 - **M6.5 DONE (2026-08-31, doodle-rust `e5b23db`): raise-trap (E§8.7, S-18; E§8.7 sharpened `6adb616`).**
   Pauses `Paused(RaiseTrap)` at each raise **before the stack unwinds**, so the debugger sees the raising
   frame intact; resuming continues the unwind. No separate paused-mid-raise *state* was needed — the pending
