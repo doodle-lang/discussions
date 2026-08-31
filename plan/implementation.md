@@ -2070,7 +2070,13 @@ landed with this entry: E§7.4 + §8.8 + App B.1. Code: M6.6 — the mode
 flag gating expression-continuation pops; value-at-fine-safe-point
 exposure; fixtures: a fine-mode stepping trace over operators / calls /
 field+index / if-expr / interpolation, leaves not stopped at, and the
-same fault instant in both modes.]**
+same fault instant in both modes.]** **[Note (user, 2026-08-31): E§8.8's second drafted axis —
+eager/lazy local-binding capture — is REMOVED from the config surface,
+not documented as inert (this entry's own knob-only rejection applies:
+an axis that does nothing is an API that lies). Pull-based inspection
+reads live slots on demand; popped-frame/step-back state is the E§11
+replay track's job. `ObservationMode = Statement | Subexpression`,
+nothing else; E§8.8 sentence landed.]**
 
 **S-63 (E§3.2/§8) RESOLVED (user, 2026-08-29): one instance
 load-diagnostics record — the warnings channel, the diagnostic schema,

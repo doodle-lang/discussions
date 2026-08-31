@@ -857,12 +857,16 @@ the directive says whether debug stops fire at all.
 ### 8.8 Host-requested pause and observation mode
 
 The host may request a pause; the engine stops with `Paused(HostPause)` at the next
-safe point. An instance's observation mode (per-statement vs. per-subexpression safe
-points, and whether local-binding capture is eager) is set in `config` and may be
-adjustable, letting a host trade fidelity for speed — e.g. run `RunToCompletion` with
-coarse safe points when nobody is watching, and switch to fine stepping when the user
-opens the debugger. Switching mode changes only where stepping may stop (§7.4); it
-never changes what the program computes or when a limit trips.
+safe point. An instance's **observation mode** has one axis: safe-point granularity —
+per-statement or per-subexpression (§7.4) — set in `config` and adjustable, letting a
+host trade fidelity for speed: run `RunToCompletion` with coarse safe points when
+nobody is watching, switch to fine stepping when the user opens the debugger.
+Switching mode changes only where stepping may stop (§7.4); it never changes what the
+program computes or when a limit trips. There is no eager-capture axis: inspection is
+pull (§8) — the host reads live frame state on demand when stopped, which is as lazy
+as possible and costs nothing while running — and reading state that no longer exists
+(a popped frame's locals, step-back history) is the deterministic-replay track's job
+(§11), not an observation mode.
 
 ### 8.9 Live edit (optional)
 

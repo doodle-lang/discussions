@@ -2152,6 +2152,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-31 — **E§8.8: observation mode has one axis (granularity); the
+  eager-capture knob removed.** Pull inspection is inherently lazy;
+  popped-frame/history state belongs to the E§11 replay track. One
+  discussions commit: E§8.8; App C S-62 note; this file. M6.6:
+  `ObservationMode = Statement | Subexpression` only.
 - 2026-08-31 — **E§8.7 sharpened: raise-trap is directive-gated
   (`RunToCompletion` ignores it, like breakpoints).** E§7.3's stop list
   already implied it; §8.7 now says it. One discussions commit: E§8.7;
