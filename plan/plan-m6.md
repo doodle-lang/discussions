@@ -366,7 +366,7 @@ decisions. Tests: native-scalar render, explicit-Stringable drive, **pause-intac
 fault**, **at a raise-trap pause** (armed unwind saved/restored), non-String → type-mismatch.
 Native 548, conformance 199, wasm32, hygiene 6/6.
 
-### M6.8 — Debugger-session conformance: the drive-script runner `[M–L]` (D-M6-2)
+### M6.8 — Debugger-session conformance: the drive-script runner `[M–L]` (D-M6-2) — **DONE (`7621c84`)**
 
 Build the **portable drive-script conformance format** (a new runner mode, §4.3): a
 fixture is a **program + a script of directives and capability/import resolutions**;
@@ -381,6 +381,27 @@ over the observation surface — stepping / breakpoints / host pause / inspectio
 fine mode must not perturb the program-observable trace (E§7.7/§11). The format is a
 sibling of the M8 record/replay stream (which adds CBOR + a divergence detector); this
 one is the debugger-session vehicle.
+
+**As built** (repo-level infra; no spec text — the format's grammar is normative in
+`conformance/README.md`, with the Rust runner as reference parser). A new `mode: drive`
+in the existing `#!`-header conformance runner (Option 1, ratified): setup (`break:`/
+`raise-trap:`/`obs:`) then ordered `do:`/`expect:`/`stack:` steps, parsed by
+`tools/conformance-runner/src/drivescript.rs`, executed by `.../src/drive.rs` — load →
+apply setup → drive each action (imports resolve transparently as in `run` mode) →
+**full-transcript** compare (every step's outcome/reason/position/stack, in order; no
+spot-checks). Per the ratified riders: stack elements are `L` / `name@L` / `name@L×N`
+(the matcher checks only what's pinned — tail counts assert E§8.3 elision); **unknown**
+`do:`/`expect:`/`stack:` tokens and the **reserved** `local:`/`render:` slots are parse
+**errors** (never silently skipped); a terminal-instance `do:` is a clean fixture error,
+not an engine-assert panic. Fixtures (`conformance/v0.1/eng/E8.*`): the **directive
+matrix** (breakpoint + raise-trap — `Continue` pauses at each, `run` runs through),
+per-iteration breakpoint **refire**, **raise-trap** pre-unwind, **tail-`StepOver`
+constant-depth** (stack `go@L×N`, tail count climbing), and **fine-mode subexpression
+stepping** (S-62, positions from `completed_position`). Runner tests 31, conformance 205
+(199 lang + 6 drive), native 548 (doodle-core untouched), wasm32, hygiene 6/6. Deferred
+(noted, reserved slots): capability-resolution steps (M7, no suspending capability yet)
+and value/inspection assertions (`local:`/`render:`). The determinism-gate extension
+over the observation surface is folded into M6.10's close.
 
 ### M6.9 — IDE debugger (doodle-web) `[L]` (D-M6-3, fuller in-gate)
 

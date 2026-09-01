@@ -651,6 +651,24 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
   hygiene 6/6.
 
+- **M6.8 DONE (2026-08-31, doodle-rust `7621c84`): drive-script conformance runner (D-M6-2, §4.3).**
+  A new `mode: drive` in the existing `#!`-header conformance runner (Option 1, ratified: reuses
+  discovery + is cheap for M7's C harness to re-parse; colocated with the program so lines can't drift).
+  Setup (`break:`/`raise-trap:`/`obs:`) then ordered `do:`/`expect:`/`stack:` steps →
+  `tools/conformance-runner/src/drivescript.rs` (parser) + `.../drive.rs` (executor): load → apply setup
+  → drive each action (imports resolve transparently like `run` mode) → **full-transcript** compare
+  (every step's outcome kind/reason/position/stack, in order — no spot-checks). Per the ratified riders:
+  stack elements `L` / `name@L` / `name@L×N` (matcher checks only what's pinned; tail counts assert E§8.3
+  elision); unknown `do:`/`expect:`/`stack:` tokens and the **reserved** `local:`/`render:` slots are
+  parse **errors** (never silently skipped); a `suspended` stop asserts the request identity; a terminal
+  `do:` is a clean fixture error, not an engine-assert panic. Grammar pinned **normatively** in
+  `conformance/README.md` (Rust runner = reference parser; versioned via `mode: drive` → future `drive2`).
+  Fixtures `conformance/v0.1/eng/E8.*` (6): directive matrix (breakpoint+raise-trap — `Continue` pauses at
+  each, `run` runs through), per-iteration breakpoint refire, raise-trap pre-unwind, tail-`StepOver`
+  constant-depth (`go@L×N`), fine-mode subexpression stepping (S-62). doodle-core untouched. Runner tests
+  31, conformance 205 (199 lang + 6 drive), native 548, wasm32, hygiene 6/6. Deferred (reserved slots):
+  capability-resolution steps (M7) + value/inspection assertions. **Next: M6.9** (IDE debugger, doodle-web).
+
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
   | Faulted(EngineFault) }` in new `machine/aux_eval.rs`. A type with an explicit `implement Stringable`
