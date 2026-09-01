@@ -417,6 +417,64 @@ breakpoint, run, hit it, inspect locals + expand a record, step, watch an expres
 evaluate, resume — in the browser. UX hardening beyond this rides the environment track
 (§7.3).
 
+**Sequenced as two sub-chunks (ratified 2026-08-31):** **6.9a** the wasm debug bindings
++ JS engine surface + a drive-script-through-wasm parity gate (a hard cross-surface
+determinism gate, mirroring M6.8); **6.9b** the CodeMirror debugger UI + Playwright e2e
+on top. The binding surface is certified before any UI rides on it.
+
+**Marshaling decision (ratified 2026-08-31, D-M6-3 rider).** The structured debug reads
+cross to JS as **plain GC-owned JS objects** built with `js_sys` (no serializer → no wasm-size
+cost): `stackWalk()` returns `{generation, frames}` where each frame is
+`{callable?: {name?, isFunction?, declSpan?}, callSite?, tailCount, locals: [names],
+dynamics: [names], elided?}` — **nothing in a frame needs `.free()`**. Binding **values** are
+**lazy**: `frameLocal(gen, frameIndex, slot)` / `frameDynamic(…)` mint the one real host-owned
+handle on demand (the only debug reads that return a handle). The **generation** token (bumped
+by every `drive`/`resolve`, not by `eval_to_string`) makes a stale frame read after a resume a
+clean error, never a wrong answer. Tail-elided frames (E§8.3) ride the same `stackWalk` array
+with `elided: true` (no `callSite`; their location is `callable.declSpan`). Scalar inspection
+reads (record/dict/list/callable/type/module) mirror the native API 1:1 as flat methods. The JS
+object shapes are pinned as TS interfaces in `@doodle-lang/engine` (`debug.ts`) — the contract
+JS hosts read. Value/binding **index** keys the lazy accessors (not name), since L§5.1 shadowing
+lets two in-scope slots share a name.
+
+**As built — M6.9a (DONE, doodle-rust + doodle-web).** doodle-core `observe.rs` gained the
+lazy split — `frame_local_names`/`frame_local_value` and `frame_dynamic_names`/
+`frame_dynamic_value` (the batch `frame_locals`/`frame_dynamic_bindings` now build on them). The
+wasm facade (`facade.rs` + new `facade/debug.rs` + `facade/inspect.rs`, plain-Rust and
+`cargo test`-able) bridges the whole E§8 surface: a **directive** on `drive`
+(`run`/`continue`/`step`/`into`/`over`/`out`; `resolve` resumes under the remembered directive,
+E§7.3); breakpoints/raise-trap/observation-mode setup; the stack walk + lazy bindings + the
+pause **generation**; `completedSpan`/`trappedRaise`/`trappedRaiseSpan`; `evalToString`; and the
+flat inspection readers. `lib.rs` + new `debug.rs` marshal these to plain JS objects via
+`js_sys` (added as a dep; pinned to `0.3.103` to hold wasm-bindgen at 0.2.126). The
+`@doodle-lang/engine` package gained `debug.ts` (the TS contract + typed `stackWalk`/
+`breakpoints`/`evalToString` wrappers); the pump passes `'run'`. **Gate:** a new
+`engine/test/drive.test.mjs` ports the reference drive-script parser/executor and runs all six
+`conformance/v0.1/eng/E8.*` `mode: drive` fixtures **through the wasm surface**, asserting the
+same outcome/reason/position/stack transcript as native — cross-surface determinism evidence for
+the debug bindings. Native facade tests (`facade/tests.rs`) cover breakpoints→locals→inspection,
+raise-trap pre-unwind + resume, step, aux-eval, and generation staleness. Gates: native
+workspace all-green, native conformance 205/0, wasm32 clean, hygiene 6/6, wasm ship-size 243 KB
+brotli (< 300 KB), doodle-web engine 124 pass / 5 skip (see below) + typecheck. **Pre-existing
+gap fixed in passing:** `engine/test/conformance.test.mjs` (M3-era) did not skip the M5.10a
+**multi-module** run fixtures, which `import` at runtime — and imports-through-wasm are the
+deferred M5-web work (the facade surfaces `SuspendedImport` as `Faulted("import-unsupported")`,
+E§6). The doodle-web CI had not run since M5.10a, so this was latent; the fix skips the five
+`main.doodle` fixtures **visibly** (like the native runner SKIPs above the implemented surface).
+
+**Discovered — module globals have no observation accessor (surface for 6.9b).** `frame_locals`
+covers **function/procedure** frames; module-level `let`/`const` are **globals** (in a module's
+`namespace`), not frame-local slots — so the module top-level frame's locals list is empty. For
+the demo's typical **top-level** programs (the STARTER spiral, most kid code) the debugger's
+Locals panel would therefore be empty. This is central to the debugger's usefulness for the
+target audience. Options to resolve before/within 6.9b: (a) add a module-globals observation
+accessor to the engine (E§8-adjacent — `module_global_names` + lazy value-by-name), (b) surface
+globals in the UI via a Module value handle + `module_member_names` (needs a "current module
+value" accessor), or (c) accept the gap for 6.9b and defer. **Raise to the user before 6.9b.**
+
+**6.9b (pending):** the CodeMirror debugger UI + a debug-session driver (directive-stepping over
+the pump's capability handling) + Playwright e2e. Awaiting the module-globals decision.
+
 ### M6.10 — Exit review + close `[M]`
 
 Multi-lens adversarial **read-only** review (raise-trap × unwind/cleanup interaction;

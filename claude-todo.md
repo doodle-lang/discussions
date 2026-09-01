@@ -669,6 +669,34 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   31, conformance 205 (199 lang + 6 drive), native 548, wasm32, hygiene 6/6. Deferred (reserved slots):
   capability-resolution steps (M7) + value/inspection assertions. **Next: M6.9** (IDE debugger, doodle-web).
 
+- **M6.9a DONE (2026-09-01, doodle-rust + doodle-web): wasm debug bindings + drive-through-wasm parity
+  gate.** M6.9 split into two sub-chunks (ratified 2026-08-31): **6.9a** the wasm/JS debug surface +
+  parity gate, **6.9b** the CodeMirror UI. Bridged the whole E§8 surface to JS: a **directive** on
+  `drive` (`run`/`continue`/`step`/`into`/`over`/`out`; `resolve` resumes under the remembered directive);
+  breakpoints, raise-trap, observation-mode setup; the stack walk + **lazy** per-frame bindings + a pause
+  **generation** token; `completedSpan`/`trappedRaise`/`trappedRaiseSpan`; `evalToString`; flat inspection
+  readers (record/dict/list/callable/type/module). **Marshaling (ratified D-M6-3 rider):** structured
+  reads cross as **plain GC-owned JS objects** via `js_sys` (no serializer); a frame needs no `.free()`
+  (callable reflected to data, binding **names** eager, **values** lazy via `frameLocal(gen,i,slot)` — the
+  only debug reads that mint a handle); the generation token makes a stale post-resume frame read a clean
+  error; tail-elided frames ride the same `stackWalk` array with `elided:true`. doodle-core `observe.rs`
+  gained the lazy split (`frame_local_names`/`_value`, `frame_dynamic_names`/`_value`; batch methods build
+  on them). `js-sys` added as a doodle-wasm dep, pinned `0.3.103` to hold wasm-bindgen at 0.2.126.
+  `@doodle-lang/engine` gained `debug.ts` (TS contract). **Gate:** new `engine/test/drive.test.mjs` ports
+  the reference drive-script parser/executor and runs all six `E8.*` `mode: drive` fixtures **through the
+  wasm surface** (same transcript as native — cross-surface determinism for the debug bindings). Native
+  facade tests cover breakpoints→locals→inspection, raise-trap, step, aux-eval, generation staleness.
+  Gates: native workspace green, native conformance 205/0, wasm32 clean, hygiene 6/6, wasm ship-size 243 KB
+  brotli (<300 KB), doodle-web engine 124 pass / **5 skip** + typecheck. **Fixed in passing:**
+  `conformance.test.mjs` now **skips** the M5.10a multi-module `import` run fixtures through wasm (imports
+  are deferred M5-web work, E§6 — the facade faults `import-unsupported`); this was latent because the
+  doodle-web CI had not run since M5.10a. **DISCOVERED (raise before 6.9b): module globals have no
+  observation accessor** — `frame_locals` covers `to`/`fn` frames only; module-level `let`/`const` are
+  globals (module `namespace`), so a **top-level** program's Locals panel would be empty. Central to the
+  demo (most kid code is top-level). Options: add `module_global_names` + lazy value to the engine, or
+  surface via a Module handle + `module_member_names`, or defer. **Next: raise the globals decision, then
+  M6.9b** (CodeMirror debugger UI + debug-session driver + Playwright e2e).
+
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
   | Faulted(EngineFault) }` in new `machine/aux_eval.rs`. A type with an explicit `implement Stringable`
