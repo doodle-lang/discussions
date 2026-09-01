@@ -791,8 +791,22 @@ Given any value handle, the host obtains its structure via the pure structural
 inspection of §4.4 — kind, and for compounds the fields/elements/keys — **without**
 running Doodle code. A debugger renders program state from this. A host may
 additionally obtain the program's own rendering of a value by driving `to_string`
-on it (L§15), but that is an explicit, effectful action (it runs Doodle code and may
-fault), not part of inspection.
+on it (L§15) — **auxiliary evaluation** — but that is an explicit, effectful
+action, not part of inspection. An auxiliary drive saves and restores only the
+**debug context** (the result register, any in-flight unwind, the program's step
+budget and slice fuel, stepping bookkeeping); **program effects are real and
+persist** — a `to_string` that prints appends to program output, one that mutates
+a reference record leaves the mutation — and no purity is promised or possible
+(the heap is not snapshotted). Auxiliary drives are drives: they enter the
+recorded sequence and replay with their effects (§7.7, §11). The program's budget
+and fuel are untouched — inspection timing never moves a program fault — while
+the auxiliary drive runs under its own host-given bound with breakpoints and
+raise-trapping suppressed; what it allocates is real and charged (exceeding the
+heap limit faults the auxiliary drive, the paused program intact), and a
+suspension inside it faults it likewise (§5.4). Hosts render automatic displays —
+panels, hovers — from §4.4 structural inspection only; driving `to_string` is
+reserved for an explicit user action, because an automatic render that mutates
+state is unaccountable to the person debugging.
 
 ### 8.5 Stepping
 

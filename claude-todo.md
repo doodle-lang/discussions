@@ -2173,6 +2173,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-31 — **S-22 resolved + spec landed: auxiliary eval is effectful —
+  only the debug context restores.** Effects persist (no purity possible);
+  aux drives are replay inputs; program rails untouched; own bound,
+  breakpoints/raise-trap suppressed; auto-display via §4.4 only. One
+  discussions commit: E§8.4; App C S-22; this file. Matches shipped (A).
 - 2026-08-31 — **E§8.8: observation mode has one axis (granularity); the
   eager-capture knob removed.** Pull inspection is inherently lazy;
   popped-frame/history state belongs to the E§11 replay track. One

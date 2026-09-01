@@ -1761,7 +1761,24 @@ load; set-into-never-imported stays pending; reload re-snaps; line-past-
 EOF pending; refire per iteration; RunToCompletion ignores.]** ·
 S-22 (E§8.4) Auxiliary evaluation (host-driven `to_string` on a paused
 instance): saved/restored debug context, own small budget, breakpoints and
-raise-trap suppressed. ·
+raise-trap suppressed. **RESOLVED (user, 2026-08-31): effectful — only the
+debug context restores.** Debug context = result register, in-flight
+unwind, program step budget + slice fuel, stepping bookkeeping, stack
+heights, tail ring; **program effects are real and persist** (prints
+append to output; ref-record mutations stay) — rejected: suppressing
+output for a "pure preview" (heap effects persist regardless, so it
+half-suppresses into a misleading purity; the API-that-lies pattern).
+Aux drives are drives — replay inputs (E§7.7/§11), reproduced with
+effects. Program rails untouched (inspection timing never moves a
+program fault — the S-62 principle); the aux drive runs under its own
+host-given bound, breakpoints/raise-trap suppressed; allocations real
+and charged (heap-limit trip faults the aux drive, paused program
+intact); suspension inside it faults it (S-15 family). Normative:
+automatic display via §4.4 structural inspection only; `to_string` is
+explicit user action. **[spec landed with this entry: E§8.4. Code:
+shipped (M6, option A); fixtures: print-during-aux appends; ref-record
+mutation persists; aux suspension faults aux only; program budget
+unchanged across an aux eval.]** ·
 S-23 (E§10.1) Cancellation robustness: reserved unwind budget; capability
 call during cancel-unwind faults; second cancel = hard abort; cancel of a
 Suspended instance discards the pending request; late `resolve` errors.
