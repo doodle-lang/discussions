@@ -765,7 +765,24 @@ innermost first. Each frame exposes:
 - the frame's **local bindings** — parameters and `let`/`const` names in scope,
   as name→value handles;
 - the **dynamic-parameter bindings** established by `with` within this frame (L§5.5),
-  as name→value handles.
+  as name→value handles;
+- the frame's **home module** — the module whose module-level bindings are in scope here.
+
+**Module-level bindings** (a module's `let`/`const`/`parameter` variables and its
+`to`/`fn`/`record`/`protocol`/`module` declarations, L§11) are **globals**, not frame
+locals, so a top-level program's variables are not in any frame's local bindings. The
+engine exposes them as an observation surface **like** frame locals — **pull-based,
+lazy, and read-only through this surface** (mutation is §8.9 live-edit territory, not
+inspection). It is addressed **per module**, keyed off the selected frame's home module,
+and shown **once per module** (module bindings are in scope module-wide, not per frame).
+Each binding carries its **name**, declaration **kind** (the engine stays policy-free; a
+host filters — the *variables* are `let`/`const`/`parameter`), and a **slot** (its
+declaration-order index, the key for its value). A binding's value is minted **lazily**
+by slot, as a host-owned handle, under the same generation discipline as frame bindings.
+A binding whose declaration has not executed reads as **not-yet-defined** (no value),
+never a fault, so a host can render at any safe point (including mid-module-load); a
+`parameter`'s value is its **current dynamic value** (the `with`-override in force,
+L§5.5), so a host watching a `with` block sees it change.
 
 ### 8.3 Tail-call provisions
 

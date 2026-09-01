@@ -2134,6 +2134,36 @@ after `load`, an imported module's warning appearing after its load
 executes, a failed import's diagnostics present in the record, stable
 order across two runs.]**
 
+**S-64 (E§8.2) RESOLVED (user, 2026-09-01; plan-m6 M6.9b): module-level
+bindings are an observation surface, like frame locals.** Discovered
+building the IDE debugger (M6.9): module-level `let`/`const`/`parameter`
+are **globals** (a module's namespace, machine-design §2), **not** frame
+slots, so `frame_locals` covers only `to`/`fn` frames — a top-level
+program's variables (the demo's STARTER spiral; most kid code) would show
+an **empty** Locals panel. Resolution: a purpose-built, **pull-based,
+lazy, read-only** module-globals accessor over `resolved.globals`,
+mirroring the M6.2/M6.9a frame-binding design (rejected: reusing
+`Module`-value reflection, whose natural view is the public surface and
+which lists callables, not a debugger's private-inclusive variable view).
+Riders (all in the E§8.2 note): **(1) per-module**, addressed by the
+selected frame's **home module** (a new field on the frame observation),
+shown **once per module** (module-scoped, not per-frame); **(2)** returns
+**(name, kind, slot)** in declaration order — the engine exposes `kind`
+and stays policy-free, the host filters (variables are
+`let`/`const`/`parameter`); **(3)** a `parameter`'s value is its **current
+dynamic value** (the `with`-override in force, L§5.5), so watching a `with`
+block shows it change; **(4) TDZ-aware** — a global whose declaration has
+not executed reads as **not-yet-defined** (no value), never a fault, safe
+to render at any safe point including mid-module-load; **(5)** the same
+**lazy/generation** discipline as M6.9a (names eager + GC-owned;
+`module_global_value` mints one handle on demand, gated by the
+pause-generation token so a stale read errors cleanly). Read-only through
+this surface — mutation is §8.9 live-edit territory. **[spec landed with
+this entry: E§8.2 note (module-level bindings) + the frame's home module.
+Code: M6.9b — `Instance::module_global_names`/`module_global_value`
+(`machine/globals.rs`), the frame's `module`, the wasm/JS bridge, and the
+debugger's Variables panel.]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

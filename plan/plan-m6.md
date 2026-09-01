@@ -472,8 +472,30 @@ accessor to the engine (E§8-adjacent — `module_global_names` + lazy value-by-
 globals in the UI via a Module value handle + `module_member_names` (needs a "current module
 value" accessor), or (c) accept the gap for 6.9b and defer. **Raise to the user before 6.9b.**
 
-**6.9b (pending):** the CodeMirror debugger UI + a debug-session driver (directive-stepping over
-the pump's capability handling) + Playwright e2e. Awaiting the module-globals decision.
+**Module-globals accessor — RATIFIED (2026-09-01), lands with 6.9b.** A purpose-built,
+pull-based, lazy observation accessor over `resolved.globals` (Option A), mirroring the 6.9a
+frame-binding design. Riders (to appear in the E§8 spec note):
+1. **Per-module**, addressed by the selected frame's **home module** — the top-level frame shows
+   the entry module's globals; stepping inside an imported module's `fn` shows that module's.
+   Module-scoped (shown once per module, not per-frame).
+2. Return **(name, kind, slot)** in declaration order; the engine exposes `kind` and stays
+   policy-free (the UI filters to `let`/`const`/`parameter` rows, dropping `to`/`fn`/`record`/…).
+3. Include **`parameter` cells at their current dynamic value** (the `with`-overridden live value)
+   — watching `pen_color` change while stepping a `with` block is the turtle demo's teaching moment;
+   it falls out of reading the cell's live value.
+4. **TDZ-aware**: a global whose declaration has not executed reads as a distinguished
+   *not-yet-defined* (`None`, the panel greys it), never a fault — safe to render at any safe point,
+   including mid-module-load.
+5. Same **lazy/generation** discipline as 6.9a: names eager + GC-owned; `module_global_value` mints
+   one handle on demand, gated by the pause-generation token (stale reads error cleanly).
+
+E§8 note sentence (to land with 6.9b): *module bindings are an observation surface like frame
+locals — pull-based, lazy, and read-only through this surface (mutation is §8.9 live-edit territory,
+not inspection).* File as an App C spec-delta.
+
+**6.9b (in progress):** (1) the module-globals accessor above (doodle-core → facade → wasm → engine
+TS + the E§8 note + native tests); (2) the CodeMirror debugger UI + a debug-session driver
+(directive-stepping over the pump's capability handling) + Playwright e2e.
 
 ### M6.10 — Exit review + close `[M]`
 
