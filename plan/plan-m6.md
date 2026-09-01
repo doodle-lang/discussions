@@ -493,9 +493,27 @@ E§8 note sentence (to land with 6.9b): *module bindings are an observation surf
 locals — pull-based, lazy, and read-only through this surface (mutation is §8.9 live-edit territory,
 not inspection).* File as an App C spec-delta.
 
-**6.9b (in progress):** (1) the module-globals accessor above (doodle-core → facade → wasm → engine
-TS + the E§8 note + native tests); (2) the CodeMirror debugger UI + a debug-session driver
-(directive-stepping over the pump's capability handling) + Playwright e2e.
+**6.9b — DONE (doodle-rust + doodle-web).** (1) The module-globals accessor above (S-64, landed).
+(2) One more engine primitive: `resultHandle`/`currentResult` (the result-register value at a fine
+stop — the watch-it-run value companion to `completedSpan`, S-62). (3) The **debugger UI**
+(doodle-web `packages/demo/src/debug/`): the ratified **Debug ▸** model — Run stays animate-only,
+Debug opts into breakpoints + panels + stepping. A **breakpoint gutter** in CodeMirror
+(`gutter.ts`, click-to-toggle, `lineMarkerChange` so a state-only toggle re-renders); a DOM-free
+**debug-session driver** (`session.ts`) that drives a directive in fuel slices, fulfils the turtle
+capabilities (reusing the pump's `decodeValue`/`encodeValue`, now exported), and stops at
+breakpoints / steps / raise-traps; a **DebugController** (`controller.ts`) owning the lifecycle;
+**panels** (`panels.ts`) rendering the call stack (tail badges + elided history), the selected
+frame's Variables (locals + `with` bindings + module globals — each an **expandable value tree**),
+a **raise-trap** readout (the raised value pre-unwind), and the **watch-it-run** value; and a
+bounded, handle-safe **value-tree** materializer (`inspect.ts` — mints child handles and releases
+them, so the DOM holds no live handles). Step controls (continue/step/into/over/out) + watch /
+trap-raises toggles wired in `main.ts`. **Gates:** demo Node tests (breakpoint→pause→globals→step
+→resume, raise-trap, watch-it-run, record value tree) 8/0; Playwright e2e (gutter breakpoint →
+Debug pause → panels+variable → Stop; Debug-no-breakpoint → done; step advances the paused line)
+8/0; typecheck clean; posture / first-load (431 KB < 461 KB) / wasm-size all green; doodle-rust
+native + wasm32 + hygiene 6/6. The accept criteria — set a breakpoint, run, hit it, inspect locals
++ expand a record, step, watch an expression evaluate, resume, in the browser — are met. UX
+hardening beyond this rides the environment track (§7.3).
 
 ### M6.10 — Exit review + close `[M]`
 

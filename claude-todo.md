@@ -697,6 +697,25 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   surface via a Module handle + `module_member_names`, or defer. **Next: raise the globals decision, then
   M6.9b** (CodeMirror debugger UI + debug-session driver + Playwright e2e).
 
+- **M6.9b DONE (2026-09-01, doodle-rust + doodle-web): the IDE debugger (D-M6-3).** Globals decision
+  ratified as **S-64** (Option A, landed 2026-09-01). Then: one more engine primitive —
+  `resultHandle`/`currentResult` (the fine-stop value, S-62 watch companion) — and the **debugger UI**
+  (`packages/demo/src/debug/`). Ratified **Debug ▸** model: Run animates to completion; Debug opts into
+  breakpoints + stepping + panels. Pieces: a CodeMirror **breakpoint gutter** (click-to-toggle,
+  `lineMarkerChange` so a state-only toggle re-renders — the e2e-only bug that a doc-less transaction
+  didn't refresh the dot); a DOM-free **DebugSession** driver (drives a directive in fuel slices, fulfils
+  turtle capabilities via the pump's now-exported `decodeValue`/`encodeValue`, stops at
+  breakpoints/steps/raise-traps); a **DebugController** (lifecycle); **DebugPanels** (call stack with tail
+  badges + elided history, the selected frame's Variables = locals + `with` + module globals as
+  **expandable value trees**, a **raise-trap** pre-unwind readout, the **watch-it-run** value); a bounded
+  handle-safe **value-tree** materializer (mints child handles + releases them, so the DOM holds no live
+  handles). **Gates:** demo Node tests 8/0 (breakpoint→pause→globals→step→resume, raise-trap,
+  watch-it-run, record tree), Playwright e2e 8/0 (gutter breakpoint → Debug pause → variables → Stop;
+  Debug-no-breakpoint → done; step advances the line), typecheck clean, posture / first-load (431 KB <
+  461 KB) / wasm-size green; doodle-rust native + wasm32 + hygiene 6/6. Accept criteria met end-to-end in
+  the browser. **M6.9 COMPLETE. Next: M6.10** (exit review + close; determinism-gate extension over the
+  observation surface; App C discharge S-15/16/18/21/22/34).
+
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
   | Faulted(EngineFault) }` in new `machine/aux_eval.rs`. A type with an explicit `implement Stringable`
