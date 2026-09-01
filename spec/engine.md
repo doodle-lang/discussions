@@ -800,8 +800,13 @@ a reference record leaves the mutation — and no purity is promised or possible
 (the heap is not snapshotted). Auxiliary drives are drives: they enter the
 recorded sequence and replay with their effects (§7.7, §11). The program's budget
 and fuel are untouched — inspection timing never moves a program fault — while
-the auxiliary drive runs under its own host-given bound with breakpoints and
-raise-trapping suppressed; what it allocates is real and charged (exceeding the
+the auxiliary drive runs under its own host-given bound — a required per-call
+fuel, as with bounded runs (§7.3); exhausting it faults the auxiliary drive
+(one-shot, never paused) — with breakpoints and raise-trapping suppressed; a
+`to_string` that yields a non-String makes the auxiliary drive raise the same
+`type-mismatch` the program's own interpolation would (the render previews the
+program's truth; the host still holds the value's handle for structural
+display); what it allocates is real and charged (exceeding the
 heap limit faults the auxiliary drive, the paused program intact), and a
 suspension inside it faults it likewise (§5.4). Hosts render automatic displays —
 panels, hovers — from §4.4 structural inspection only; driving `to_string` is

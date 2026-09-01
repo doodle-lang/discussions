@@ -1778,7 +1778,14 @@ automatic display via §4.4 structural inspection only; `to_string` is
 explicit user action. **[spec landed with this entry: E§8.4. Code:
 shipped (M6, option A); fixtures: print-during-aux appends; ref-record
 mutation persists; aux suspension faults aux only; program budget
-unchanged across an aux eval.]** ·
+unchanged across an aux eval.
+**Riders (user, 2026-08-31):** the aux bound is a **required per-call
+fuel parameter** (the S-40 shape; not an engine constant, not config —
+E§8.4's "host-given" made literal; 2^20 is a fine binding-level
+default), exhaustion faulting the one-shot aux drive; a non-String
+`to_string` result **raises the interpolation `type-mismatch`**
+(`{expected: ["String"], got}`) rather than passing through — the
+debug render must not show something the program cannot render.]** ·
 S-23 (E§10.1) Cancellation robustness: reserved unwind budget; capability
 call during cancel-unwind faults; second cancel = hard abort; cancel of a
 Suspended instance discards the pending request; late `resolve` errors.

@@ -2173,6 +2173,11 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-08-31 — **S-22 riders: aux fuel is per-call host-given; non-String
+  `to_string` raises as interpolation does.** Two shipped provisionals
+  adjusted (E§8.4 sentence; App C S-22 bracket). Code: M6 — thread the
+  fuel param (2^20 → binding default); pass-through → the `type-mismatch`
+  raise.
 - 2026-08-31 — **S-22 resolved + spec landed: auxiliary eval is effectful —
   only the debug context restores.** Effects persist (no purity possible);
   aux drives are replay inputs; program rails untouched; own bound,
