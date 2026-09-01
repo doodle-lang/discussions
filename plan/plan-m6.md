@@ -333,7 +333,7 @@ frame serial (identity) across tail reuse. `step.rs` crossed the 500-line soft l
 `dispatch` match into `machine/step/dispatch.rs`. Native 541, conformance 199, wasm32, hygiene
 6/6.
 
-### M6.7 — Auxiliary evaluation `[M]` (S-22, E§8.4) — *the tricky mechanism*
+### M6.7 — Auxiliary evaluation `[M]` (S-22, E§8.4) — **DONE (`0c328fc`)** — *the tricky mechanism*
 
 Host-driven `to_string` (L§15) on a value at a **paused** instance: a nested drive
 that runs Doodle code (may raise/fault) under a **saved/restored debug context** —
@@ -345,6 +345,26 @@ foundation the (deferred) conditional-breakpoint extension would build on. Test:
 `to_string` on a record at a breakpoint returns its rendering and leaves the pause
 position/stack unchanged; a `to_string` that itself raises surfaces as an
 aux-eval error without disturbing the paused program.
+
+**As built.** New `machine/aux_eval.rs`: `Instance::eval_to_string(handle, fuel) -> AuxOutcome
+{ Rendered(Handle) | Raised(Handle) | Faulted(EngineFault) }`. A value whose type has an
+explicit `implement Stringable` drives its `to_string` in a **nested drive** (mirroring the
+reentrant block-consumer loop — `step::step`, not the debug drive loop, which is what
+suppresses breakpoints + raise-trap); a value without one renders through the pure native
+seam (`stringify::render`), no drive. The **saved/restored debug context** snapshots the
+register, in-flight unwind (clearing it — load-bearing at a raise-trap pause, where the outer
+raise is armed), the program budget/fuel, stepping bookkeeping (`fine_span`/`safe_point_stmt`/
+`directive`), pending, the tail-ring, and the stack heights (frames/dyn/handling/foreign,
+truncated back); the aux drive runs on its **own per-call `fuel`** (a `FusedCounter` swapped
+in) so it never charges the program's budget. **Effects persist** (S-22 ratified `39fa1e8`:
+aux eval is effectful — only the debug context restores; a `to_string` that prints/mutates a
+ref record does so for real); a suspension inside faults it (S-15 nested-suspend); a
+**non-String result raises the same `type-mismatch` interpolation does** (`bc5972b`); heap
+allocations are real and charged. Two spec riders landed the fuel-is-per-call and non-String
+decisions. Tests: native-scalar render, explicit-Stringable drive, **pause-intact**
+(position/depth unchanged, program resumes), raising `to_string`, **runaway → own-budget
+fault**, **at a raise-trap pause** (armed unwind saved/restored), non-String → type-mismatch.
+Native 548, conformance 199, wasm32, hygiene 6/6.
 
 ### M6.8 — Debugger-session conformance: the drive-script runner `[M–L]` (D-M6-2)
 

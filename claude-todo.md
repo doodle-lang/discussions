@@ -651,6 +651,23 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   host-owned. `Frame.dyn_depth` now read (dead_code allow dropped). Native 521, conformance 199, wasm32,
   hygiene 6/6.
 
+- **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
+  + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
+  | Faulted(EngineFault) }` in new `machine/aux_eval.rs`. A type with an explicit `implement Stringable`
+  drives its `to_string` in a **nested drive** (mirrors the reentrant block-consumer loop — `step::step`,
+  not the debug drive loop, which is what suppresses breakpoints + raise-trap); no explicit Stringable →
+  the pure native seam (`stringify::render`), no drive. **Saved/restored debug context**: register,
+  in-flight unwind (cleared — load-bearing at a raise-trap pause where the outer raise is armed), program
+  budget/fuel, `fine_span`/`safe_point_stmt`/`directive`, pending, tail-ring, and stack heights
+  (frames/dyn/handling/foreign, truncated back). The aux drive runs on its **own per-call `fuel`** (a
+  swapped-in `FusedCounter`), so it never charges the program's budget; exhaustion faults it (one-shot).
+  **Effects persist** (ratified `39fa1e8`: aux eval is effectful — only the debug context restores);
+  suspension inside → nested-suspend fault (S-15); a **non-String `to_string` result raises the same
+  `type-mismatch`** interpolation does (`bc5972b`). Tests: native-scalar render, explicit-Stringable
+  drive, pause-intact (position/depth unchanged + resume completes), raising `to_string`, runaway →
+  own-budget fault, at-a-raise-trap-pause (armed unwind saved/restored), non-String → type-mismatch.
+  Native 548, conformance 199, wasm32, hygiene 6/6. **Next: M6.8** (drive-script conformance runner, D-M6-2).
+
 - **M6.6 DONE (2026-08-31, doodle-rust `e895db2`): stepping refinement + observation mode (E§7.4/§8.8,
   S-62; E§8.8 one-axis `aac6766`).** `ObservationMode { Statement, Subexpression }` on `Config` (kept
   `Copy`) + `Instance::set_observation_mode`/`observation_mode`; `create*` threads it. The eager/lazy
