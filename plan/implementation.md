@@ -2206,6 +2206,37 @@ now covering string repeat too), the demo's 1 MiB cap; the M4.10 freeze
 disclaimer removed. Ops remain atomic by design — the next freeze discussion
 starts here.]**
 
+**S-66 (E§8.5) RESOLVED (user, 2026-09-01): `StepOver` correctness — the
+anchor must survive a step's internal re-entries, and a callee's return into
+the stepped-over frame is not a stop.** Discovered from the debugger: "step
+over `forward` takes several clicks." Two independent defects. (1) The
+`StepOver`/`StepOut` depth anchor was recomputed as the current frame depth on
+*every* drive call. A single step may span several drive calls — `forward`
+suspends the `draw_line` capability (§7.5) mid-call, and a step may also yield
+on slice fuel (§7.4) — so after the host resolved the suspend the step
+re-anchored at the *deep* resume depth, turning `StepOver` into `StepInto`: it
+stopped *inside* `forward` (source not shown → the "under" highlight), several
+times, never advancing. Fix: fix the anchor when the step *begins* and preserve
+it across internal suspend/slice re-entries (a `resuming` flag consumed at each
+drive entry). (2) Even for a plain (non-suspending) call, `StepOver` stopped
+**twice** on the call's line — once at the callee's *return* into the caller,
+then at the next statement — because the pause decision saw only the safe
+point's depth, and a return into the anchor frame and the next statement are
+both at the anchor depth. Fix: classify each safe point as a **forward
+boundary** (statement start / call entry / fine stop) or a **return**;
+`StepOver` stops at a boundary at `depth <= anchor` but at a return only at
+`depth < anchor` (the anchor frame itself returning), so a callee returning
+*into* the stepped-over frame is not a stop. Residual (separate, not fixed
+here): the program's final statement is still visited twice — an exhausted
+`Seq` fires an empty boundary past the last statement, then the module-top
+drain — a pre-existing empty-boundary stop, not a call double. **[spec landed
+with this entry: E§8.5 (safe-point kinds + the return rule + anchor
+preservation). Code: `drive::SafePoint`/`SafePointKind` returned from
+`step::step`; `should_pause` takes the kind; `Machine::step_anchor`/`resuming`
+with `mark_step_resuming` at the slice-end and suspend returns. Tests:
+`step_over_treats_a_call_as_one_step` (native), the demo's "StepOver treats each
+call as one click".]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

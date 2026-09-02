@@ -836,17 +836,37 @@ Stepping is expressed through the drive directives (§7.3), defined against safe
 points and the frame depth at the moment the directive is issued:
 
 - **StepInto** — stop at the next safe point in any frame (including a newly entered
-  callee).
+  callee, and a callee's return).
 - **StepOver** — stop at the next safe point in the current frame or a caller (do not
-  stop inside callees).
+  stop inside callees), treating a call as a single step (see the return rule below).
 - **StepOut** — stop at the next safe point in a caller (run the current frame to its
   return).
 - **Step** — a synonym for `StepInto` unless a host distinguishes them.
+
+Safe points are of two kinds, which `StepOver` must distinguish. A **forward** safe
+point — the start of a statement, entry into a call, or a fine subexpression stop
+(§7.4) — stops `StepOver` at the anchor depth or shallower. A **return** safe point —
+a frame handing control back to a shallower frame (an explicit `return`, a callable
+falling off its end, or the module top draining) — stops `StepOver` only *strictly*
+shallower than the anchor, i.e. when the anchor frame itself returns. A callee
+returning *into* the stepped-over frame lands at the anchor depth and is **not** a
+`StepOver` stop: it is mid-statement, not the next step. Without this rule, stepping
+over a statement that calls a function stops twice on the same line — once at the
+call's return, once at the next statement. (`StepInto` stops at both kinds; `StepOut`
+already stops only strictly shallower, for either kind.)
 
 Tail calls interact with stepping: a `StepOver` across a tail call observes that the
 current frame is replaced rather than returned-into; the engine treats the reused
 frame as "the same or shallower depth" so that `StepOver`/`StepOut` behave as a user
 expects for a tail-recursive loop (they do not run away).
+
+The step anchor is preserved across a step's internal re-entries. A single `StepOver`
+or `StepOut` may span several drive calls — a capability `Suspend`/`resolve` in the
+middle of the stepped-over call (§7.5), or a slice-fuel yield (§7.4) — but the depth
+it is judged against is fixed when the step *begins*, not recomputed at each re-entry.
+Otherwise a `StepOver` of a call that suspends a capability (e.g. a turtle move that
+draws) would re-anchor at the deep resume depth and degrade into a `StepInto`, halting
+inside the callee.
 
 ### 8.6 Breakpoints
 

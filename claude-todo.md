@@ -110,6 +110,21 @@ written. Spec landed (L§3.6.4, App D.1, App C S-53). **Code follow-up
 `scan_triple_string` (+ `malformed-triple-quote` message update) + tests
 (incl. `""""""` = empty, quote-runs at the closer).
 
+**[ ] MINOR (debugger) — `StepOver`/`StepInto` visit the program's final
+statement twice.** Symptom: stepping over the last top-level statement stops on
+it, then stops on it again (an empty span at end-of-module) before `Completed`.
+Root cause: an exhausted `Seq` (index past the last statement) still fires a
+`Boundary` safe point with nothing to run, then the module-top drains (a
+`Return` at depth 0). Distinct from the S-66 call-return double (that was a
+`Return` at the anchor depth; this is a vacuous forward boundary). Discovered
+verifying S-66; loop/block ends are unaffected (they re-arm, not drain), so this
+is program-end (and outermost-block-end) only — cosmetic. No fix landed; needs
+its own call on whether an exhausted `Seq` should be a safe point at all
+(touches breakpoints/limit accounting). Covered indirectly by
+`step_over_treats_a_call_as_one_step` (native) and the demo's "StepOver treats
+each call as one click", which both assert around it (first-3-lines / call-line
+counts) rather than on it.
+
 ## Awaiting the user (blocking)
 
 (none)
