@@ -423,7 +423,18 @@ may additionally return **`NonLocalExit`** when the invoked block exits (a
 `break`/`return`) to a target outside the host call, which the callback must relay
 by returning promptly (§7.6). It **cannot** suspend: a capability reached inside a
 nested drive faults `NestedSuspend` (§7.6, S-15), because the native consumer's
-in-progress state lives on the host stack and cannot be frozen and resumed. Nested
+in-progress state lives on the host stack and cannot be frozen and resumed. This
+is the **frozen v1 rule**: the C ABI ships it. The designated extension is
+**additive, not breaking** — a future descriptor capability flag ("resumable")
+could opt a callback into a foreign-yield protocol (externalize state, return a
+yield status, be re-entered on resolve) while unflagged callbacks keep fault
+semantics forever; today's faults become working programs, never the reverse. No
+such protocol exists in v1, and a host rarely wants one: a host that needs
+suspension inside iteration **inverts the control flow** — it exposes suspending
+*capabilities* and lets Doodle own the loop (`while animating() do frame =
+next_frame() … end`), which suspends for free because the frames are the
+engine's. Control flow belongs in Doodle; a native block-consumer is a
+convenience for synchronous iteration. Nested
 drives observe the same instrumentation as top-level drives (§8). Reentrancy is
 single-threaded; the host must not drive the instance from another thread
 meanwhile (§10).

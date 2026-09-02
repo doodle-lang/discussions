@@ -1993,6 +1993,16 @@ gutter graying; entry module's canonical id = `load`'s `module_path`
 (E§3.2, owed to S-63 anyway). Spec landed: E§8.6 + §3.2 + App B.1; App C
 S-21. Code: **M6.4** (pending table, re-resolution, listing, fixtures).
 
+**S-15 M7 half CLOSED (user, 2026-09-02): forbid-and-fault frozen as the
+v1 C-ABI rule; no yield protocol.** No driver materialized; a yield
+protocol would tax every C host (re-entrant state machines + a
+resumable-state replay obligation); the inversion idiom (suspending
+capabilities, Doodle owns the loop) is now normative in E§5.4. Freeze is
+additive-open: a v-next descriptor "resumable" flag is the designated
+extension. S-42 suite: `NestedSuspend` fixture + Doodle-consumer parity
+control. Spec landed: E§5.4; App C S-15 + R4 note. Code: **M7** (the
+fixtures ride S-42).
+
 Discovered at M2a.3a (raise path; small, non-blocking — flag for the user):
 **instance state after an uncaught raise.** E§3.3 lists ready/running/
 suspended/paused/completed/faulted, with no distinct "raised" state, yet E§9
@@ -2310,6 +2320,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-02 — **S-15 M7 half closed: forbid-and-fault frozen as the v1
+  ABI rule; the yield protocol stays an additive v-next descriptor flag.**
+  One discussions commit: E§5.4 (frozen rule + the inversion idiom); App C
+  S-15 + the R4 closure note; this file. Code: M7 / S-42 fixtures.
 - 2026-08-31 — **S-22 riders: aux fuel is per-call host-given; non-String
   `to_string` raises as interpolation does.** Two shipped provisionals
   adjusted (E§8.4 sentence; App C S-22 bracket). Code: M6 — thread the

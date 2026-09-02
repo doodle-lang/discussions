@@ -843,7 +843,9 @@ the JS main thread (E App B.2 defers this; App C S-15). *Mitigation:* the
 M3 demo exercises exactly this contract permanently; candidate resolutions
 (forbid-and-fault vs. suspend-the-outer-drive with an async callback
 protocol) are prototyped there and the winner is written into E before M7
-freezes the C ABI's version of the same question.
+freezes the C ABI's version of the same question. **[Closed 2026-09-02:
+forbid-and-fault frozen as the v1 ABI rule; the yield protocol left as an
+additive v-next descriptor flag — App C S-15.]**
 
 **R5 — Scope creep in the environment.** The IDE is unbounded product
 work that can starve the engine. *Mitigation:* the environment advances
@@ -1704,7 +1706,23 @@ demo's `repeat` relies on that. The chosen alternative, *suspend-the-outer-drive
 **the same save/resume protocol a C foreign function needs and is deferred to the
 C-ABI design (M7)** — not pre-committed. R4 asked M3 to "prototype both"; the
 mechanism analysis was conclusive that (b) is the M7 C-ABI-yield design, so it is
-**characterized, not speculatively built** (user-ruled 2026-08-21). ·
+**characterized, not speculatively built** (user-ruled 2026-08-21).
+**M7 half CLOSED (user, 2026-09-02): forbid-and-fault is the frozen v1
+ABI rule — no yield protocol built.** Fresh-look grounds: no driver ever
+materialized (the stdlib went Doodle-all-the-way at M5; M6 shipped
+against pure-engine suspension; nothing in the corpus needed a native
+frame to survive a suspension); a yield protocol would tax every
+conforming C host with hand-written re-entrant state machines plus a
+host-owned resumable-state replay obligation, for a client that doesn't
+exist; and the host that wants suspension inside iteration has the
+architecture's own answer — **invert**: expose suspending capabilities,
+let Doodle own the loop (now a normative idiom in E§5.4, beside S-44's
+dynamic-state-as-argument). The freeze is additive-open: a v-next
+descriptor "resumable" flag is the designated extension shape (unflagged
+callbacks keep fault semantics; loosening only). S-42's C-ABI
+conformance suite gains the `NestedSuspend` fault fixture + the
+Doodle-consumer parity control. **[E§5.4 frozen-rule + idiom text landed
+2026-09-02.]** ·
 S-16 (E§5.4/§7.6) Abandoned nested drives (a callback returns without driving
 its nested drive to completion): define as a host-contract fault. **Note:** under
 the S-15 forbid-and-fault resolution a block-invocation nested drive cannot be
