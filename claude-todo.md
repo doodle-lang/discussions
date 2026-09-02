@@ -2320,6 +2320,15 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-02 — **plan-m7 D-M7-2..11 RATIFIED** (one adjustments-recorded
+  commit): descriptor/config builders, ABI discipline, S-19 capabilities,
+  Send + cross-instance guard, copy-out strings, Miri-on-capi — as
+  recommended; **D-M7-8 adjusted** (foreign defaults restricted to
+  transitively immutable values — no L§8.3 divergence exists; builder
+  rejects mutable defaults); **D-M7-10 decided** (header+lib+README;
+  dry-run-ready core+CLI with internal-API disclaimer; publication waits
+  for D-8); riders: payload-only finalizer = the E§11 determinism guard;
+  freeze conventions platform-neutral despite Linux-only certification.
 - 2026-09-02 — **S-15 M7 half closed: forbid-and-fault frozen as the v1
   ABI rule; the yield protocol stays an additive v-next descriptor flag.**
   One discussions commit: E§5.4 (frozen rule + the inversion idiom); App C
