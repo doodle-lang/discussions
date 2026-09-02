@@ -1008,15 +1008,26 @@ kid-authored program:
   same step;
 - a **heap limit** (bytes/objects); an operation that would produce a value exceeding it —
   the same result-growing operations — faults before allocating, from the same deterministic
-  size estimate, rather than attempting an allocation that could exhaust memory. When one
-  operation would exceed both rails, the heap fault is reported (the result could not exist
-  regardless of the work);
+  size estimate, rather than attempting an allocation that could exhaust memory;
+- a **per-operation result cap** — the **latency rail**: a result-growing operation whose
+  estimated result size exceeds this faults before computing, *even when the result would fit
+  the heap*. Because an atomic operation cannot yield mid-way (§7.7 — the step budget bounds
+  the *number* of operations, not one operation's running time), this is what bounds a single
+  operation's latency, so a result that fits in memory but would take seconds to compute (a
+  huge `**`/`*`/repetition) faults promptly instead of blocking the host. It is bounded above
+  by the heap limit; a host that does not set it is limited only by the heap. When an operation
+  would exceed more than one rail, the most fundamental reason is reported: out of heap first
+  (the result cannot exist), else the per-operation cap (it fits but is too big to compute in
+  one step);
 - a **stack-depth limit** for non-tail recursion (proper tail calls do not count, L§8.7,
   so a tail-recursive loop never trips it, but unbounded non-tail recursion does);
 - the **tail-history bound** (§8.3).
 
-Exceeding a limit yields `Faulted(LimitExceeded(kind))`. Limits are essential for an
-environment running programs that legitimately contain infinite loops.
+These are three orthogonal rails on a single operation and a whole program: the heap bounds
+**space**, the step budget bounds **total work**, and the per-operation cap bounds **one
+operation's latency**. Exceeding a limit yields `Faulted(LimitExceeded(kind))`; every limit is
+config, so the same configuration faults identically (replay identity, §11). Limits are essential
+for an environment running programs that legitimately contain infinite loops.
 
 ### 10.3 Concurrency and reentrancy
 

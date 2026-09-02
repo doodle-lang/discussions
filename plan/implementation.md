@@ -2178,6 +2178,34 @@ Code: M6.9b — `Instance::module_global_names`/`module_global_value`
 (`machine/globals.rs`), the frame's `module`, the wasm/JS bridge, and the
 debugger's Variables panel.]**
 
+**S-65 (E§10.2) RESOLVED (user, 2026-09-01): a per-operation result cap —
+the "latency rail" — closing the R8/S-20 residual.** Discovered removing the
+demo's freeze disclaimer: R8's pre-charge (S-20) bounds a result-growing op's
+result **size** (heap) and charges its size against the step **budget**, but
+neither bounds a single op's **latency** — a bignum `**`/`*` (or string/list
+repetition) whose result fits the heap but takes seconds to compute still froze
+the host, and an atomic op cannot be interrupted (S-40 — "the budget's pre-charge
+is what bounds the longest single operation" was true but toothless when the
+budget is rightly huge, e.g. the demo's 1<<40 for animations). Resolution: a
+**third rail** on `Limits` — a maximum single-operation result size — checked at
+every result-growing admission point (bignum `*`/`**`, string/list repetition),
+faulting a **distinct** `LimitExceeded(OpResult)` **before** the op computes,
+from the same cheap deterministic size estimate. Default = bounded only by the
+heap (no change for hosts that don't set it); the browser demo sets ~1 MiB,
+bounding the worst single-op stall to a fraction of a second. Rejected again:
+baking a superlinear compute estimate into the charge (couples replay identity
+to the multiplication algorithm — Karatsuba vs schoolbook — which the
+deterministic charge must not absorb) and interior safe points in arithmetic
+(relitigates the pinned S-40 "atomic op cannot yield mid-way"; a machine-model
+change requiring an MD revision first, with no driver the demo has). Config,
+hence replay-stable. The three rails now: **space** (heap), **total work**
+(budget), **single-op latency** (this). **[spec landed with this entry: E§10.2
+(the third rail + the three-rails sentence). Code: `Limits::max_op_result_bytes`
++ `LimitKind::OpResult`, `Machine::admit_op_result` (renamed from `admit_bignum`,
+now covering string repeat too), the demo's 1 MiB cap; the M4.10 freeze
+disclaimer removed. Ops remain atomic by design — the next freeze discussion
+starts here.]**
+
 **Environment-driven engine additions — resolve by M9b.**
 S-24 (E§3.2-new) Incremental top-level evaluation into a persistent
 session module (the REPL API). Design notes banked from the S-5/S-6

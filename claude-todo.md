@@ -743,6 +743,19 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
 met; the deployed browser demo carries the full debugger (breakpoints, stepping, call-stack/variables/
 value-tree/raise-trap/watch panels). **Next milestone: M7** (per implementation-plan §5 / M7 paragraph).
 
+- **S-65 DONE (2026-09-01): per-operation result cap — the "latency rail" (E§10.2).** Removing the demo's
+  "huge `**` can freeze the page" disclaimer, investigation showed R8's guard fixed the *example*
+  (`9 ** 9 ** 9` faults on heap in ~2ms) but not the *class*: a bignum `**`/`*`/repetition whose result
+  fits the heap but is expensive to compute still froze the tab (`1500000 ** 1500000` = 2.3s, Stop can't
+  interrupt an atomic op, S-40). Fix (ratified): a **third `Limits` rail** — `max_op_result_bytes` — a
+  distinct `LimitExceeded(OpResult)` faulted **before** computing at every result-growing admission point
+  (`admit_op_result`, renamed from `admit_bignum`, now covering string repeat), from the same cheap size
+  estimate. Default = heap-bounded (no change for other hosts); the demo sets 1 MiB → the pathological
+  ops now fault in ~ms. Rejected again: a superlinear compute charge (couples replay to the multiply
+  algorithm) and interior safe points (relitigates S-40). Spec: E§10.2 (three rails: space/work/latency);
+  App C S-65. Disclaimer removed; a friendlier "that computation is too big" status added. Native +
+  wasm32 + hygiene 6/6, doodle-web all green.
+
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
   | Faulted(EngineFault) }` in new `machine/aux_eval.rs`. A type with an explicit `implement Stringable`
