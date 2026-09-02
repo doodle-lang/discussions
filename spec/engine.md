@@ -345,8 +345,12 @@ not affect any program result or the engine's determinism (§11). A finalizer
 **must not fail into the instance** (it runs outside any Doodle drive) nor unwind
 out of the host callback; the engine isolates a misbehaving finalizer so it cannot
 prevent its peers from running or tear down the host, but the resource it was to
-release may then leak. The in-engine finalizer representation is provisional
-pending the C-ABI host-callback FFI (App C, S-42).
+release may then leak. The C-ABI finalizer is an `extern "C" fn(void*)` that
+receives **only** the `host_ptr` — never the instance — so its inability to
+re-enter (and hence its determinism-neutrality above) is **structural**, not a
+rule the host must remember to follow; it must be abort-on-unwind (a panic or
+exception escaping it aborts rather than crossing the FFI boundary). (App C,
+S-42.)
 
 Foreign values are how host state that cannot be a plain Doodle value — a canvas,
 a file handle, a rendering target, a network socket — crosses the boundary.
@@ -375,6 +379,19 @@ a descriptor:
   host, so the callback sees arguments already resolved by name and position.
 - the **callback** (for synchronous foreign functions, §5.2) or a **capability
   identity** (for suspending capabilities, §5.3).
+
+**Default values (S-42).** A foreign parameter's default is a **constant**,
+restricted to a **transitively immutable** value — a scalar, string, or bytes:
+value-typed, with no reachable shared mutable content (the L§4.14 value class). A
+list, dict, or `ref record` default is **rejected at descriptor construction**.
+Because the value is immutable, binding that one constant on every defaulting call
+is **indistinguishable from re-evaluating the default per call** — identity is
+observable only for reference types (L§4.13/§4.14) — so this satisfies L§8.3
+exactly *by construction*, and it keeps host code out of the shared-mutable-default
+footgun (a single mutable default aliased across all omitting calls). A default
+that must vary per call is not a default: the host takes a required parameter and
+computes it, or exposes the varying value as a capability (§5.3, so it stays on
+the recordable boundary, §11).
 
 ### 5.2 Synchronous foreign functions
 

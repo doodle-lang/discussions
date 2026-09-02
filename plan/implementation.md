@@ -1865,12 +1865,28 @@ pinned. Shipped: the provisional `sin`/`cos` natives and the `**` float path via
 the bundled `libm` crate (`libm::pow`, replacing `f64::powf`). The basic IEEE ops
 (`+ − × ÷`, comparison, `sqrt`, roundToIntegral, remainder) are already correctly
 rounded and stay deterministic. ·
-S-42 (E§5.1) Foreign-function descriptor argument binding: how defaults
-are represented (value handles vs engine-evaluated) and block-parameter
-declaration; conformance-tested through the C ABI. Also covers the
-**foreign-value finalizer** shape: M2b.6 pinned a provisional in-engine
-form (a boxed `FnOnce(host_ptr)`), with the C-ABI `extern "C" fn(void*)`
-form deferred here. Resolve by M7. ·
+**S-42 (E§5.1/§4.5) RESOLVED (user, 2026-09-02; plan-m7 D-M7-2/D-M7-8;
+spec + engine landed M7.0).** Foreign-function descriptor argument
+binding and the foreign-value finalizer shape. **Defaults:** a default is
+a **constant restricted to a transitively immutable value** (scalar/
+string/bytes — the value class; list/dict/`ref record` rejected at
+descriptor construction). Because the value is immutable, capturing the
+constant is indistinguishable from per-call evaluation (identity is
+observable only for reference types, L§4.13/§4.14), so it is
+**L§8.3-equivalent by construction** — closing the evaluate-once-vs-
+per-call divergence rather than accepting it (D-M7-8), and keeping host
+code out of the shared-mutable-default footgun. Engine: `ForeignParam.
+default` is a `ConstValue` **recipe** materialized per call in
+`intrinsic::binding` (the registry predates the heap, so it holds no heap
+ref); `ConstValue`'s variant set enforces the immutability restriction.
+**Block parameter:** the trailing `is_block` param, bound reentrantly
+(M2b.5). **Finalizer:** the C-ABI form is `extern "C" fn(void*)`
+receiving only the `host_ptr` — never the instance — so non-re-entrancy
+(hence determinism-neutrality, E§11) is **structural**; abort-on-unwind.
+`Finalizer` widened to `Box<dyn FnOnce(u64) + Send>` so `Instance: Send`
+(D-M7-5), asserted at compile time. **[spec landed: E§5.1 defaults + E§4.5
+finalizer C-form. Code: M7.0. The C-ABI descriptor *builders* + the
+`extern "C"` trampoline are the marshalling in M7.1/M7.2.]** ·
 **S-46 (E§7.2/§5.4) RESOLVED (user, 2026-08-02): support non-local exits
 across a native block-consuming callee** via the machine-design §12
 mechanism (chosen over disallowing them, so a native `each`/`repeat`
