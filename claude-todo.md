@@ -715,18 +715,33 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   461 KB) / wasm-size green; doodle-rust native + wasm32 + hygiene 6/6. Accept criteria met end-to-end in
   the browser. **M6.9 COMPLETE.**
 
-- **M6.10 IN PROGRESS (2026-09-01): exit review + close.**
-  - **Globals-ordering fix — DONE.** The screenshot showed the prepended turtle-library globals
-    (`turtle_*`) crowding out the user's `side`/`n`. Fix: `module_global_names` now returns each
-    global's **`decl_span`** (E§8.2), and the demo separates its own top-level globals (decl after the
-    prelude → a user-program line) from the library's (decl before → `userLineOf` null), showing the
-    user's under "Module globals" and tucking the library's into a collapsed group. Threaded
-    doodle-core → facade → wasm → engine TS → demo panels; demo test asserts the classification.
-  - **Next:** multi-lens adversarial read-only review (raise-trap × unwind; breakpoint index across
-    load/canonical-reuse/suspend-resume; handle discipline across the new minting methods; aux-eval
-    save/restore; determinism of the whole surface); the **determinism-gate extension** (a debugged run
-    vs a straight run produce identical program-observable execution, E§7.7/§11); App C discharge
-    S-15/16/18/21/22/34.
+- **M6.10 DONE (2026-09-01): exit review + close. M6 COMPLETE.**
+  - **Globals-ordering fix — DONE (doodle-rust `aa4661d`, doodle-web `49f9e2f`).** `module_global_names`
+    returns each global's **`decl_span`** (E§8.2); the demo separates its own top-level globals (decl
+    after the prelude) from the prepended library's (decl before → `userLineOf` null), user's under
+    "Module globals", library's in a collapsed group.
+  - **Multi-lens adversarial review (4 read-only subagents) — 2 confirmed defects, both FIXED
+    (doodle-rust `96b7add`):** a **CRITICAL** aux-eval GC use-after-free (the nested drive moved the
+    outer `unwind`/`reg`/`pending` into Rust locals, which `gc::collect` no longer rooted → a GC during
+    a `Stringable` render freed the trapped raise value; fixed by rooting them in `foreign_roots`; a
+    regression test panics on a freed slot without the fix) and a **MAJOR** dynamic-parameter leak (the
+    aux fault path truncated `dyn_stack` instead of the `with` cell writeback; fixed with
+    `unwind::restore`). Minors fixed: `gc_threshold` restore, cancel→`Cancelled`, `frame_dynamic_*`
+    fail-soft slice, `trapped_raise` doc, gen-wrap note. Handle-discipline + breakpoint/fine-mode lenses
+    found no correctness/determinism bugs (all invariants verified sound).
+  - **Determinism-gate extension — DONE.** `the_observation_surface_does_not_perturb_the_program_trace`:
+    straight vs stepped/fine/breakpointed + full pull reads, under a collect at every safe point →
+    identical output + outcome (E§7.7/§11).
+  - **App C discharged:** S-18/S-21/S-22 (two review fixes recorded on S-22), S-34 marked; S-15/S-16
+    `NestedSuspend` consistency re-verified.
+  - **Debugger UX pass (feedback) — DONE (doodle-web `b5128a2`):** panels fixed-size + always-visible
+    while debugging; an "under" highlight colour for a pause inside a call whose source isn't shown;
+    animated `right`/`left` turns; a speed slider (animation speed + paced `continue` with per-line
+    highlight). Gates all green; CI verified.
+
+**★ MILESTONE M6 — Full observation surface + IDE debugger — COMPLETE (2026-09-01).** All exit criteria
+met; the deployed browser demo carries the full debugger (breakpoints, stepping, call-stack/variables/
+value-tree/raise-trap/watch panels). **Next milestone: M7** (per implementation-plan §5 / M7 paragraph).
 
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)

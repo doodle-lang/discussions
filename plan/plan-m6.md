@@ -515,7 +515,7 @@ native + wasm32 + hygiene 6/6. The accept criteria — set a breakpoint, run, hi
 + expand a record, step, watch an expression evaluate, resume, in the browser — are met. UX
 hardening beyond this rides the environment track (§7.3).
 
-### M6.10 — Exit review + close `[M]`
+### M6.10 — Exit review + close `[M]` — **DONE (2026-09-01)**
 
 Multi-lens adversarial **read-only** review (raise-trap × unwind/cleanup interaction;
 breakpoint index across module load/canonical-reuse/suspend-resume; handle discipline
@@ -525,6 +525,45 @@ observation surface is consistent under `NestedSuspend`), **S-18** (raise-trap
 unification), **S-21** (breakpoint mapping), **S-22** (aux eval), **S-34**
 (ring-buffer scoping). Determinism gate green; all four surfaces (native, wasm build,
 + the debugger) green.
+
+**As built.** Four read-only review lenses ran as parallel subagents (raise-trap × aux-eval;
+breakpoints/stepping; handle discipline; determinism). Net: **two confirmed defects, both at the
+raise-trap × auxiliary-evaluation seam, both fixed** (doodle-rust `96b7add`):
+- **CRITICAL (GC use-after-free):** `drive_aux_to_string` moved the outer `unwind`/`reg`/`pending`
+  into Rust locals for the nested drive, but `gc::collect` roots those values only through those
+  live machine fields — so a collection during a `Stringable` render freed them. At a raise-trap
+  pause the trapped `Error` record is reachable *only* from `unwind`, so it was the sharp case: the
+  resumed drive read a freed slab slot. Fixed by rooting the saved values in `foreign_roots` for
+  the aux drive (the discipline the reentrant block-consumer already uses). Regression test panics
+  on a freed slot without the fix under `collect_at_every_safe_point`.
+- **MAJOR (dynamic-parameter corruption):** the aux-drive fault path `truncate`d `dyn_stack` instead
+  of running the `with` cell writeback, leaking an aux `with`-binding into the outer program's
+  shared parameter. Fixed with `unwind::restore` (a no-op on the completion/raise paths).
+
+Minor items also fixed: `gc_threshold` restored across aux-eval; a cancel observed in the aux drive
+reports `Faulted(Cancelled)` not `Internal`; `frame_dynamic_*` slice `dyn_stack` fail-soft; the
+`trapped_raise` docs corrected; the u32 pause-generation wrap noted. Handle-discipline and
+breakpoint/fine-mode lenses found **no** correctness/determinism bugs (rooting, staleness,
+mint/release ordering, reentrant gating, and the fine-safe-point-no-accounting invariant all
+verified sound); their remaining notes are cosmetic gutter-flag limitations.
+
+**Determinism-gate extension** (`the_observation_surface_does_not_perturb_the_program_trace`): a
+program run straight vs stepped / fine-stepped / breakpointed with the full pull-observation reads,
+under a collect at every safe point, produces **identical output + terminal outcome** — the
+observation surface is outside replay identity (E§7.7/§11). App C discharged: S-18/S-21/S-22 (with
+the two review fixes recorded on S-22) and S-34 marked; S-15/S-16 `NestedSuspend` consistency
+re-verified by the aux-eval lens.
+
+**Debugger UX pass (user feedback on the live debugger).** The panels region is a fixed share of the
+pane and stays visible through a session (placeholder while driving) — no resize jumps; a pause
+inside a call whose source isn't shown highlights the *call site* in a distinct "under" colour
+(stepping into `forward` reads as "under this line"); the turtle handler animates `right`/`left`
+turns (shortest-direction in-place rotation, position-tracked to tell a turn from a teleport); and a
+speed slider sets the animation speed and, below full speed, paces `continue` one statement per
+slice with a per-line highlight — so slowing a run shows every line, not only the drawing ones.
+(doodle-web `b5128a2`; UX hardening beyond this rides the environment track §7.3.)
+
+**M6 COMPLETE.** All exit criteria met; the deployed browser demo carries the full debugger.
 
 ## Notes on ordering and risk
 

@@ -1785,7 +1785,16 @@ E§8.4's "host-given" made literal; 2^20 is a fine binding-level
 default), exhaustion faulting the one-shot aux drive; a non-String
 `to_string` result **raises the interpolation `type-mismatch`**
 (`{expected: ["String"], got}`) rather than passing through — the
-debug render must not show something the program cannot render.]** ·
+debug render must not show something the program cannot render.]**
+**[M6.10 exit review found + fixed two aux-eval defects (doodle-rust
+`96b7add`): a **CRITICAL** GC use-after-free — the nested drive moved the
+outer `unwind`/`reg`/`pending` into Rust locals, which `gc::collect` no
+longer rooted, so a collection during the render freed the trapped raise
+value; fixed by rooting them in `foreign_roots` for the drive — and a
+**MAJOR** dynamic-parameter leak — the fault path truncated `dyn_stack`
+instead of running the `with` cell writeback; fixed with `unwind::restore`.
+Both regression-tested under GC stress. Confirms the "context restored /
+pause byte-for-byte intact" contract now actually holds.]** ·
 S-23 (E§10.1) Cancellation robustness: reserved unwind budget; capability
 call during cancel-unwind faults; second cancel = hard abort; cancel of a
 Suspended instance discards the pending request; late `resolve` errors.
@@ -1800,8 +1809,13 @@ cap-call-during-unwind, second-cancel hard abort, cross-thread.**] ·
 S-33 (E§3.3/§7.3) Instance reusability after `Raised`/`Faulted` at top
 level (REPL needs drive-again); raising a step budget after
 `LimitExceeded`. ·
-S-34 (E§8.3) Ring-buffer scoping (instance-global; snapshot into traces at
-raise-capture; entries tagged with consuming frame serial). ·
+**S-34 (E§8.3) DISCHARGED (M6, 2026-09-01): Ring-buffer scoping** (instance-global;
+snapshot into traces at raise-capture; entries tagged with consuming frame serial).
+The bounded tail-elided ring is instance-global and snapshotted into a raise's trace at
+capture (M4.5); M6.2 added the host-facing pull accessor `tail_elided_history` (E§8.3),
+and M6.9's stack walk marks elided frames distinctly from live ones. The M6.10 review
+verified the ring stays rooted through GC (aux-eval clones it, not takes) and its
+ordering (`most_recent_first`) is a deterministic `Vec` iteration. ·
 S-35 (E§4.2) Handle `retain` semantics (per-handle count; double-release
 and use-after-destroy are contract violations caught in debug builds). ·
 **S-40 (E§7.2/§7.3) RESOLVED (user, 2026-08-03; spec + M3.1 code landed):
