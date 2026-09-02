@@ -280,7 +280,7 @@ M7.6's standing gate, so the C surface can't rot).
 
 ## The work items
 
-### M7.0 — Engine pre-work: S-42 close, `Send`, finalizer, defaults `[M]` (D-M7-2, D-M7-5, D-M7-8)
+### M7.0 — Engine pre-work: S-42 close, `Send`, finalizer, defaults `[M]` (D-M7-2, D-M7-5, D-M7-8) — DONE (doodle-rust `8ded450`)
 
 Pure engine + spec, no C yet. Land the **S-42** E§5.1 edit (descriptor defaults +
 block-param + the `extern "C" fn(void*)` finalizer). Widen `Finalizer` to
@@ -293,7 +293,19 @@ E§5.1 as L§8.3-equivalent by construction. Tests: a foreign function with a de
 binding per L§8.3; a foreign value finalized exactly once at **both** GC and
 `destroy`.
 
-### M7.1 — C ABI core + the freeze conventions `[M–L]` (D-M7-3, D-M7-6, D-M7-7)
+### M7.1 — C ABI core + the freeze conventions `[M–L]` (D-M7-3, D-M7-6, D-M7-7) — DONE (doodle-rust `07b265e`)
+
+> Landed: the `#[repr(C)]` ABI-type mirror + cbindgen prefixing + `doodle_abi_version()`;
+> opaque config builders (limits / observation mode / S-41 target Unicode version);
+> `doodle_load`/`doodle_free`; `doodle_drive`/`doodle_drive_slice`/`doodle_cancel` + the
+> flat six-kind `DoodleOutcome` (reserved tail); `doodle_raised_kind`/`_message`/
+> `doodle_output` (copy-out); the value boundary routing through the canonicalizing/NFC
+> constructors; a `catch_unwind` firewall at every boundary; `crate-type += rlib` +
+> `tests/abi.rs`; the C smoke host does a load/drive/handle round-trip. S-19 landed (E§5.2).
+> **Deferred to M7.2 (its natural home, flagged not silent):** the additive-only golden-header
+> gate (the regen-no-diff gate is in place; the removal/renumber check rides with the first
+> real extension), and populating `DoodleOutcome::value` for a reentrant `fn` return (needs an
+> intern-to-handle path, M7.3).
 
 The highest-stakes chunk. Establish the **`#[repr(C)]` ABI-type mirror**,
 cbindgen prefixing/config, the ABI-version macro + `doodle_abi_version()`, the

@@ -408,6 +408,19 @@ Synchronous foreign functions are for effects that do not need to yield to the
 host's scheduler: pure computation, non-blocking output, and host-provided
 higher-order functions (a native `each`-like primitive that invokes a block).
 
+**Determinism host-contract (S-19).** A synchronous foreign function's return
+value is **not** on the recordable boundary (only capability requests and imports
+are, §11) — it is computed inline and never enters a recording. So a synchronous
+foreign function **must be deterministic**: a pure function of its arguments and
+the instance's own state. Anything that reads a clock, a random source, user
+input, or other external/ambient state **must be a suspending capability** (§5.3),
+whose result crosses the recordable boundary — otherwise replay and cross-surface
+trace identity break silently (each run/surface would compute its own value
+off-record). A host that needs, say, a timestamp exposes it as a capability, not
+as a synchronous `now()`. (The engine cannot enforce this — it is the one
+determinism obligation the host owns; the C ABI documents it at the
+foreign-function descriptor.)
+
 ### 5.3 Suspending capabilities
 
 A capability is a foreign operation that must yield control to the host before it

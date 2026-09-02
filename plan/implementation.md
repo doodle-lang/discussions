@@ -1741,8 +1741,15 @@ list already implied it (`Paused(RaiseTrap)` is not among
 fast run at raises a `rescue` was about to catch. E§8.7 sentence
 landed; matches the shipped M6 drive-loop gate + the exit-criteria
 matrix.]** ·
-S-19 (E§11) Determinism obligation on synchronous foreign functions
-(host contract: sync FFs must be deterministic or become capabilities). ·
+**S-19 (E§5.2/§11) RESOLVED (user-ratified via plan-m7 D-M7-4; spec landed
+M7.1).** Determinism obligation on synchronous foreign functions: a sync FF's
+return value is not on the recordable boundary (computed inline, never
+recorded), so it **must be deterministic** — anything reading a clock/RNG/
+input/ambient state must be a suspending capability (§5.3) whose result crosses
+the boundary, or replay + cross-surface trace identity break silently. The
+engine cannot enforce it; the host owns it, and the C ABI documents it at the
+foreign-function descriptor (M7.2). **[E§5.2 host-contract paragraph landed
+M7.1; the CLI's `time`/`random`/`read_line` are capabilities per D-M7-4.]** ·
 S-20 (E§7.7/§10.2) Step-budget unit is mode-independent regardless of
 observation granularity. **[Refined by R8 (M4.10): the unit is now **work
 units**, not just statement safe points — a result-growing op (`*`/`**`,
