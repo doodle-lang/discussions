@@ -6,8 +6,11 @@ and the native **`doodle` CLI** — the second and third embedding surfaces besi
 the browser (wasm) one, certified to run the conformance suite with **traces
 identical across all three surfaces**.
 
-Status: **revised after a 4-lens adversarial review (2026-09-02); awaiting
-ratification.** Chunk sizes per implementation-plan Appendix A.
+Status: **RATIFIED (user, 2026-09-02)** — D-M7-1 resolved earlier
+(`c377b32`); D-M7-2..11 ratified with two adjustments (D-M7-8 immutable-only
+defaults; D-M7-10 dry-run-ready, publication behind D-8) and two riders
+(finalizer-as-determinism-guard; platform-neutral conventions). Execution may
+begin at M7.0. Chunk sizes per implementation-plan Appendix A.
 
 > **Milestone size — re-tagged `[M]` → `[L]` (review finding).** The milestone
 > contains a genuine `[L]` chunk and, honestly counted (the certification
