@@ -713,8 +713,20 @@ Out of scope: live edit (E§8.9), conditional breakpoints (aux-eval is their fut
   watch-it-run, record tree), Playwright e2e 8/0 (gutter breakpoint → Debug pause → variables → Stop;
   Debug-no-breakpoint → done; step advances the line), typecheck clean, posture / first-load (431 KB <
   461 KB) / wasm-size green; doodle-rust native + wasm32 + hygiene 6/6. Accept criteria met end-to-end in
-  the browser. **M6.9 COMPLETE. Next: M6.10** (exit review + close; determinism-gate extension over the
-  observation surface; App C discharge S-15/16/18/21/22/34).
+  the browser. **M6.9 COMPLETE.**
+
+- **M6.10 IN PROGRESS (2026-09-01): exit review + close.**
+  - **Globals-ordering fix — DONE.** The screenshot showed the prepended turtle-library globals
+    (`turtle_*`) crowding out the user's `side`/`n`. Fix: `module_global_names` now returns each
+    global's **`decl_span`** (E§8.2), and the demo separates its own top-level globals (decl after the
+    prelude → a user-program line) from the library's (decl before → `userLineOf` null), showing the
+    user's under "Module globals" and tucking the library's into a collapsed group. Threaded
+    doodle-core → facade → wasm → engine TS → demo panels; demo test asserts the classification.
+  - **Next:** multi-lens adversarial read-only review (raise-trap × unwind; breakpoint index across
+    load/canonical-reuse/suspend-resume; handle discipline across the new minting methods; aux-eval
+    save/restore; determinism of the whole surface); the **determinism-gate extension** (a debugged run
+    vs a straight run produce identical program-observable execution, E§7.7/§11); App C discharge
+    S-15/16/18/21/22/34.
 
 - **M6.7 DONE (2026-08-31, doodle-rust `0c328fc`): auxiliary evaluation (E§8.4, S-22; riders `39fa1e8`
   + `bc5972b`).** `Instance::eval_to_string(handle, fuel) -> AuxOutcome { Rendered(Handle) | Raised(Handle)
