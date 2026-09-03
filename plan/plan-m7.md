@@ -408,7 +408,18 @@ per AD7): `doodle run <file>` (load → drive, streaming `print`, **rendering
 raises/faults/S-63 diagnostics with spans**); **FS module resolution** (resolver
 → sibling `.doodle`, singleton by canonical path, L§11.3); the CLI **primitive
 capabilities** `print`/`read_line`/`time`/`random` — **`read_line`/`time`/`random`
-as suspending capabilities** whose resolutions are replay inputs (D-M7-4/S-19);
+as suspending capabilities** whose resolutions are replay inputs (D-M7-4/S-19).
+**Default policy RATIFIED (user, 2026-09-03): real by default** — wall-clock
+time, entropy-seeded `random` — since the resolutions cross the recordable
+boundary, any run is reproducible-in-principle and the policy is pure UX
+(identical-every-run games and frozen clocks would be the surprising default).
+**`--seed N` ships day one** (deterministic `random` on demand — the classic
+pattern); no fixed-time flag now; **`--record`/`--replay` are the designated
+deterministic mode**, deferred with E§11's replay-artifact work; `doodle test`
+is unaffected — the harness resolves from scripted fixtures / the portable
+test registry (M7.5b), deterministic by construction; the CLI README carries
+one line: real time and entropy enter only as capability resolutions, so a
+recorded run replays bit-for-bit.
 `doodle test` wrapping the conformance runner. Name the **minimal gallery** M7.4
 runs (the `turtle.doodle`-style programs; the full examples gallery is M10).
 Tests: CLI integration over the gallery; a multi-file program resolves; a scripted

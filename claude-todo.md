@@ -2344,6 +2344,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **`doodle run` capability defaults ratified: real time +
+  entropy-seeded random; `--seed` day one; `--record`/`--replay` deferred
+  to the E§11 replay-artifact work; `doodle test` deterministic by
+  construction.** Recorded in plan-m7 M7.4.
 - 2026-09-03 — **M7.3 DONE (C observation/debug surface).** The E§8 pull surface
   mirrored into the C ABI, per D-M7-12..15 (`plan/m7.3-observation-design.md`),
   landed in chunks: M7.3a positions + stack walk + pause-generation
