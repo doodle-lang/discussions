@@ -2344,6 +2344,10 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **Entry-module loader ruled: align the engine API to E§3.2
+  (registration pre-load, `load` takes the real path as canonical id); no
+  CLI-side "main" map. Transcript module ids entry-relative (M7.5d
+  exclusion list).** Recorded in plan-m7 M7.4 + M7.5d.
 - 2026-09-03 — **`doodle run` capability defaults ratified: real time +
   entropy-seeded random; `--seed` day one; `--record`/`--replay` deferred
   to the E§11 replay-artifact work; `doodle test` deterministic by

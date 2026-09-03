@@ -406,7 +406,15 @@ README's host↔engine addressing-asymmetry note.
 A new `doodle` binary crate over `doodle-core` (not through the C ABI; placement
 per AD7): `doodle run <file>` (load → drive, streaming `print`, **rendering
 raises/faults/S-63 diagnostics with spans**); **FS module resolution** (resolver
-→ sibling `.doodle`, singleton by canonical path, L§11.3); the CLI **primitive
+→ sibling `.doodle`, singleton by canonical path, L§11.3). **Entry-module
+loading RULED (user, 2026-09-03): align the engine API to E§3.2's factoring**
+— registration is a separate pre-load step (S-43/E§5.5) and `load(source,
+module_path)` takes the real path as the entry module's canonical id
+(un-bundle any registry-fused loader; no combined variant). A CLI-side
+"main"→path map is rejected as a route-around: it would falsify the S-63
+record, side-channel the resolver's relative-import base, and misaddress
+S-21 breakpoints. The CLI mints a normalized id (resolved, no `..`); "main"
+dies as a magic default (the wasm playground supplies its own id explicitly); the CLI **primitive
 capabilities** `print`/`read_line`/`time`/`random` — **`read_line`/`time`/`random`
 as suspending capabilities** whose resolutions are replay inputs (D-M7-4/S-19).
 **Default policy RATIFIED (user, 2026-09-03): real by default** — wall-clock
@@ -440,7 +448,10 @@ control** (D-M7-1), and `read_line`/`time`/`random` capability fixtures.
 **(d)** Pin the **cross-surface trace schema** — positions, outcome, stack frames
 with **structurally-rendered values**, output bytes, capability request identity
 + resolution — explicitly **excluding** handle ids, foreign `ptr`s, host-side
-float formatting, and any HashMap-order dependence; C↔wasm identity is
+float formatting, any HashMap-order dependence, and **machine-specific module
+ids** (transcripts render module ids **entry-relative** — the entry module by
+bare name, imports relative to it — so three-surface transcripts don't differ
+by working directory; ruled with the entry-loader alignment, 2026-09-03); C↔wasm identity is
 **transitive** via each fixture's canonical transcript (no direct C-vs-wasm diff).
 **(e)** The **~300-line example C host** + the C-surface conformance mechanism
 (Rust orchestrator does discovery/parse/compare; a thin C driver drives one
