@@ -323,19 +323,47 @@ model (D-M7-6); `output`; positions; `describe_raised`. **`catch_unwind` at ever
 panic UB). Regenerate + commit `doodle.h`; extend the C smoke test. Freeze the
 conventions here, before M7.2/M7.3 replicate them.
 
-### M7.2 — C host extensions: capabilities, foreign functions, resolver `[M–L]` (D-M7-2, D-M7-1)
+### M7.2 — C host extensions: capabilities, foreign functions, resolver `[M–L]` (D-M7-2, D-M7-1) — DONE
 
-Capability registration + resolve; **foreign functions / native modules** via the
-opaque descriptor builders; the **module-resolver callback** (import path →
-source / not-found / raise); **foreign values + the `extern "C" fn(void*)`
-finalizer**; **`doodle_call_block(ctx, …)`** routing through the callback's
-`ctx` (never a second `&mut Instance`), returning Completed/NonLocalExit/Raised/
-Faulted and enforcing the **S-46 return-promptly** contract + the **S-15
-`NestedSuspend`** fault. Note this is **new unsafe plumbing** (today `IntrinsicFn`
-is a bare `fn` ptr that can't carry host `void*`; `IntrinsicCtx` accessors are
-`pub(crate)`), not a mirror of an existing surface. Tests: foreign fn with
-default+block; resolver loads a second module; finalizer; a callback that returns
-a value / re-drives after `NonLocalExit` **faults**.
+Landed in sub-pieces (each gated + CI-green):
+- **M7.2a** (doodle-rust `6eb77cc`) — capability registration + resolve + the
+  engine built-ins by identity (`DoodleRegistry`, `doodle_registry_add_builtin`).
+- **M7.2c/d** (doodle-rust `9c03111`) — the **module-resolver** callback (import
+  path → source / not-found / raise) and **foreign values** + the
+  `extern "C" fn(void*)` finalizer, both pull-based (no engine change).
+- **M7.2b** — the control-inversion piece. **Step 1** (engine, `a2d40a4`):
+  `ForeignBody::Host` + the curated `pub` `IntrinsicCtx` host-call API
+  (`arg_handle`/`invoke_block_handles`/`emit`/`fault_host`) + `ForeignBuilder`.
+  **Step 2** (C ABI + the full in-callback value API, `525c294`): the opaque
+  `DoodleForeignDesc` builder, `doodle_registry_add_foreign`, `DoodleCallCtx` +
+  `doodle_call_arg`/`block`/`emit`/`set_result`/`set_raise` (result/raise handles
+  **consumed**), and the ctx-based `doodle_call_make_*`/`as_*`/`kind_of`/`list_*`/
+  `foreign_*`/`release` (so a `fn` callback reads args + builds a result). The
+  value ops were refactored to a shared core (`machine/values.rs`) that both
+  `Instance` and `IntrinsicCtx` delegate to — this also root-caused a determinism
+  gap (`materialize_const` now canonicalizes a `ConstValue::Float` NaN, S-28).
+- `doodle_call_block` routes through the callback's `ctx` (never a second
+  `&mut Instance`), returns Completed/NonLocalExit/Halted, and enforces the
+  **S-46 return-promptly** + **S-15 `NestedSuspend`** backstops.
+
+**Decisions taken (reported, ratified-by-default):** the callback speaks in
+*handles* (`HostReply`), so the C ABI never names an engine `Value`/`Raise`
+(`Arc<dyn Fn>`, not `Box`, keeps `ForeignBody: Clone`); `set_result`/`set_raise`
+**consume** their handle (the host can't reach the ctx after return); the full
+in-callback value API was built (user chose it over an accept-only surface).
+
+**FFI-soundness review (adversarial, read-only) caught a CRITICAL** before land:
+the original `live: bool` gate rejected a returned ctx but not an *ancestor* ctx
+whose block is mid nested-drive → a reentrant host touching a stashed ancestor
+ctx formed a second aliasing `&mut IntrinsicCtx` (UB). Fixed with a thread-local
+**innermost-ctx** gate (pointer-equality, never derefs before confirming
+innermost); the re-review confirmed both CRITICAL and MAJOR (freed-stack `live`
+read) closed, **verified under Miri/Stacked Borrows** (all 22 ABI tests pass,
+incl. the reentrant-ancestor regression test). Tests: foreign fn with
+default+block; a `fn` reads args + constructs a result; a callback raises a
+ctx-built value; the reentrant-ancestor touch → `ErrContract`; native
+re-drive/return-value-after-`NonLocalExit` → `Faulted`. The C smoke drives a
+foreign `greet()` from real C. (Full Miri sweep is M7.6/D-M7-11.)
 
 ### M7.3 — C observation/debug surface `[M]`
 

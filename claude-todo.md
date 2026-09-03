@@ -2320,6 +2320,23 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.2 DONE (C host extensions complete).** M7.2b landed the
+  control inversion: `ForeignBody::Host` + curated `IntrinsicCtx` host API +
+  `ForeignBuilder` (doodle-rust `a2d40a4`), then the C ABI + full in-callback
+  value API (`525c294`): `DoodleForeignDesc` builder, `doodle_registry_add_foreign`,
+  `DoodleCallCtx` + `doodle_call_arg`/`block`/`emit`/`set_result`/`set_raise`
+  (result/raise handles consumed) + `doodle_call_make_*`/`as_*`/`release`; the
+  value ops refactored to a shared `machine/values.rs` core (Instance +
+  IntrinsicCtx both delegate). Determinism gap root-caused: `materialize_const`
+  now canonicalizes a `ConstValue::Float` NaN (S-28). **An adversarial FFI review
+  caught a CRITICAL pre-land (fixed, never shipped):** the `live` flag rejected a
+  *returned* ctx but not an *ancestor* ctx mid nested-drive → a reentrant host
+  touching a stashed ancestor ctx formed a second aliasing `&mut IntrinsicCtx`
+  (UB). Fixed with a thread-local **innermost-ctx** gate (pointer-equality, never
+  derefs before confirming innermost); re-review confirmed CRITICAL + MAJOR
+  (freed-stack `live` read) closed, **verified Miri/Stacked-Borrows clean** (22
+  ABI tests + a `touching_an_ancestor_ctx…` regression test). Detail: plan-m7
+  §M7.2. Next: **M7.3** (C observation/debug surface).
 - 2026-09-02 — **plan-m7 D-M7-2..11 RATIFIED** (one adjustments-recorded
   commit): descriptor/config builders, ABI discipline, S-19 capabilities,
   Send + cross-instance guard, copy-out strings, Miri-on-capi — as
