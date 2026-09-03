@@ -2344,6 +2344,19 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.4b DONE (conformance-runner → lib + bin, D-M7-19).**
+  Landed doodle-rust `a9be3e6`. The discovery/matching logic moved to
+  `tools/conformance-runner/src/lib.rs`, exposing
+  `pub fn run(root: &Path) -> Result<usize, String>` (prints the report,
+  returns the failed-test count); `main.rs` is now a thin wrapper. Cargo
+  auto-detects the lib (`conformance_runner`) + bin (`conformance-runner`);
+  bin name and `cargo run -p conformance-runner` unchanged, and the bin now
+  consumes the public `run` cross-crate. `demo_registry` parity untouched. The
+  31 crate unit tests run under the lib; suite still 205/205. So `doodle test`
+  (M7.4c) links the runner in-process rather than shelling out. Gates: native
+  0-fail, conformance 205/205, clippy -D, wasm32, hygiene 6/6, capi header
+  up-to-date. Next: **M7.4c** (the `doodle-cli` crate — `run` + `test`,
+  hand-rolled args, `--seed`).
 - 2026-09-03 — **M7.4a DONE (engine chunk of the `doodle` CLI).** Landed
   doodle-rust `907d4e6`, per `plan/m7.4-cli-design.md`. Two pieces:
   (1) **time/random ambient capabilities** (D-M7-16) — new
