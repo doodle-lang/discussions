@@ -2344,6 +2344,27 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.4a DONE (engine chunk of the `doodle` CLI).** Landed
+  doodle-rust `907d4e6`, per `plan/m7.4-cli-design.md`. Two pieces:
+  (1) **time/random ambient capabilities** (D-M7-16) — new
+  `machine/intrinsic/ambient.rs`, exported `time_intrinsic`/`random_intrinsic`;
+  both zero-arg suspending `fn`s (the `read_line` shape) so a clock/RNG read
+  crosses the recordable resolution boundary (E§5.3/§11, S-19); the resolved
+  value is host policy (the CLI's, built in M7.4c). (2) **Loader reshape**
+  (D-M7-17) — the `load*` family collapsed to one canonical
+  `Instance::load(module, limits, registry, module_path)` + config-validated
+  `create(module, config, registry, module_path)`; the engine's `"main"` magic
+  default is gone, `module_path` is caller-supplied (the entry module's
+  canonical id, E§3.2). ★ **Loader-shape decision (user-ratified):** one
+  canonical loader (over keeping the 5-variant family). Callers supply their own
+  entry id: wasm playground → `"playground"` (never in program output, so
+  demo/turtle conformance parity holds; doodle-web reads `entryModule()`
+  dynamically), C ABI → its own local `"main"`, conformance runner + core tests
+  → `"main"` (the drive-fixture `break:` default). Tests: time/random suspend +
+  resolve with stable ids; a custom entry path names the entry in
+  `module_canonical_id`/breakpoints. Gates: native 0-fail, conformance 205/205,
+  clippy -D, wasm32, hygiene 6/6, capi header up-to-date, C smoke. Next:
+  **M7.4b** (conformance-runner → lib+bin, D-M7-19).
 - 2026-09-03 — **Entry-module loader ruled: align the engine API to E§3.2
   (registration pre-load, `load` takes the real path as canonical id); no
   CLI-side "main" map. Transcript module ids entry-relative (M7.5d
