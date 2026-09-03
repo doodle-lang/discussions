@@ -2344,6 +2344,28 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.4c DONE (the `doodle` CLI crate — `run` + `test`).**
+  Landed doodle-rust `889c8e4`. New `crates/doodle-cli/` (`[[bin]] doodle`,
+  AD7). **`doodle run <file>`**: front end → load (registry
+  `[print, read_line, time, random]`) → drive to completion, streaming `print`
+  to stdout and resolving each capability from the outside world — `read_line`
+  from stdin (EOF raises), `time` from the wall clock, `random` from a seeded
+  PRNG. `--seed N` makes `random` reproducible (D-M7-16); a load error /
+  uncaught raise / engine fault renders to stderr (the raise via a new
+  `diag::render::render_raise` sharing the diagnostic snippet style); exit 0
+  Completed / 1 error / 2 usage. Imports resolve `NotFound` until M7.4d.
+  **`doodle test [root]`**: runs the suite in-process via
+  `conformance_runner::run` (D-M7-19). Entry canonical id = normalized absolute
+  path (E§3.2). Hand-parsed args; hand-rolled SplitMix64 RNG (zero deps); the
+  CLI bin compiles for wasm32. **Chunk-boundary note:** `draw_*` registration
+  moved from M7.4c to M7.4e (with the never-silent drawing sink) — registering
+  them without a sink would be the silent-discard D-M7-18 rejects; final
+  registry order (…, draw_*) preserved by appending. Tests: 8 CLI integration
+  (print, scripted read_line, load-error render, runtime-raise snippet, --seed
+  reproducibility, bad-seed, `test` running the real suite, no-command) + 3 RNG
+  unit. Gates: native 0-fail, conformance 205/205, clippy -D, wasm32, hygiene
+  6/6, capi header up-to-date, C smoke. Next: **M7.4d** (filesystem module
+  resolver + a multi-file gallery program + its integration test).
 - 2026-09-03 — **M7.4b DONE (conformance-runner → lib + bin, D-M7-19).**
   Landed doodle-rust `a9be3e6`. The discovery/matching logic moved to
   `tools/conformance-runner/src/lib.rs`, exposing
