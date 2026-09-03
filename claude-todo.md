@@ -16,6 +16,30 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
+**Two pre-existing bugs the M7.3 handle-discipline review surfaced — OPEN, deferred
+to their designated milestones (2026-09-03).**
+1. **Cross-thread `&Instance` in `doodle_cancel`/`doodle_pause`** (memory model).
+   Both form `&DoodleInstance` (via `di_ref`) to reach an `Arc<AtomicBool>` while a
+   drive thread may hold `&mut DoodleInstance` — a shared+mut reference to the same
+   `Instance` is UB in Rust's model even though only the atomic is touched.
+   Pre-existing in `doodle_cancel` (M7.1); M7.3 added `doodle_pause` with the same
+   pattern. **Fix → M7.6** (threads + sanitizers + Miri): reach the atomic without
+   materializing `&Instance` — a standalone token holding the `Arc<AtomicBool>`
+   (the design-doc-noted M7.6 cross-thread token for pause **and** cancel together).
+   No functional test (a memory-model/Miri concern; the M7.6 threaded-Miri run is
+   the check). `instance.rs` `doodle_cancel`, `observe/debug.rs` `doodle_pause`.
+2. **Cross-module call-site span resolved against the wrong AST.** `frame_info`
+   (and the bulk `stack_walk` it mirrors) resolves a frame's `call_site` node
+   against `current_resolved()` (the *top* frame's module), not the frame's own
+   module — so for a stack spanning modules the span offsets come from the wrong
+   AST (garbage span, or an out-of-range `NodeId` → `ErrPanic`, which `catch`
+   contains — not UB), while `DoodleFrame.call_site.module` is the correct per-frame
+   token (internally inconsistent). Single-module (the common case) is unaffected.
+   Pre-existing (`stack_walk`), flagged M5.1 in `current_resolved`'s own doc. **Fix
+   → M5.1** (multi-module): resolve the node against the *caller* frame's module for
+   both `frame_info` and `stack_walk`; a cross-module-stack regression test lands
+   with M5.1. `machine/observe.rs`.
+
 **Three bugs found by the M4.10 multi-lens exit review — all FIXED (2026-08-26,
 doodle-rust `61ca2a2`).**
 1. **Unwind: the handling stack leaked on non-raise exits from a rescue body.**
@@ -2320,6 +2344,21 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.3 DONE (C observation/debug surface).** The E§8 pull surface
+  mirrored into the C ABI, per D-M7-12..15 (`plan/m7.3-observation-design.md`),
+  landed in chunks: M7.3a positions + stack walk + pause-generation
+  (doodle-rust `eae226d`), M7.3b frame bindings + module globals (`d2715f5`),
+  M7.3c structural inspection + `eval_to_string` (`a666d97`), M7.3d breakpoints +
+  raise-trap + pause + observation mode + tail history + diagnostics (`b979f79`),
+  M7.3e C-smoke observation walk + wasm parity confirm. Frames addressed by index +
+  a pause-generation token (stale → benign `ErrStale`, never `ErrContract`); frame
+  callables/values/inspection children are lazily-minted host-owned handles;
+  positions carry an opaque module token. **Found + fixed a MAJOR null-handle
+  collision** (a live handle could encode to `0` == `DOODLE_NULL_HANDLE`, so the
+  first handle in an instance read as "no handle"; generations are now 1-based —
+  regression `no_live_handle_encodes_to_zero`). Deferred to the M7 spec-recon: the
+  E§8/App-C text pins + M7.5d trace-schema exclusion of module tokens (in the
+  design doc). Next: **M7.4** (the `doodle` CLI).
 - 2026-09-03 — **M7.2 DONE (C host extensions complete).** M7.2b landed the
   control inversion: `ForeignBody::Host` + curated `IntrinsicCtx` host API +
   `ForeignBuilder` (doodle-rust `a2d40a4`), then the C ABI + full in-callback

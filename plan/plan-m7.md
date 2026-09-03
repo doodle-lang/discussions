@@ -365,15 +365,41 @@ ctx-built value; the reentrant-ancestor touch → `ErrContract`; native
 re-drive/return-value-after-`NonLocalExit` → `Faulted`. The C smoke drives a
 foreign `greet()` from real C. (Full Miri sweep is M7.6/D-M7-11.)
 
-### M7.3 — C observation/debug surface `[M]`
+### M7.3 — C observation/debug surface `[M]` — DONE
 
-Mirror the E§8 pull surface the traces + example host need: stack walk + frame
-callable/locals/dynamic/globals, positions, breakpoints, raise-trap, observation
-mode, tail-elided history, auxiliary evaluation. **All value rendering routes
-through the engine's structural inspection** (never handle ids / host formatting /
-raw foreign `ptr` in any host-visible output). Handle discipline (host-owned +
-released) is the review focus. Tests: drive-script positions/stack **and**
-value-inspection (`local:`/`render:`) read identically through C.
+Mirrors the E§8 pull surface into the C ABI. Four ABI-shape decisions ratified
+(D-M7-12..15) and captured in `plan/m7.3-observation-design.md`; landed in chunks
+(each gated + CI-green):
+- **M7.3a** (doodle-rust `eae226d`) — pause-generation core + positions
+  (`doodle_current_position`/`_completed_position`/`_current_result`), stack walk
+  (`doodle_stack_frame_count` → count + generation; `doodle_frame_at`, gen-checked
+  before bounds → `ErrStale`/`ErrIndexOutOfBounds`; lazily-minted `doodle_frame_callable`),
+  and `doodle_module_canonical_id` (opaque module token → canonical id). **Also
+  found + fixed a MAJOR null-handle collision** (a live handle could encode to `0`
+  == `DOODLE_NULL_HANDLE`; generations are now 1-based) and closed the deferred
+  `DoodleOutcome::value`-on-Completed item.
+- **M7.3b** (`d2715f5`) — frame local/dynamic bindings + module globals (count +
+  per-slot name + lazy value handle), all gen-checked.
+- **M7.3c** (`a666d97`) — structural value inspection (record/dict/list/callable/
+  type/module-member) + `doodle_eval_to_string`; read by handle, not pause-scoped.
+- **M7.3d** (`b979f79`) — breakpoints, raise-trap, host pause, runtime observation
+  mode, tail-elided history (gen-checked), and the S-63 load-diagnostics pull
+  record.
+- **M7.3e** — the C smoke drives a paused-stack walk from real C; the wasm facade
+  already reports staleness with a distinct `StaleGeneration` error, matching C's
+  `ErrStale` (the D-M7-12 parity rider — no wasm change needed).
+
+**All value rendering routes through the engine's structural inspection** (never
+handle ids / host formatting / raw foreign `ptr` / module tokens in host-visible
+output). Handle discipline (host-owned + released, no live handle encodes to `0`)
+was the review focus (a read-only handle-discipline pass). Three-surface parity of
+the observation *results* is exercised in M7.5.
+
+**Deferred to the M7 spec-reconciliation** (captured in the design doc): the E§8
+staleness contract + opaque-module-token text; App C S-24 (module token ⇄
+canonical on M9b reload) + the `ErrStale`/`StaleGeneration` cross-surface
+vocabulary; module tokens on the M7.5d trace-schema exclusion list; the embedder
+README's host↔engine addressing-asymmetry note.
 
 ### M7.4 — The `doodle` CLI `[M]` (D-M7-4)
 
