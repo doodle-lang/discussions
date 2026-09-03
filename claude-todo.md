@@ -2344,6 +2344,23 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-03 — **M7.4d DONE (filesystem module resolver + multi-file gallery).**
+  Landed doodle-rust `710a79e`. `doodle run` now resolves `import` against the
+  filesystem (E§6, S-7): a request's dotted path maps to a `.doodle` file beside
+  the importing module — segments joined as directories under the importer's own
+  dir (the parent of its canonical id, via `module_canonical_id`), `.doodle` on
+  the last, so a module in a subdir resolves its own siblings and resolution is
+  cwd-independent. A missing file is `NotFound` (which drives the S-7
+  module-vs-member fallback: `import a.b` tries module `a/b`, then member `b` of
+  module `a`); a present-but-unreadable file raises at the `import` rather than
+  reporting NotFound. A resolved module's `canonical_id` is its normalized
+  absolute path — the singleton-load key (L§11.3). Gallery:
+  `examples/gallery/hello_modules.doodle` imports its sibling `sayings.doodle`
+  (`to`/`fn` members + selective `exports`). Tests: multi-file import output +
+  missing-import raise (manually verified: selective-import S-7 fallback,
+  cwd-independence). Gates: native 0-fail, conformance 205/205, clippy -D,
+  wasm32, hygiene 6/6. Next: **M7.4e** (drawing text sink — `--draw-log` +
+  summary + `draw_*` registration + turtle gallery program + README, D-M7-18).
 - 2026-09-03 — **M7.4c DONE (the `doodle` CLI crate — `run` + `test`).**
   Landed doodle-rust `889c8e4`. New `crates/doodle-cli/` (`[[bin]] doodle`,
   AD7). **`doodle run <file>`**: front end → load (registry
