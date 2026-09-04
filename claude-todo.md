@@ -2344,6 +2344,19 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5 decisions ratified (transcript model + drive grammar).**
+  Recorded in plan-m7 M7.5 as D-M7-20/D-M7-21. **D-M7-20 (scoped transcript):**
+  `mode: run`/`mode: drive` fixtures get a canonical transcript oracle;
+  static-family stays `expect-*` only. Transcripts assert kinds + structured
+  details + positions, never message text (S-58); native generates (`--write`
+  regen, drift-check fails on drift — M1.12 lang-corpus-sync pattern), wasm/C
+  match; transcript authoritative per fixture with expect-* validated against it at
+  generation; content = the M7.5d schema (rendered values, output bytes, capability
+  identity+resolution, entry-relative module ids; exclusions listed). **D-M7-21
+  (grammar):** `suspended <cap>` = capability (Outcome::Suspended), `import <path>`
+  = import (rename existing); `resolve:`/`resolve-raise:` steps + `input:` queue;
+  wire the engine's ready-but-unused `resolve()`. **Next: M7.5a** (capability-
+  resolution scripting + registration).
 - 2026-09-04 — **M7.4e DONE → M7.4 COMPLETE (the `doodle` CLI).** Landed
   doodle-rust `4e730e1`. Drawing text sink (D-M7-18): `doodle run` registers
   `draw_line`/`set_turtle`/`clear_canvas` (+ `sin`/`cos` for the turtle library's

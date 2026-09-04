@@ -458,6 +458,38 @@ by working directory; ruled with the entry-loader alignment, 2026-09-03); C↔wa
 fixture and emits a transcript). **(f)** Make conformance-through-C a **standing
 CI gate** (surface it for the user to hook, like the wasm gate — do not self-wire).
 
+**D-M7-20 — Transcript model: SCOPED (hybrid). RATIFIED (user, 2026-09-04).** A
+canonical transcript is the oracle for **`mode: run` and `mode: drive` fixtures**;
+**static-family fixtures stay `expect-*` only** (all three surfaces share the same
+doodle-core front end, so static goldens add no surface-variance coverage while
+taxing every diagnostic-wording tweak with corpus-wide regen — and would freeze
+message text the message-quality work is still improving). The scope boundary is
+mechanical: run/drive ⇒ transcript; static ⇒ expect-*. Riders:
+1. **Transcripts assert kinds + structured details + positions, never message
+   text** (S-58 "messages are not API" applied to the corpus): an error is a slug
+   + structured details + position; wording stays free to improve.
+2. **Native generates; everyone else matches.** Canonical transcripts are
+   generated from the native surface, committed, and drift-checked with regen
+   tooling (the M1.12 lang-corpus-sync house pattern: committed artifact, `--write`
+   regenerates, default check fails on drift).
+3. **One source of truth per fixture:** where a transcript exists it is
+   authoritative; any `expect-*` lines in that fixture stay as human-readable
+   intent and are **validated against the transcript at generation** (they cannot
+   drift).
+4. Transcript content is the M7.5(d) schema: positions, outcome, stack frames with
+   **structurally-rendered values**, output bytes, capability request identity +
+   resolution, entry-relative module ids; excluding handle ids, foreign `ptr`s,
+   host float formatting, HashMap-order, machine-specific module ids.
+
+**D-M7-21 — Drive grammar aligns with `Outcome` names. RATIFIED (user,
+2026-09-04).** `suspended <capability> @ L:C` matches a **capability** request
+(`Outcome::Suspended`, matching the engine); a new `import <path> @ L:C` matches an
+**import** (`Outcome::SuspendedImport`) — renaming the few existing import fixtures
+(mechanical). Capability results are scripted with `resolve: <value>` /
+`resolve-raise: <msg>` steps (drive mode) and an ordered `input: <cap> -> <value>`
+queue (run mode); `drive.rs`/`matcher.rs` call the engine's ready-but-unused
+`resolve(Resolution)` path.
+
 ### M7.6 — Threads, cross-instance guard, sanitizers, Miri `[M–L]` (D-M7-5, D-M7-9, D-M7-11)
 
 Two instances on two OS threads with independent deterministic traces; the
