@@ -2344,6 +2344,19 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5b DONE (portable conformance capability manifest).** Landed
+  doodle-rust `18229b8`. Pinned the ordered manifest all surfaces install
+  identically (registration order = replay identity, E§5.5/§11): print(0)…decode(4),
+  read_line(5), time(6), random(7); drawing/trig append at M7.5d (indices
+  preserved). Normative in `conformance/README.md`; the wasm facade
+  `DoodleInstance.demo` (the registry both doodle-web harnesses use) now installs
+  the same 8 in order (was 5). **Non-breaking for doodle-web CI** — it runs the
+  corpus against its committed `.wasm`, and no fixture calls the capabilities until
+  M7.5c (which lands with the doodle-web wasm rebuild + JS harness update for
+  `input:`/`resolve:`). C mirrors the manifest at M7.5e; M7.5d's trace schema
+  catches divergence. Gates: native 0-fail, doodle-wasm tests, conformance
+  206/206, clippy -D, wasm32, hygiene 6/6. **Next: M7.5c/d — cross-repo (shared
+  corpus + doodle-web harness/wasm + new C surface); best done with fresh context.**
 - 2026-09-04 — **M7.5a DONE (capability-resolution scripting in the drive grammar).**
   Landed doodle-rust `8eac622`. Wired the engine's ready-but-unused capability
   `resolve()` into the conformance runner + gave fixtures a way to script results
