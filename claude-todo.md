@@ -2344,6 +2344,23 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **MAJOR fixed: cross-module block consumer mis-bound its block.**
+  Landed doodle-rust `b1725ec`. A block-consumer proc imported from another module
+  (`import lib.*` + `twice() do … end`, where `lib` defines `twice(do body)`)
+  raised a spurious `missing-argument` when it invoked `body()` — it named the
+  first proc's parameter of the *consumer's* module. Root cause: `block_apply`
+  indexed the block's `desc.callable` (an index into the block's **defining**
+  module's callables) against the consumer's `resolved`; when the consumer is
+  imported, those modules differ, so it read the wrong callable. Fix: read the
+  block's `CallableInfo` + build its locals from its defining module
+  (`frames[desc.defining].module`), threading `modules` into the block path
+  (`eval_call` → `eval_block_call`/`got_block_arg` → `block_apply`, `block.rs`).
+  `invoke_native` unaffected (a native consumer's block is always written at that
+  call site). Found by M7.4e recon (the turtle gallery's `import turtle.*` +
+  `repeat(N) do forward … right … end` — now works). Regression:
+  `tests/cross_module_blocks.rs` (2 tests) + conformance
+  `L11.2/import-013_block-to-imported-consumer`. Gates: native 0-fail, conformance
+  206/206, clippy -D, wasm32, hygiene 6/6.
 - 2026-09-03 — **M7.4d DONE (filesystem module resolver + multi-file gallery).**
   Landed doodle-rust `710a79e`. `doodle run` now resolves `import` against the
   filesystem (E§6, S-7): a request's dotted path maps to a `.doodle` file beside
