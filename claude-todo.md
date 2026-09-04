@@ -2344,6 +2344,21 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5a DONE (capability-resolution scripting in the drive grammar).**
+  Landed doodle-rust `8eac622`. Wired the engine's ready-but-unused capability
+  `resolve()` into the conformance runner + gave fixtures a way to script results
+  (D-M7-21). Grammar (normative in conformance/README.md): `suspended <cap>` =
+  capability (Outcome::Suspended), `import <path>` = import (rename of the unused
+  `suspended`=import stop; the drive runner suppresses auto-resolution when a step
+  asserts `import`); drive `resolve: <value>`/`resolve-raise: "<msg>"` steps; run
+  `input: <cap> -> <value|raise "…">` FIFO. New `capability.rs` = the ordered
+  manifest (M7.5b seed): print/length/each/encode/decode + read_line/time/random,
+  single source of truth for the registry + name↔id map (CapabilityId = reg index).
+  Namespace-only for the corpus (206/206 unchanged). Scope: the foreign-fn
+  *registration declaration* defers to M7.5c (S-42 fixture); wasm/C manifest
+  alignment is M7.5b. 7 new runner tests. Gates: native 0-fail, conformance
+  206/206, clippy -D, wasm32, hygiene 6/6. **Next: M7.5b** (portable manifest
+  shared by native/wasm/C).
 - 2026-09-04 — **M7.5 decisions ratified (transcript model + drive grammar).**
   Recorded in plan-m7 M7.5 as D-M7-20/D-M7-21. **D-M7-20 (scoped transcript):**
   `mode: run`/`mode: drive` fixtures get a canonical transcript oracle;
