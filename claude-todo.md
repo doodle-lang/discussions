@@ -2344,6 +2344,26 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.4e DONE → M7.4 COMPLETE (the `doodle` CLI).** Landed
+  doodle-rust `4e730e1`. Drawing text sink (D-M7-18): `doodle run` registers
+  `draw_line`/`set_turtle`/`clear_canvas` (+ `sin`/`cos` for the turtle library's
+  `forward`) and renders drawing to **text**, never silently — a quiet end-of-run
+  summary by default, one deterministic line per command with `--draw-log`
+  (`draw.rs`). Registry order now print(0), read_line(1), time(2), random(3),
+  sin(4), cos(5), draw_line(6), set_turtle(7), clear_canvas(8). Gallery
+  (`examples/gallery/`, AD7): flagship `spiral.doodle` (`import turtle.*` +
+  `repeat` block + forward/right — full kid stack) + terminal-friendly
+  `greeting`/`random`/`clock` + `hello_modules` + imported `turtle.doodle`
+  (sibling copy of `doodle/turtle.doodle`; the sibling resolver finds it, no
+  stdlib-location design pulled forward — stays D-8/M9a) + `sayings.doodle` +
+  README (honesty + replay contracts). 14 CLI integration tests; the
+  primitives-direct program kept as the suite's plumbing smoke test, not the
+  gallery (user rider). **M7.5d riders:** the spiral is the intended three-surface
+  conformance program (identical source through native/wasm/C, transcript-compared
+  — exercises resolver + wrapper + parameters + capabilities); trace module ids
+  entry-relative. Gates: native 0-fail, conformance 206/206, clippy -D, wasm32,
+  hygiene 6/6, capi header up-to-date. **M7.4 (a–e) complete.** Next: **M7.5**
+  (conformance substrate + three-surface parity + M7.5d trace schema).
 - 2026-09-04 — **MAJOR fixed: cross-module block consumer mis-bound its block.**
   Landed doodle-rust `b1725ec`. A block-consumer proc imported from another module
   (`import lib.*` + `twice() do … end`, where `lib` defines `twice(do body)`)
