@@ -2358,9 +2358,26 @@ instance is never re-polled). E§10.1 edit landed.
   (deterministically Faulted(Cancelled) — the loop only ends when the flag is seen). Regen'd
   `doodle.h` (additive: the opaque `DoodleControl` + 4 fns). Gates: workspace 0-fail, clippy -D,
   wasm32, hygiene 6/6, capi header up-to-date, capi smoke + conformance OK, native conformance
-  216/216. **Miri validation of the no-aliasing property rides M7.6's Miri chunk.** **Next M7.6:**
-  the cross-instance handle guard (capi side-table, D-M7-5), ASAN/LSAN/UBSan on the C host, `cargo
-  miri test` on the capi rlib (first Miri bring-up), GC-stress-to-C; each its own CI job.
+  216/216. **Miri validation of the no-aliasing property rides M7.6's Miri chunk.**
+
+  **Next M7.6 — cross-instance handle guard (D-M7-5), design scoped 2026-09-05 (do fresh, ~40-site
+  non-mechanical change):** a per-instance **minted-handle set** on the capi `DoodleInstance` (a
+  host-side `HashSet<u64>` — not a Doodle-observable path, so the default hasher is fine); `di.mint(h)`
+  inserts `h.bits()` and returns the ABI handle, `di.decode(abi) -> Result<Handle, DoodleStatus>`
+  returns `ErrStaleHandle`/a new `ErrForeignHandle` if `abi` is not in the set (so a handle minted by
+  A used on B is caught, not silently aliasing B's slot; today's engine gen-check only misses a 2^32
+  gen-wrap ABA), `di.unmint(abi)` on release. Thread through the ~30 decode (`Handle::from_bits`) +
+  ~10 mint (`.bits()`) instance-handle sites in **value.rs / inspect.rs / observe/ / instance.rs /
+  instance/import.rs**. Wrinkles: (1) value.rs uses its own `instance_mut`/`instance_ref` that unwrap
+  to the **engine** `Instance` (dropping the capi `di`) — change them to return the capi
+  `&mut DoodleInstance`/`&DoodleInstance` (like `di_mut`/`di_ref`, which inspect/observe already use),
+  then add `.inner` at each engine call; (2) the `read(instance, |inst| inst.op(Handle::from_bits(h)),
+  out)` closures can't `?` inside — hoist `let h = di.decode(h)?;` before the `read`; (3) the
+  **in-callback ctx handle space (`call*.rs`, ~17 `from_bits`) is SEPARATE** (ctx-scoped, not
+  instance handles) — do NOT touch it. Test: a handle from instance A resolved/read on B returns the
+  error (debug + release). Then: ASAN/LSAN/UBSan on the C host, `cargo miri test` on the capi rlib
+  (needs `rustup component add miri`; first Miri bring-up validates M7.6a's threading too),
+  GC-stress-to-C; each its own CI job.
 - 2026-09-04 — **★ M7.5f DONE → M7.5 COMPLETE (conformance-through-C is a standing CI gate).** Landed
   doodle-rust `3ac4e9f`. Added a `capi conformance (through the C ABI)` CI job (`.github/workflows/
   test.yml`) running `scripts/capi-conformance.sh`: the example C host drives every run/drive fixture
