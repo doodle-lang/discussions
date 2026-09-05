@@ -2344,6 +2344,29 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5e-1 DONE (the example C conformance host — run fixtures; the third surface).**
+  Landed doodle-rust `<pending>`. The M7 headline: a real C host embeds the engine through the C
+  ABI, registers the full portable manifest (print/length/each/encode/decode + read_line/time/random
+  capabilities + the S-42 `test_greet` foreign fn with default+block), drives every `mode: run`
+  fixture, and emits a transcript that matches the canonical oracle — so C↔wasm trace identity holds
+  transitively (M7.5d). **All 124 run fixtures pass through C** (the 6 drive fixtures are M7.5e-2).
+  **New `examples/c-host/conformance.c`** (~330 lines): reads a job (mode + scripted `input:`) + the
+  fixture, registers the manifest in order, drives to completion resolving capabilities + imports
+  (pull model, like native), emits transcript v1 with positions as `<canonical-module>#<byte-offset>`
+  (the ABI hands out byte spans + opaque module tokens; there is no NFC-source accessor). **New
+  orchestrator `conformance-runner --c-host <bin>`** (`c_host.rs`): spawns the host per fixture,
+  **finalizes** offsets→line:col with doodle-core's own `normalize`+`LineIndex` (the identical mapping
+  the native emitter used, so a correct C run matches byte-for-byte), compares to the canonical
+  sidecar. **New `scripts/capi-conformance.sh`** builds capi + the C host + runs the orchestrator (a
+  standing check; **not** self-wired into CI — that's M7.5f). **Additive C-ABI fix (necessary
+  prereq):** `DoodleBuiltin::Time`=11/`Random`=12 (the manifest's capabilities 6,7 were missing from
+  the enum) + `intrinsic_for` mapping + regen'd `doodle.h` (additive, registry position is call-order
+  not enum value); abi.rs test `time_and_random_builtins_register_and_suspend`. **Cross-repo: zero
+  doodle-web change** (C ABI + examples + tools only; doodle-web uses its own wasm). Gates: workspace
+  0-fail, native conformance 216/216, **C-host conformance 124/124**, clippy -D, wasm32, hygiene 6/6,
+  capi header up-to-date, capi smoke OK. **Next: M7.5e-2** (extend the C host to drive-mode fixtures —
+  breakpoints/raise-trap/obs/stepping + stop/stack emission — for the 6 `mode: drive` fixtures), then
+  **M7.5f** (surface capi-conformance.sh as a CI gate).
 - 2026-09-04 — **M7.5d DONE (the cross-surface transcript oracle).** Landed doodle-rust
   `afbd1d1` (+ `29e9e56` — a `.gitattributes` `*.transcript text eol=lf` follow-up: the byte-exact
   drift-check read every sidecar as drifted on the **Windows** CI matrix leg, where autocrlf turns LF
