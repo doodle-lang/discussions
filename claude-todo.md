@@ -2345,7 +2345,10 @@ instance is never re-polled). E§10.1 edit landed.
 ## Done
 
 - 2026-09-04 — **M7.5d DONE (the cross-surface transcript oracle).** Landed doodle-rust
-  `<pending>`. The linchpin: a committed, byte-exact `<entry>.doodle.transcript` beside every
+  `afbd1d1` (+ `29e9e56` — a `.gitattributes` `*.transcript text eol=lf` follow-up: the byte-exact
+  drift-check read every sidecar as drifted on the **Windows** CI matrix leg, where autocrlf turns LF
+  into CRLF; the format is defined LF-only, so pin it. All platforms green after). The linchpin: a
+  committed, byte-exact `<entry>.doodle.transcript` beside every
   `mode: run` / `mode: drive` fixture (**130**: 124 run + 6 drive), the native surface generating
   it (`conformance-runner --write`) and drift-checking by default (drift or a missing sidecar =
   FAIL — the M1.12 lang-corpus-sync house pattern); wasm/C emit their own and string-compare to the
