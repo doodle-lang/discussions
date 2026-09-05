@@ -2360,24 +2360,39 @@ instance is never re-polled). E§10.1 edit landed.
   wasm32, hygiene 6/6, capi header up-to-date, capi smoke + conformance OK, native conformance
   216/216. **Miri validation of the no-aliasing property rides M7.6's Miri chunk.**
 
-  **Next M7.6 — cross-instance handle guard (D-M7-5), design scoped 2026-09-05 (do fresh, ~40-site
-  non-mechanical change):** a per-instance **minted-handle set** on the capi `DoodleInstance` (a
-  host-side `HashSet<u64>` — not a Doodle-observable path, so the default hasher is fine); `di.mint(h)`
-  inserts `h.bits()` and returns the ABI handle, `di.decode(abi) -> Result<Handle, DoodleStatus>`
-  returns `ErrStaleHandle`/a new `ErrForeignHandle` if `abi` is not in the set (so a handle minted by
-  A used on B is caught, not silently aliasing B's slot; today's engine gen-check only misses a 2^32
-  gen-wrap ABA), `di.unmint(abi)` on release. Thread through the ~30 decode (`Handle::from_bits`) +
-  ~10 mint (`.bits()`) instance-handle sites in **value.rs / inspect.rs / observe/ / instance.rs /
-  instance/import.rs**. Wrinkles: (1) value.rs uses its own `instance_mut`/`instance_ref` that unwrap
-  to the **engine** `Instance` (dropping the capi `di`) — change them to return the capi
-  `&mut DoodleInstance`/`&DoodleInstance` (like `di_mut`/`di_ref`, which inspect/observe already use),
-  then add `.inner` at each engine call; (2) the `read(instance, |inst| inst.op(Handle::from_bits(h)),
-  out)` closures can't `?` inside — hoist `let h = di.decode(h)?;` before the `read`; (3) the
-  **in-callback ctx handle space (`call*.rs`, ~17 `from_bits`) is SEPARATE** (ctx-scoped, not
-  instance handles) — do NOT touch it. Test: a handle from instance A resolved/read on B returns the
-  error (debug + release). Then: ASAN/LSAN/UBSan on the C host, `cargo miri test` on the capi rlib
-  (needs `rustup component add miri`; first Miri bring-up validates M7.6a's threading too),
-  GC-stress-to-C; each its own CI job.
+- 2026-09-05 — **M7.6 cross-instance handle guard DONE (D-M7-5) — MD §16, NOT the scoped
+  minted-set.** Landed doodle-rust `<pending>`. **Recon on `machine/handle.rs` falsified the scoped
+  minted-set** (the design note this entry replaces): a `DoodleInstance` → minted-handles
+  `HashSet<u64>` keyed on the handle value **cannot** catch the dangerous case — two fresh instances
+  mint **bit-identical** handles (both first `intern` → index 0, gen 1 → bits `1`), so A's handle
+  used on B is a member of B's own set and passes silently, in **every** build (it would catch the
+  harmless non-colliding variant and miss the harmful one, at ~40-site cost). Surfaced the fork; user
+  chose **MD §16 as written — a debug-only per-instance id in the handle's top 8 bits**, with one
+  adjustment (below). `HandleTable` gains a debug `instance_id` (from a process-global `AtomicU8`);
+  `pack()` stamps it as **id:8 | index:24 | gen:32** — steals from the *index*, so the generation
+  stays a full 32 bits (no ABA regression, honoring the user's rider); `live_index` rejects an id
+  mismatch on an otherwise-live slot as new `HandleError::ForeignInstance` → `ValueError::
+  ForeignInstance` → **`DoodleStatus::ErrContract`** (the **adjustment**: kept **distinct from
+  `ErrStaleHandle`** — Stale is a routine retry, cross-instance is a host bug to assert on).
+  Because the check lives in `live_index`, **all ~30 reader sites + the in-callback ctx handle space
+  are guarded with zero capi threading**; only the error *mapping* changed (`abi::value_error` arm +
+  new `abi::handle_error`, used by the two `release` sites). **Release posture (honest):** no id,
+  cannot detect the collision, but **wrong-answers-not-UB** (index+gen validate against the resolving
+  instance's own table) — stated in the capi crate doc `# Handles & instances` next to the
+  handle-ownership contract, and in the `ErrStaleHandle`/`ErrContract` status docs. Tests: engine unit
+  `handle::tests::a_handle_from_another_instance_is_caught_as_foreign` (deterministic ids via a test
+  ctor) + end-to-end capi `a_handle_from_another_instance_is_a_contract_error` (through the C ABI,
+  `#[cfg(debug_assertions)]`) — the case the minted-set could not express. **Also split `abi.rs`
+  (580 → ~450) — extracted the core↔ABI conversion fns into `abi/map.rs`** (re-exported; call sites
+  unchanged), since the guard pushed it further over the 500 soft limit. Amended plan-m7 D-M7-5 +
+  updated the D-M7-11 test list. Regen'd `doodle.h` (doc-only; **no new ABI symbol** — ErrContract
+  already existed). Gates: workspace 0-fail (incl. 2 new tests), clippy -D, wasm32, hygiene 6/6,
+  native conformance 216/216, capi header up-to-date, capi smoke OK, capi conformance-through-C
+  130/130. **Remaining M7.6:** `cargo miri test` on the capi rlib (needs `rustup component add miri`;
+  first Miri bring-up — also validates M7.6a's threading + this guard's no-alias claim),
+  ASAN/LSAN/UBSan on the C host, GC-stress-to-C; each its own CI job. **Pre-existing WARN (not this
+  chunk, flagged for a clean follow-up):** `crates/doodle-capi/src/inspect.rs` is 506 lines (over the
+  500 soft limit), untouched here.
 - 2026-09-04 — **★ M7.5f DONE → M7.5 COMPLETE (conformance-through-C is a standing CI gate).** Landed
   doodle-rust `3ac4e9f`. Added a `capi conformance (through the C ABI)` CI job (`.github/workflows/
   test.yml`) running `scripts/capi-conformance.sh`: the example C host drives every run/drive fixture

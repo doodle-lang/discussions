@@ -195,13 +195,37 @@ broken a frozen by-value config struct.
   it to `+ Send`** (the C finalizer captures only the `void*` payload + fn ptr)
   and adds a compile-time `assert_send::<Instance>()`. `!Sync` is correct
   (`StrObj.graphemes: OnceCell` is `&self`-mutated).
-- **Cross-instance handle use caught in a debug build** via a **capi-side table**
-  mapping each `DoodleInstance*` to the handles it minted (keeps the clean
-  `uint64_t`; works in **release** too, returning a status error — a raw
-  `uint64_t` from instance A resolved on B would otherwise alias B's slot and,
-  for a `Foreign`, hand a wrong pointer back to C: not "memory-safe" once it
-  re-crosses to C). The generation-wrap (ABA) budget is documented (full 32-bit
-  generation retained; no bit-stealing).
+- **Cross-instance handle use caught in a debug build.** **AMENDED 2026-09-05
+  (supersedes the original capi side-table design):** recon on the handle model
+  (`machine/handle.rs`) falsified the side-table's premise. A `DoodleInstance` →
+  minted-handles set keyed on the `uint64_t` handle value **cannot** catch the
+  dangerous case: two fresh instances mint **bit-identical** handles (both first
+  `intern` → index 0, generation 1 → bits `1`), so a handle from A used on B is a
+  *member of B's own set* — the collision passes, in **every** build. The
+  minted-set is retired: it would catch the harmless (non-colliding) variant and
+  miss the harmful one, at a ~40-site threading cost. **Implemented instead: MD §16
+  as written — a debug-only per-instance id stolen from the handle's top 8 bits**
+  (`HandleTable::pack`/`live_index`), so a cross-instance handle resolves to
+  `HandleError::ForeignInstance` → `ValueError::ForeignInstance` →
+  **`DoodleStatus::ErrContract`** (a host bug to fix, kept **distinct from
+  `ErrStaleHandle`**, which a host may routinely retry after releasing). The guard
+  lives inside `live_index`, so all ~30 reader sites and the in-callback ctx handle
+  space are covered with **zero capi threading** (only the error *mapping* gained a
+  `ForeignInstance` arm). It is complete where certification runs (debug + the M7.6
+  sanitizer/Miri gates are debug-side; the exit criterion already says "caught in
+  debug builds").
+- **Release posture (documented honestly** in the capi crate doc `# Handles &
+  instances`, next to the handle-ownership contract**).** Release does not encode
+  the id and cannot detect the collision, but this is **wrong-answers-not-UB**: the
+  index+generation are always validated against the *resolving* instance's own
+  table (a `slots.get()` bound + generation check), so the worst case is a
+  wrong-but-live value from that instance or a boundary error — never memory
+  unsafety, and never a wrong pointer handed to C (a `Foreign` read resolves to B's
+  own slot, not A's). Rust-side boundary safety (AD1) holds in every build; only the
+  *diagnosis* is debug-only. The **ABA budget is preserved**: the debug id steals
+  from the *index* field, so the generation stays a full 32 bits in every build (a
+  24-bit generation would wrap in hours under a handle-churning debugger — the exact
+  hole the full generation closes).
 
 **D-M7-6 — String/byte ownership model (new).** *Recommend: copy-out by
 default.* Return bytes/strings by **copying into a caller-provided buffer**
@@ -272,6 +296,17 @@ are callable from Rust `#[test]`s, and run **`cargo miri test`** against those
 returned-pointer windows). Split: **Miri = Rust-side aliasing/UAF on the capi**;
 **ASAN/LSAN/UBSan = C-host misuse + foreign-resource leaks**. (Miri on
 `doodle-core` alone certifies the wrong crate — it has no `unsafe`.)
+
+> **Landed 2026-09-05 (M7.6 handle guard, part 1):** the **cross-instance** case
+> now has a deterministic **debug** test — the case the retired value-keyed
+> minted-set could not even express (the two handles are bit-identical). Engine
+> unit test `machine::handle::tests::a_handle_from_another_instance_is_caught_as_foreign`
+> (pins the two instance ids via a test constructor so it does not depend on the
+> process-global counter under parallel tests), and the end-to-end
+> `crates/doodle-capi/tests/abi.rs::a_handle_from_another_instance_is_a_contract_error`
+> (through the real C ABI → `ErrContract`, `#[cfg(debug_assertions)]`). `cargo miri
+> test` over these (plus double-release / re-entrant-block / returned-pointer) is
+> the remaining M7.6 Miri bring-up.
 
 **Also settled (no decision):** suspend-the-outer-drive is out (D-M7-1); live
 edit stays out (§1.2); the CLI is a **Rust binary over `doodle-core`** while the
