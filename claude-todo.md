@@ -16,18 +16,20 @@ go at the top, per CLAUDE.md.
 
 ## MAJOR
 
-**Two pre-existing bugs the M7.3 handle-discipline review surfaced — OPEN, deferred
-to their designated milestones (2026-09-03).**
-1. **Cross-thread `&Instance` in `doodle_cancel`/`doodle_pause`** (memory model).
-   Both form `&DoodleInstance` (via `di_ref`) to reach an `Arc<AtomicBool>` while a
-   drive thread may hold `&mut DoodleInstance` — a shared+mut reference to the same
-   `Instance` is UB in Rust's model even though only the atomic is touched.
-   Pre-existing in `doodle_cancel` (M7.1); M7.3 added `doodle_pause` with the same
-   pattern. **Fix → M7.6** (threads + sanitizers + Miri): reach the atomic without
-   materializing `&Instance` — a standalone token holding the `Arc<AtomicBool>`
-   (the design-doc-noted M7.6 cross-thread token for pause **and** cancel together).
-   No functional test (a memory-model/Miri concern; the M7.6 threaded-Miri run is
-   the check). `instance.rs` `doodle_cancel`, `observe/debug.rs` `doodle_pause`.
+**One pre-existing bug the M7.3 handle-discipline review surfaced remains OPEN (the other,
+cross-thread `&Instance`, is FIXED — M7.6a).**
+
+1. **Cross-thread `&Instance` in `doodle_cancel`/`doodle_pause` — FIXED (M7.6a, doodle-rust
+   `<pending>`).** Both formed `&DoodleInstance` (via `di_ref`) to reach an `Arc<AtomicBool>` while a
+   drive thread may hold `&mut DoodleInstance` (shared+mut alias = UB, even though only the atomic is
+   touched). **Fix:** the design-doc-noted cross-thread token — a standalone `DoodleControl`
+   (`control.rs`) holding **clones** of the cancel + pause tokens' `Arc<AtomicBool>`s, obtained once
+   on the owning thread via `doodle_control(instance)` and used cross-thread via
+   `doodle_control_cancel`/`_pause` **without ever re-forming `&Instance`**. `doodle_cancel`/
+   `doodle_pause` re-documented as owning-thread-only, pointing to the control for cross-thread. Two
+   threading tests: two-instance/two-thread independence (Send), and a spin-loop cancelled from
+   another thread via the control (deterministically Faulted(Cancelled)). **Miri validation of the
+   no-aliasing property rides the M7.6 Miri chunk** (the tests are threaded and Miri-runnable).
 2. **Cross-module call-site span resolved against the wrong AST.** `frame_info`
    (and the bulk `stack_walk` it mirrors) resolves a frame's `call_site` node
    against `current_resolved()` (the *top* frame's module), not the frame's own
@@ -2344,6 +2346,21 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.6a DONE (cross-thread control token — fixes MAJOR #1 + the two-thread accept
+  criterion).** Landed doodle-rust `<pending>`. **M7.6 started.** The D-M7-5 threading foundation: a
+  standalone `DoodleControl` (`crates/doodle-capi/src/control.rs`) holding clones of an instance's
+  cancel + pause tokens (`Arc<AtomicBool>`), obtained once on the owning thread with
+  `doodle_control(instance)` and used from ANOTHER thread via `doodle_control_cancel`/`_pause` +
+  `doodle_control_free` — never re-forming `&Instance` (fixes the cross-thread aliasing UB, MAJOR
+  #1). `doodle_cancel`/`doodle_pause` re-documented as owning-thread-only. Two abi.rs threading
+  tests: **two instances on two threads run independently** (exercises `Instance: Send`, the M7
+  accept criterion), and **a spin-loop drive cancelled from another thread via the control**
+  (deterministically Faulted(Cancelled) — the loop only ends when the flag is seen). Regen'd
+  `doodle.h` (additive: the opaque `DoodleControl` + 4 fns). Gates: workspace 0-fail, clippy -D,
+  wasm32, hygiene 6/6, capi header up-to-date, capi smoke + conformance OK, native conformance
+  216/216. **Miri validation of the no-aliasing property rides M7.6's Miri chunk.** **Next M7.6:**
+  the cross-instance handle guard (capi side-table, D-M7-5), ASAN/LSAN/UBSan on the C host, `cargo
+  miri test` on the capi rlib (first Miri bring-up), GC-stress-to-C; each its own CI job.
 - 2026-09-04 — **★ M7.5f DONE → M7.5 COMPLETE (conformance-through-C is a standing CI gate).** Landed
   doodle-rust `3ac4e9f`. Added a `capi conformance (through the C ABI)` CI job (`.github/workflows/
   test.yml`) running `scripts/capi-conformance.sh`: the example C host drives every run/drive fixture
