@@ -2344,6 +2344,21 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **★ M7.5f DONE → M7.5 COMPLETE (conformance-through-C is a standing CI gate).** Landed
+  doodle-rust `3ac4e9f`. Added a `capi conformance (through the C ABI)` CI job (`.github/workflows/
+  test.yml`) running `scripts/capi-conformance.sh`: the example C host drives every run/drive fixture
+  and its transcript is compared to the canonical oracle on every push, so the C surface can't rot.
+  Linux-only per D-M7-9; no cbindgen; `cc` on the ubuntu runner. **Wired at the user's explicit
+  request** (the plan's default was to surface the job, not self-wire — the user overrode it). CI:
+  the new job is green alongside all others (native conformance, wasm, header+smoke, tests ×3
+  platforms). **★ MILESTONE M7.5 (three-surface conformance parity) COMPLETE:** the M7 headline
+  accept criterion is met — a real C host embeds the engine, registers primitives incl. an S-42
+  foreign fn with a default + block parameter, and runs the whole run/drive corpus through the C ABI
+  with traces identical to native/wasm (transitively, via the M7.5d oracle). **Remaining M7:** M7.6
+  (two-thread independence + cross-instance handle guard + ASAN/LSAN/UBSan + `cargo miri test` on the
+  capi rlib; also fixes the 2 tracked MAJORs — cross-thread `&Instance` in doodle_cancel/pause, and
+  the cross-module call-site span), M7.7 (publish dry-runs + distribution artifact + adversarial exit
+  review + App C discharge). Separable cross-repo: the doodle-web wasm-parity extension.
 - 2026-09-04 — **★ M7.5e-2 DONE → M7.5e COMPLETE (the C conformance host now drives DRIVE fixtures
   too; full three-surface parity).** Landed doodle-rust `<pending>`. Extended the example C host with
   the E§8 debug surface: parses the drive job (`break`/`raise-trap`/`obs` setup + `do <action>`),
