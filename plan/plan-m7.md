@@ -482,7 +482,16 @@ message text the message-quality work is still improving). The scope boundary is
 mechanical: run/drive ⇒ transcript; static ⇒ expect-*. Riders:
 1. **Transcripts assert kinds + structured details + positions, never message
    text** (S-58 "messages are not API" applied to the corpus): an error is a slug
-   + structured details + position; wording stays free to improve.
+   + structured details + position; wording stays free to improve. **Amendment
+   (M7.5d, 2026-09-04):** `transcript v1` records the **kind + position only**;
+   the Error's structured **`details`** are a designated **v1.1** field, deferred
+   until **M9a stabilizes structural value serialization** — committing today's
+   placeholder compound rendering (`<dict>`/`<list>`, M4.9) as goldens would freeze
+   it against the real M9a work. This is distinct from the M6.0b `details`
+   *population* obligation (already done; the IDE reads details by handle
+   inspection, not from a rendered string) — the transcript blocks on *serialization
+   stability*, not on the data existing. The version line is the evolution mechanism:
+   v1.1 regenerates every sidecar in one wholesale commit at the bump.
 2. **Native generates; everyone else matches.** Canonical transcripts are
    generated from the native surface, committed, and drift-checked with regen
    tooling (the M1.12 lang-corpus-sync house pattern: committed artifact, `--write`

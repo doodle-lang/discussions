@@ -2344,6 +2344,31 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5d DONE (the cross-surface transcript oracle).** Landed doodle-rust
+  `<pending>`. The linchpin: a committed, byte-exact `<entry>.doodle.transcript` beside every
+  `mode: run` / `mode: drive` fixture (**130**: 124 run + 6 drive), the native surface generating
+  it (`conformance-runner --write`) and drift-checking by default (drift or a missing sidecar =
+  FAIL — the M1.12 lang-corpus-sync house pattern); wasm/C emit their own and string-compare to the
+  canonical file, so C↔wasm identity is transitive. Static-family fixtures have **no** transcript
+  (D-M7-20 scope: run/drive ⇒ transcript, static ⇒ expect-*). **`transcript v1` grammar** (normative
+  in conformance/README.md, one section, reuses drive-script encodings): version line first + `mode:`
+  + tagged events — `out:` (coalesced output, control/`\`/DEL as `\xNN`, UTF-8/LF/trailing-newline),
+  `req:`/`res:` (capability identity+position / scripted resolution), `outcome:` / `step:`+`stop:`
+  (+`stack:`); positions `<mod>:L:C` **entry-relative** (entry = `main`); unknown prefix = parse
+  error. **Q1 ratified: raises record kind (slug) + position, never message text; the Error `details`
+  are a designated v1.1 field deferred to M9a stable structural serialization** (committing today's
+  `<dict>` placeholder would freeze it — distinct from the done M6.0b details *population*). New
+  `transcript.rs` (type + serialize) + `transcript/emit.rs` (record_run/record_drive, reusing the
+  matcher's exact drive logic so a transcript can't diverge from expect-*); `--write` regen +
+  drift-check wired into the default runner — so the **existing CI conformance job auto-gates it** (no
+  self-wired pipeline). Emitter fix: byte-vector escaping (a `byte as char` would remap 0x80–0xFF to
+  Latin-1, corrupting multibyte UTF-8). **Cross-repo: zero doodle-web change** — `.transcript` files
+  end in `.transcript`, invisible to both harnesses' `.endsWith('.doodle')` glob and the runner's own
+  discovery. Runner tests 46 → 53. Gates: workspace 0-fail, conformance 216/216 + 130 transcripts
+  drift-clean, clippy -D, wasm32, hygiene 6/6, capi header up-to-date, capi smoke OK. **Next (M7.5
+  remainder): M7.5e** (~300-line C example host + Rust orchestrator driving fixtures through the C ABI,
+  emitting transcripts) then **M7.5f** (surface conformance-through-C as a CI gate). The **doodle-web
+  wasm-parity extension** (M7.5c/d riders) stays the separable cross-repo follow-up.
 - 2026-09-04 — **M7.5c DONE (capability + S-42 + NestedSuspend conformance fixtures).**
   Landed doodle-rust `<pending>`. The fixtures the M7 accept criteria name, plus the runner
   mechanism to run them. **`#! requires: <name>`** (selection line, D-M7-21 rider): names fixed
