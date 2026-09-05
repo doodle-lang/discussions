@@ -458,6 +458,21 @@ by working directory; ruled with the entry-loader alignment, 2026-09-03); C↔wa
 fixture and emits a transcript). **(f)** Make conformance-through-C a **standing
 CI gate** (surface it for the user to hook, like the wasm gate — do not self-wire).
 
+**Amendment (M7.5c, ratified 2026-09-04):** the (a) "foreign-function/native-module
+registration declaration" is a **selection**, not a definition — a fixture's
+`#! requires: <name>` names entries of the fixed portable manifest (b), whose shapes
+live once per surface (a fixture-defined descriptor DSL would need a mini-interpreter
+inside the C host's ~300-line budget and drift per surface). One test foreign fn
+`test_greet(name, punct = "!", do body)` (default + block, L§8.3) is appended to the
+manifest (append-only; registration order is replay identity); `each` (already a foreign
+block-consumer) carries the NestedSuspend fault. The D-M7-8 mutable-default rejection is
+immutable-**by-construction** on native (`ConstValue`) and C (typed `set_default_*`), so
+it is a per-surface API guarantee, not a fixture. Landed as ten `eng/E5.1`/`E5.3`/`E5.4`
+`mode: run` fixtures (invisible to the doodle-web `lang/`-only run harness and
+`drive`-only harness — the wasm surface joins capability/transcript parity with the
+deferred doodle-web extension: rebuild its wasm to the aligned registry + teach both
+`.mjs` harnesses `input:`/`resolve:`/the M7.5a grammar).
+
 **D-M7-20 — Transcript model: SCOPED (hybrid). RATIFIED (user, 2026-09-04).** A
 canonical transcript is the oracle for **`mode: run` and `mode: drive` fixtures**;
 **static-family fixtures stay `expect-*` only** (all three surfaces share the same

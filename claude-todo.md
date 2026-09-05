@@ -2344,6 +2344,31 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **M7.5c DONE (capability + S-42 + NestedSuspend conformance fixtures).**
+  Landed doodle-rust `<pending>`. The fixtures the M7 accept criteria name, plus the runner
+  mechanism to run them. **`#! requires: <name>`** (selection line, D-M7-21 rider): names fixed
+  portable-manifest primitives; loud both ways (unknown name = fixture error; a harness whose
+  manifest lacks a required name fails at fixture start). **`#! expect-fault: <kind>`** (run mode):
+  asserts a non-resumable engine fault as the terminal outcome (a fault isn't a catchable raise, so
+  it needs its own expectation) — reuses drive.rs's `fault_kind`. **`test_greet(name, punct = "!",
+  do body)`** appended to the manifest (index 8, append-only; a host `fn` with an immutable default +
+  trailing block, built in the runner via the public `ForeignBuilder`/`HostReply` API — no
+  doodle-core change). Ten `mode: run` fixtures under `eng/E5.1` (S-42 default/keyword/non-local-exit
+  through the foreign boundary), `eng/E5.3` (read_line echo/order/raise, time, random capabilities),
+  `eng/E5.4` (**NestedSuspend fault** via `each`+capability; **Doodle-consumer inversion parity
+  control** — same shape, Doodle owns the loop → suspends fine). Corpus **206 → 216**. **D-M7-8
+  mutable-default rejection** is immutable-**by-construction** on native (`ConstValue`) and C (typed
+  `set_default_*`, no handle variant) — a per-surface API guarantee, documented, not a fixture (Q2
+  rider). **Cross-repo: zero doodle-web change** — all new fixtures are `mode: run` under `eng/`,
+  invisible to doodle-web's `lang/`-only run harness and `drive`-only harness. Runner tests 39 → 46.
+  README (requires/expect-fault/test_greet) + plan-m7 amendment updated. Gates: workspace 0-fail,
+  conformance 216/216, clippy -D, wasm32, hygiene 6/6, capi header up-to-date, capi smoke OK.
+  **DEFERRED (surfaced, not baked): the doodle-web wasm-parity extension** — for the wasm surface to
+  run these (three-surface parity), rebuild doodle-web's `.wasm` to the aligned registry (incl.
+  `test_greet`) and teach both `.mjs` harnesses `input:`/`resolve:`/the M7.5a `import`/`suspended`
+  grammar (`drive.test.mjs` still uses the stale pre-M7.5a `suspended`=import spelling). **Next:
+  M7.5d** (the cross-surface transcript oracle: line-oriented sidecar `<fixture>.transcript`, native
+  `--write` regen + drift-check over the 120 run+drive fixtures, D-M7-20).
 - 2026-09-04 — **M7.5b DONE (portable conformance capability manifest).** Landed
   doodle-rust `18229b8`. Pinned the ordered manifest all surfaces install
   identically (registration order = replay identity, E§5.5/§11): print(0)…decode(4),
