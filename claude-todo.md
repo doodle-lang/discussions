@@ -2344,6 +2344,22 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-04 — **★ M7.5e-2 DONE → M7.5e COMPLETE (the C conformance host now drives DRIVE fixtures
+  too; full three-surface parity).** Landed doodle-rust `<pending>`. Extended the example C host with
+  the E§8 debug surface: parses the drive job (`break`/`raise-trap`/`obs` setup + `do <action>`),
+  applies setup (`doodle_set_breakpoint`/`_raise_trapping`/`_observation_mode`), drives each action
+  (run/continue/step/into/over/out + resolve/resolve-raise), and emits `step:`/`stop:`/`stack:`
+  (positions offset-form; stacks `<name>@<mod>#<offset>×<tail>`). The orchestrator (`c_host.rs`) now
+  serializes drive jobs and **finalizes stack lines** (offset→line only, the drive-script stack
+  encoding) alongside `@ <mod>#<offset>`→`<mod>:<line>:<col>`. Shared `render_action` moved to
+  `transcript.rs` (native emitter + C job builder use one spelling, so a C `step:` matches). **All
+  130 run+drive fixtures pass through C** (the 6 `mode: drive` incl. stepover-tail stacks
+  `go@23×1`, breakpoint+raise-trap matrix, subexpr fine-stops). Gates: workspace 0-fail, native
+  conformance 216/216, **C-host conformance 130/130**, clippy -D, wasm32, hygiene 6/6, capi header
+  up-to-date, capi smoke OK. **M7.5 (a–e) COMPLETE.** Remaining M7.5: **M7.5f** (surface
+  capi-conformance.sh as a standing CI gate — do NOT self-wire). Later M7: M7.6 (threads/sanitizers/
+  Miri + the 2 open MAJORs), M7.7 (publish/close). The **doodle-web wasm-parity extension** stays the
+  separable cross-repo follow-up.
 - 2026-09-04 — **M7.5e-1 DONE (the example C conformance host — run fixtures; the third surface).**
   Landed doodle-rust `<pending>`. The M7 headline: a real C host embeds the engine through the C
   ABI, registers the full portable manifest (print/length/each/encode/decode + read_line/time/random
