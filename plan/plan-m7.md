@@ -308,6 +308,18 @@ returned-pointer windows). Split: **Miri = Rust-side aliasing/UAF on the capi**;
 > test` over these (plus double-release / re-entrant-block / returned-pointer) is
 > the remaining M7.6 Miri bring-up.
 
+> **Landed 2026-09-05 (M7.6, part 2 — Miri bring-up):** `scripts/miri.sh` runs
+> `cargo +nightly-2026-09-05 miri test -p doodle-capi` (pinned nightly + `miri`
+> component; the stable `rust-toolchain.toml` is untouched — Miri is a separate
+> `+`-selected dev toolchain). All 33 `tests/abi.rs` cases pass under **both
+> Stacked Borrows and Tree Borrows** — the capi `unsafe` boundary (raw-ptr↔ref,
+> `Box::from_raw`, the callback trampoline, the cross-thread control, the handle
+> guard) is certified free of aliasing/UAF/provenance UB, and both threading tests
+> run under Miri's data-race model (validating M7.6a's no-`&Instance`-aliasing
+> claim). **CI wiring is the pending decision** (recommend per-push, Linux-only per
+> D-M7-9, pinned nightly). Remaining M7.6: ASAN/LSAN/UBSan on the C host,
+> GC-stress-to-C.
+
 **Also settled (no decision):** suspend-the-outer-drive is out (D-M7-1); live
 edit stays out (§1.2); the CLI is a **Rust binary over `doodle-core`** while the
 **example C host** exercises the C ABI (different consumers by design — but see
