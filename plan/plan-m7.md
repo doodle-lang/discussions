@@ -316,9 +316,10 @@ returned-pointer windows). Split: **Miri = Rust-side aliasing/UAF on the capi**;
 > `Box::from_raw`, the callback trampoline, the cross-thread control, the handle
 > guard) is certified free of aliasing/UAF/provenance UB, and both threading tests
 > run under Miri's data-race model (validating M7.6a's no-`&Instance`-aliasing
-> claim). **CI wiring is the pending decision** (recommend per-push, Linux-only per
-> D-M7-9, pinned nightly). Remaining M7.6: ASAN/LSAN/UBSan on the C host,
-> GC-stress-to-C.
+> claim). **Wired as a per-push CI gate** — the `miri (capi unsafe)` job in
+> `Build & test` installs the pinned `nightly-2026-09-05` + miri and runs
+> `scripts/miri.sh` (Linux-only per D-M7-9); green on its first CI run. Remaining
+> M7.6: ASAN/LSAN/UBSan on the C host, GC-stress-to-C.
 
 **Also settled (no decision):** suspend-the-outer-drive is out (D-M7-1); live
 edit stays out (§1.2); the CLI is a **Rust binary over `doodle-core`** while the

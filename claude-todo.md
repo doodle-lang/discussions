@@ -2346,8 +2346,8 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
-- 2026-09-05 — **M7.6 Miri bring-up DONE (D-M7-11, capi `unsafe` certified) — CI wiring is the
-  pending decision.** Landed doodle-rust `<pending>`. First Miri run on the now-large core: all of
+- 2026-09-05 — **M7.6 Miri bring-up DONE + wired as a CI gate (D-M7-11, capi `unsafe` certified).**
+  Landed doodle-rust `49986c7` (script + certification) and `47f7d9d` (CI job). First Miri run on the now-large core: all of
   doodle-capi's `unsafe` (raw-ptr↔ref, `Box::from_raw`, the callback trampoline, the cross-thread
   control) is exercised by the 33 `tests/abi.rs` cases, and **`cargo miri test -p doodle-capi`
   passes 33/33 under BOTH Stacked Borrows (default) and Tree Borrows (`-Zmiri-tree-borrows`,
@@ -2358,11 +2358,10 @@ instance is never re-polled). E§10.1 edit landed.
   hints). **The stable `rust-toolchain.toml` is untouched** — Miri is a separate, `+`-selected
   dev/CI toolchain, never what ships. Added `use doodle_core as _;` to `tests/abi.rs` to quiet
   Miri's `unused-crate-dependencies` force-warn (a no-op for ordinary builds). Gates: workspace
-  0-fail, clippy -D, hygiene 6/6 (still the pre-existing `inspect.rs` 506-line WARN). **Next
-  (proposed, awaiting the user's go — CLAUDE.md keeps CI-wiring a separate decision):** wire
-  `scripts/miri.sh` as a CI job (recommend **per-push, Linux-only** per D-M7-9, **pinned nightly**
-  so nightly churn can't spontaneously break it). Then ASAN/LSAN/UBSan on the C host,
-  GC-stress-to-C; each its own job.
+  0-fail, clippy -D, hygiene 6/6 (still the pre-existing `inspect.rs` 506-line WARN). **CI: wired as
+  a per-push `miri (capi unsafe)` job** in `Build & test` (Linux-only per D-M7-9; installs the pinned
+  `nightly-2026-09-05` + miri, runs `scripts/miri.sh`) — **green on its first CI run in 46s**.
+  **Remaining M7.6:** ASAN/LSAN/UBSan on the C host, then GC-stress-to-C; each its own job.
 - 2026-09-04 — **M7.6a DONE (cross-thread control token — fixes MAJOR #1 + the two-thread accept
   criterion).** Landed doodle-rust `<pending>`. **M7.6 started.** The D-M7-5 threading foundation: a
   standalone `DoodleControl` (`crates/doodle-capi/src/control.rs`) holding clones of an instance's
