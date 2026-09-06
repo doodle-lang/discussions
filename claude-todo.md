@@ -2346,6 +2346,21 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-05 — **M7.6 ASAN/LSAN/UBSan gate DONE + wired (D-M7-11, C-host side certified).** Landed
+  doodle-rust `8755235`. The sanitizer half of the D-M7-11 split (Miri = Rust side; this = C side):
+  **`scripts/capi-sanitize.sh`** builds the example C hosts — `main.c` (smoke) and `conformance.c`
+  (driven over the whole run/drive corpus) — with `-fsanitize=address,undefined`, links the release
+  staticlib, and runs them, so C-host memory misuse (overflow/UAF/double-free of the host's *own*
+  buffers), boundary UB, and (Linux) leaked host resources abort the gate. Only the C hosts are
+  instrumented; the Rust staticlib is the ordinary release build (its `unsafe` is Miri's job). **LSAN
+  is part of ASAN on Linux (on by default); macOS ASAN has none and *aborts* if asked**, so the
+  script requests `detect_leaks` only on Linux — the same script runs ASAN+UBSan for macOS dev.
+  **Validated on macOS (ASAN+UBSan) and in a Linux/Docker container (ASAN+LSAN+UBSan): smoke clean,
+  130/130 conformance through the sanitized host, zero leaks, no suppressions needed** (LSAN treats
+  Rust's reachable statics as non-leaks). **CI: wired as the per-push, Linux-only `capi sanitize
+  (ASAN/LSAN/UBSan)` job** (with a best-effort `vm.mmap_rnd_bits=28` step so ASan's shadow mapping
+  fits newer kernels) — **green on its first CI run in 35s**. **Remaining M7.6:** GC-stress
+  determinism → C surface (the last piece).
 - 2026-09-05 — **M7.6 Miri bring-up DONE + wired as a CI gate (D-M7-11, capi `unsafe` certified).**
   Landed doodle-rust `49986c7` (script + certification) and `47f7d9d` (CI job). First Miri run on the now-large core: all of
   doodle-capi's `unsafe` (raw-ptr↔ref, `Box::from_raw`, the callback trampoline, the cross-thread

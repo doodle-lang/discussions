@@ -321,6 +321,17 @@ returned-pointer windows). Split: **Miri = Rust-side aliasing/UAF on the capi**;
 > `scripts/miri.sh` (Linux-only per D-M7-9); green on its first CI run. Remaining
 > M7.6: ASAN/LSAN/UBSan on the C host, GC-stress-to-C.
 
+> **Landed 2026-09-05 (M7.6, part 3 — sanitizers):** `scripts/capi-sanitize.sh`
+> builds the example C hosts (`main.c` smoke + `conformance.c` over the whole
+> corpus) with `-fsanitize=address,undefined` (+ LeakSanitizer on Linux) against the
+> release staticlib and runs them — the C-side half of the split (only the C hosts
+> are instrumented; the Rust side is Miri's). Validated on macOS (ASAN+UBSan) and in
+> a Linux container (ASAN+LSAN+UBSan): clean, 130/130 through the sanitized host, no
+> leaks, no suppressions (LSAN treats Rust's reachable statics as non-leaks). Wired
+> as the per-push, Linux-only `capi sanitize (ASAN/LSAN/UBSan)` CI job (a best-effort
+> `vm.mmap_rnd_bits=28` step keeps ASan's shadow mapping happy on newer kernels);
+> green on its first CI run. **Remaining M7.6: GC-stress determinism → the C surface.**
+
 **Also settled (no decision):** suspend-the-outer-drive is out (D-M7-1); live
 edit stays out (§1.2); the CLI is a **Rust binary over `doodle-core`** while the
 **example C host** exercises the C ABI (different consumers by design — but see
