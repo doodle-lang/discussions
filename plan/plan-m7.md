@@ -332,6 +332,17 @@ returned-pointer windows). Split: **Miri = Rust-side aliasing/UAF on the capi**;
 > `vm.mmap_rnd_bits=28` step keeps ASan's shadow mapping happy on newer kernels);
 > green on its first CI run. **Remaining M7.6: GC-stress determinism → the C surface.**
 
+> **Landed 2026-09-06 (M7.6, part 4 — GC-stress to the C surface; ★ M7.6 COMPLETE):**
+> `pub Instance::enable_gc_stress()` (latch-once, pre-first-drive-only) makes the knob reachable
+> outside doodle-core; the host layers (native `conformance-runner`, capi `doodle_load`) read a
+> `DOODLE_GC_STRESS` env toggle and latch it pre-drive — the engine never reads the environment, so
+> the E§11 boundary stays exact, and no symbol enters the frozen `doodle.h`. `--write` refuses to
+> write the oracle while the hook is set. `scripts/gc-stress-conformance.sh` drives the corpus twice
+> (native 216 + through-C 130) under stress against the same committed oracle; a dedicated
+> `tests/gc_stress.rs` certifies a foreign finalizer fires once, at GC, across the C trampoline under
+> stress (also under Miri). Wired as the per-push, Linux-only `gc-stress conformance (native + C)`
+> job. Documented in the capi crate doc + `conformance/README` as a not-ABI certification hook.
+
 **Also settled (no decision):** suspend-the-outer-drive is out (D-M7-1); live
 edit stays out (§1.2); the CLI is a **Rust binary over `doodle-core`** while the
 **example C host** exercises the C ABI (different consumers by design — but see

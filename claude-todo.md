@@ -2346,6 +2346,26 @@ instance is never re-polled). E§10.1 edit landed.
 
 ## Done
 
+- 2026-09-06 — **★ M7.6 COMPLETE — GC-stress determinism gate extended to the C surface (D-M7-11,
+  the last M7.6 piece).** Landed doodle-rust `e9f1fab`. Added `pub Instance::enable_gc_stress()`
+  (latch-once, pre-first-drive-only → `GcStressRefused`) so the knob is reachable outside doodle-core;
+  the **host layers** read a **`DOODLE_GC_STRESS`** env toggle and latch it before the first drive —
+  the native `conformance-runner` (every `Instance::load`) and the capi's `doodle_load` — so the
+  **engine never reads ambient input** (the E§11 boundary stays exact, per the user's ruling) and
+  **no symbol enters the frozen `doodle.h`**. `--write` refuses to regenerate the oracle while the
+  hook is set (the oracle stays the canonical un-stressed trace). **`scripts/gc-stress-conformance.sh`**
+  drives the whole corpus twice — native + through the example C host — under stress, comparing each
+  trace to the **same committed oracle** (216 native + 130 through-C, all pass). Driving through C is
+  the point (the user's reasoning): it exercises **host-held handles as GC roots and foreign
+  finalizers firing at GC time across the C trampoline** — a dedicated `tests/gc_stress.rs` pins that
+  (finalize exactly once, at GC, under stress, no double-free at destroy; **passes under Miri** too),
+  and a contract test covers latch-once/pre-drive. Wired as the per-push, Linux-only `gc-stress
+  conformance (native + C)` CI job. Documented the hook in the capi crate doc + `conformance/README`
+  as a certification hook, explicitly not ABI. **★ MILESTONE M7.6 COMPLETE:** M7.6a (cross-thread
+  control, MAJOR #1 fixed) · cross-instance handle guard (MD §16) · Miri (Rust side) · ASAN/LSAN/UBSan
+  (C side) · GC-stress determinism (native + C). **Remaining M7: M7.7** (publish dry-runs + C-ABI
+  distribution artifact + embedder README + adversarial exit review + App C discharge). Still-open
+  **MAJOR #2** (cross-module call-site span, tagged M5.1) is unaffected.
 - 2026-09-05 — **M7.6 ASAN/LSAN/UBSan gate DONE + wired (D-M7-11, C-host side certified).** Landed
   doodle-rust `8755235`. The sanitizer half of the D-M7-11 split (Miri = Rust side; this = C side):
   **`scripts/capi-sanitize.sh`** builds the example C hosts — `main.c` (smoke) and `conformance.c`
