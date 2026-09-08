@@ -15,7 +15,12 @@ go at the top, per CLAUDE.md.
 **Two found by the M7.7 C-ABI exit review (2026-09-07, multi-lens adversarial, read-only). Both are
 must-fix-before-freeze and invisible to Miri/sanitizers — no exercised path hits them.**
 
-1. **R1 — The foreign-value finalizer is UNCALLABLE from C (frozen-ABI defect).** cbindgen emits
+1. **R1 — FIXED (doodle-rust `8b0c1a4`).** The foreign-value finalizer was UNCALLABLE from C
+   (frozen-ABI defect). Fix: `pub type DoodleFinalizer = Option<extern "C" fn(u64)>` (nullability
+   baked into the alias) so cbindgen NPO-emits `typedef void (*DoodleFinalizer)(uint64_t);`; both
+   functions take a plain nullable `DoodleFinalizer`. Regenerated `doodle.h`. Regression guard: the C
+   smoke host now creates a foreign value with a finalizer + a NULL finalizer from real C and asserts
+   finalize-once. **Original report:** cbindgen emits
    `Option_DoodleFinalizer` as an *incomplete* struct (`include/doodle.h:651`) and passes it **by
    value** in `doodle_make_foreign` (`doodle.h:2372`) and `doodle_call_make_foreign` (`1186`) — a
    conforming C host cannot construct/pass an incomplete-type value, so the foreign-value-with-
@@ -25,7 +30,14 @@ must-fix-before-freeze and invisible to Miri/sanitizers — no exercised path hi
    typedef and pass it as a nullable pointer directly (so `Option<extern "C" fn(u64)>` gets NPO'd),
    then regen. Changes a frozen param type — land before the ABI truly ships. `abi.rs:26`,
    `value.rs:219`, `call_value.rs:233`, `crates/doodle-capi/cbindgen.toml`.
-2. **R2 — Reentrancy `&mut Instance` aliasing UB on the instance-pointer path.** During a foreign
+2. **R2 — FIXED (doodle-rust `eebdae7`).** Reentrancy `&mut Instance` aliasing UB on the
+   instance-pointer path. Fix: a thread-local `IN_DRIVE` flag (RAII `DriveScope`) set around the
+   engine `run`/`resolve`; the instance accessors (`di_mut`/`di_ref`, and value.rs's
+   `instance_mut`/`instance_ref` now routed through them) return `Result<_, DoodleStatus>` —
+   `ErrContract` on reentrancy — instead of forming the aliasing reference. Test: a callback that
+   calls `doodle_output` mid-drive gets `ErrContract`, verified under Miri (no-aliasing proof). Split
+   `inspect/aux.rs` out (the refactor pushed inspect.rs over the length limit). **Original report:**
+   During a foreign
    callback the engine holds `&mut Instance`; any instance-pointer entry the host calls
    (`doodle_drive`/`doodle_output`/`doodle_make_*`/`doodle_resolve`/…) re-forms a `&mut`/`&Instance`
    aliasing that live borrow → instantaneous UB. `di_mut`/`di_ref` (`instance.rs`) and
