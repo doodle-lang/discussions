@@ -542,6 +542,9 @@ drive" alternative is deferred to the C-ABI-yield design (M7).
 - **Roots:** handle table (§16); every frame's `locals`, `block_param`
   (via its defining-frame link — no heap refs, but listed for
   completeness), and `conts` (values embedded in cont variants); `reg`;
+  the terminal **raised** state's retained exception value and trace
+  callables (`Machine.raised_value`/`raised_trace`, E§9/§3.3 — kept live
+  for post-mortem host inspection until the instance is dropped);
   `Machine.unwind` (exception + trace, §12); `dyn_stack` saved values;
   module namespaces **including `Loading`-state partial namespaces and
   `Failed(ErrorIdx)` retained exception values** (§18 — v0.1 omitted the

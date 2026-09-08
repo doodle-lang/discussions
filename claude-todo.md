@@ -122,12 +122,26 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
    (`registry.rs:46-49`), not on `DoodleForeignFn`/`doodle_foreign_desc_*` where a host defining its own
    sync FF reads. **Fix:** add the sentence to `desc.rs`/`DoodleForeignFn`/`doodle_foreign_desc_set_callback`
    docs (regenerates into the header). Closes the last open App C item for M7.
-6. **R6 — RATIFIED (user, 2026-09-07): add accessors (Option 2), NOT a spec delta.**
+6. **R6 — DONE (both parts landed). RATIFIED (user, 2026-09-07): add accessors (Option 2),
+   NOT a spec delta.**
    **Part A LANDED (d20ba5b): `raised_value_handle()` — the retained exception value across
    engine (`Machine.raised_value`, GC-rooted) + C (`DoodleOutcome.value` on `Raised`) + wasm
-   (`raisedValue`), with a GC-stress rooting test on each surface. Part B (retained-trace
-   reader, extending `TraceFrame` to carry the callable per E§9) is next — both before M7.7
-   certifies.** The E§3.3
+   (`raisedValue`), with a GC-stress rooting test on each surface.**
+   **Part B LANDED (8edefdf): the retained TRACE (E§9 "positions AND callables"). `TraceFrame`
+   now carries `callable: Option<CalIdx>` and `Trace.tail_elided` is `Vec<CalIdx>`;
+   `Machine.raised_trace` is set at the terminal raise beside `raised_value` and is a new GC
+   root (recorded in machine-design's root set). Post-mortem readers: native
+   `raised_trace_frame_count`/`_frame`/`_frame_callable`/`_tail_count`/`_tail_entry`/`_raised_at`;
+   C `doodle_raised_trace_frame_count`/`_frame_at`/`_frame_callable`/`_tail_count`/`_tail_at`
+   (no pause-generation — a terminal trace is immutable); wasm `Session::raised_trace()` /
+   `DoodleInstance.raisedTrace`. GC-stress rooting test on native (collection held across the
+   terminal Raised state while reading the trace), verified under Miri; C + wasm surface tests.
+   TWO DISCOVERIES: (a) contra the ratification's "already retained" framing, the trace was
+   only captured into the transient `Outcome` and dropped — Part B adds the retention (as
+   rider 2 anticipated). (b) `capture_trace`'s old tail-elided span computation resolved a
+   callable's decl span against the RAISE-SITE module (a latent cross-module bug, MAJOR #2
+   family); the read-time-recompute design drops it — positions are now recomputed from each
+   callable's own home module.** The E§3.3
    post-mortem promise is load-bearing: S-58's display design reads the exception's **details** by
    §8.4 structural inspection (localization, `{index,length}`, fix data — all consumed *at* the
    uncaught-raise moment), and the multi-frame trace is core kid UX (already captured + rooted in
