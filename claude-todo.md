@@ -188,6 +188,48 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
 - `doodle_frame_local_value`/`_dynamic_value`/`module_global_value` return NULL for an out-of-range slot
   while their `_name`/`_count` siblings return `ErrIndexOutOfBounds` (`observe/bindings.rs`).
 
+**M7.7 FREEZE-SHAPE DECISIONS — RATIFIED (user, 2026-09-08); ALL FOUR LANDED (697475e),
+CI pending. Do(ne) before certification (the ABI freezes there); the "freeze decisions first"
+chunk.**
+1. **`DoodlePosition` reserved tail — ADD (Option 1).** Add a `reserved` tail (4 bytes,
+   `[u32; 1]`) so it can grow additively; it is embedded by value in `DoodleFrame` so a wrong
+   freeze cascades. Riders: (a) **no tailless by-value structs, no exceptions** — record
+   Position's E§8.1 completeness argument (a position IS (module, byte-span); line/col host-
+   derived, canonical id via token, secondary positions/elision belong to structs that already
+   carry tails) in the header comment as **why `reserved` is expected to stay zero forever**,
+   informative NOT an exemption; (b) pin the reserved-field convention **globally** in the
+   freeze checklist: producer writes zero, consumer ignores, repurposable **only at a minor
+   version bump gated by the ABI version** — so the mechanism is usable, not just present.
+2. **List-accessor width — UNIFY to `u32` (Option 1).** Change the callback surface
+   (`doodle_call_list_length`/`_get`: `usize`→`u32`) to match inspection + observe. `u32` is
+   the engine's **actual** width (MD ground rule 2: heap indices are typed `u32`; slabs cannot
+   address >2³² elements) — `uintptr_t` was the fiction. Riders: (a) checklist rule — **element
+   counts/indices cross as fixed-width `u32`; raw byte-buffer sizes cross as `size_t`** (D-M7-6
+   copy-out `cap`/`out_len` stay `size_t` — a memory quantity, not an element index); (b) doc the
+   width as **engine-guaranteed** (cite the `u32`-indexed heap), so nobody "fixes" it to 64-bit.
+3. **`doodle_retain` — ADD (Option 1).** The C surface was quietly narrowing E§4.2's refcounted
+   model to affine (the R6 lesson, applied preemptively). Riders: (1) signature
+   `doodle_retain(instance, handle) → handle` (returns the same handle, chainable — CFRetain/
+   AddRef idiom); (2) doc becomes true: "a reference is obtained by minting **or** by
+   `doodle_retain`; release exactly as many times as obtained"; (3) refcount rides the native
+   `HandleTable`; confirm MD §16 id-in-bits guard is orthogonal (retain doesn't change bits) and
+   S-35 double-release still fires on over-release after retains balance; (4) D-M7-11 Miri list
+   gains retain patterns: retain/release/release, use-after-final-release, retain-after-release
+   (a **contract error**, not resurrection).
+4. **`DOODLE_GC_STRESS` env read — CARGO FEATURE (Option 1).** Refines the prior GC-stress
+   ratification (env-hook → **feature-gated** env-hook): the shipped capi library is the
+   host-shaped thing we ship, so a production `doodle_load` must not silently vary with an env
+   var. Gate the **ambient read** behind `#[cfg(feature = "gc-stress")]` in doodle-capi **and**
+   the conformance-runner; leave `Instance::enable_gc_stress()` **ungated** (the sanctioned
+   explicit path). Riders: (1) the gate job builds capi + the native runner with
+   `--features gc-stress --release` **explicitly** (state it in the job, so it can't degrade to
+   debug-only); (2) gate only the env read, not the API — pin the distinction against a
+   tidy refactor; (3) the shipped **D-M7-10 artifact is built WITHOUT the feature** (say so in
+   the artifact recipe); the **embedder README certification section** documents the feature +
+   env var as the embedder's opt-in to run the gate against their own build; (4) recorded as
+   amending the GC-stress ratification. [Riders 3's README/artifact text land with the M7.7
+   close-out deliverables, which don't exist yet.]
+
 **Three bugs found by the M4.10 multi-lens exit review — all FIXED (2026-08-26,
 doodle-rust `61ca2a2`).**
 1. **Unwind: the handling stack leaked on non-raise exits from a rescue body.**
