@@ -162,31 +162,35 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
    **Fix (user decision):** either add `doodle_raised_value` + a retained-trace accessor, or file an
    E§3.3 spec delta narrowing the post-mortem promise to described-form + span. `instance.rs:331`.
 
-**M7.7 review — MINOR / NIT (open, batch-fixable after the CRITICAL/MAJOR set):**
-- `doodle_free` (`instance/load.rs:154`) and `doodle_registry_add_builtin` (`registry.rs:92`) run
-  outside `guard::catch` (convention-5 gaps; panic-free today but the frozen contract promises `ErrPanic`).
-- The shipped `doodle_load` reads `DOODLE_GC_STRESS` from the env (`instance/load.rs:206`) — ambient
-  input in the shipping lib (not a leak today; consider `cfg`-gating or a non-frozen entry point).
-- `doodle_resolve`/`_resolve_raise` handle-ownership unstated — NOT consumed (release it yourself),
-  asymmetric with the consuming ctx setters. `instance.rs:142-174`.
-- S-41 version-mismatch check runs **after** parse/resolve (`instance/load.rs:187`), so a parse error
-  masks `ErrUnsupportedUnicode`; validate the pure config field first.
-- resolve/result/raise consuming paths collapse a cross-instance/stale handle to `Faulted(Internal)`
-  (`drive.rs:280/295/355`), losing the `ForeignInstance`↔`Stale` distinction the readers keep
-  (defensible; consider a note or a dedicated fault).
-- No `doodle_retain` (E§4.2 abstract contract lists it); `doodle_release`'s "as many times as obtained"
-  over-promises (only a mint obtains). Additive later.
-- No unknown-tag sentinel enumerator (docs/convention-2 claim one); safe via the fixed `uint32_t`
-  underlying type — fix the doc or add a sentinel. `abi.rs`.
-- `DoodlePosition` (`abi.rs:286`) has no reserved tail and is embedded by value → can't grow; confirm
-  intentional or add a tail before freeze.
-- "No platform-varying sizes in `doodle.h`" (convention-6/D-M7-9) is overstated — `uintptr_t` in
-  signatures (not in by-value structs); narrow the doc.
-- `u32` vs `uintptr_t` mismatch between `doodle_list_length`/`_get` and `doodle_call_list_length`/`_get`.
-- `doodle_drive_slice(fuel=0)` bumps the pause generation despite zero progress (`instance.rs:297`),
-  spuriously staleness-invalidating a host's frame tokens.
-- `doodle_frame_local_value`/`_dynamic_value`/`module_global_value` return NULL for an out-of-range slot
-  while their `_name`/`_count` siblings return `ErrIndexOutOfBounds` (`observe/bindings.rs`).
+**M7.7 review — MINOR / NIT. ALL RESOLVED as of 2026-09-08 (freeze-shape four in 697475e; the
+mechanical + doc batch below in a follow-up commit).**
+- ✓FIXED `doodle_free` now runs inside `guard::catch_or` (a void-returning firewall variant), so a
+  finalizer panic during drop is swallowed at the boundary, not UB. (`doodle_registry_add_builtin`
+  was already wrapped in R3.)
+- ✓FIXED (freeze decision 4) `DOODLE_GC_STRESS` env read is behind the off-by-default `gc-stress`
+  cargo feature; the shipped lib never reads the env.
+- ✓FIXED `doodle_resolve`/`_resolve_raise` docs now state the handle is **borrowed, not consumed**
+  (verified: `resume_with_value` reads via `handles.resolve` without releasing) — release it yourself.
+- ✓FIXED (S-41) the Unicode-version config check moved **before** parse/resolve, so a parse error no
+  longer masks `ErrUnsupportedUnicode`. Test: `a_bad_target_unicode_is_reported_even_with_a_parse_error`.
+- ✓NOTED resolve consuming paths collapse a bad (stale/cross-instance) handle to `Faulted(Internal)`:
+  documented as **intentional** (the suspension is cleared, non-recoverable; readers keep the
+  distinction because they're retryable). A dedicated `EngineFault` kind to surface `Stale`↔
+  `ForeignInstance` on the consuming path remains an OPEN OPTION for the user (it is an E-spec
+  addition, not applied unilaterally).
+- ✓FIXED (freeze decision 3) `doodle_retain` added; `doodle_release` doc now accurate.
+- ✓FIXED (doc) convention-2 no longer claims an unknown-tag *enumerator*; the guarantee is the
+  fixed-width tag repr + a host `switch` default (convention 7 reworded to match).
+- ✓FIXED (freeze decision 1) `DoodlePosition` gained a `reserved` tail.
+- ✓FIXED (doc, freeze decision 2 rewrite) convention 6 narrowed: ABI-defined element counts/indices
+  are `u32`; `uintptr_t` for an opaque host pointer is exempt.
+- ✓FIXED (freeze decision 2) list-accessor width unified to `u32`.
+- ✓FIXED `doodle_drive_slice(fuel=0)` no longer bumps the pause generation (an `advanced` flag gates
+  the bump). Test: `a_zero_fuel_slice_preserves_the_pause_generation`.
+- ✓FIXED `doodle_frame_local_value`/`_dynamic_value`/`module_global_value` now return
+  `ErrIndexOutOfBounds` for an out-of-range slot (bound-checked like the `_name` siblings), so a
+  `NULL` handle unambiguously means "not yet initialized". Test assertions in
+  `observation_frame_locals_and_module_globals`.
 
 **M7.7 FREEZE-SHAPE DECISIONS — RATIFIED (user, 2026-09-08); ALL FOUR LANDED (697475e),
 CI pending. Do(ne) before certification (the ABI freezes there); the "freeze decisions first"
