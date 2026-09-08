@@ -87,13 +87,19 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
    match — which `catch` cannot intercept (violates convention-5 "never UB across the boundary").
    Reachable via version skew or a host bug. **Fix:** receive as `u32`, validate → `ErrContract`.
    `instance.rs:58/77`, `config.rs`, `desc.rs:129`, `registry.rs:95`.
-4. **R4 — NULL-`out` constructor handle leak.** `doodle_make_*`/`doodle_call_make_*`/`doodle_call_arg`
+4. **R4 — FIXED (doodle-rust `ded9cbc`).** NULL-`out` constructor handle leak. Fix: `emit` takes
+   the mint as a closure and null-checks `out` first (infallible ctors); the two fallible ctors +
+   `doodle_call_arg` null-check `out` before the mint. Test: `make_foreign` with NULL out no longer
+   creates the value (its finalizer never runs at free). **Original report:**
+   `doodle_make_*`/`doodle_call_make_*`/`doodle_call_arg`
    mint the handle **then** write it out, so a NULL `out` returns `ErrNullPointer` but orphans a
    refcount-1 GC root (rooted for the instance's life; unbounded if looped; invisible to ASAN/LSAN).
    `value.rs::emit` (69) mints-then-writes while `inspect.rs::minted` (56) deliberately checks-first.
    **Fix:** null-check `out` before minting in `value.rs`/`call_value.rs`; reorder `doodle_call_arg`
    (`call.rs:220`). (`doodle_capability_arg` is NOT affected — it returns bits of an already-owned handle.)
-5. **R5 — S-19 discharge incomplete (App C).** E§5.2 normatively requires the "sync foreign functions
+5. **R5 — FIXED (doodle-rust `45dc2bf`); closes the last open App C item (S-19).** Added the S-19
+   determinism contract to `DoodleForeignFn` (call.rs) + `doodle_foreign_desc_set_callback` (desc.rs);
+   regenerated `doodle.h`. **Original report:** E§5.2 normatively requires the "sync foreign functions
    must be deterministic; a clock/random/input/external read must be a suspending capability" contract
    **at the foreign-function descriptor**; it appears only on the `Time`/`Random` builtins
    (`registry.rs:46-49`), not on `DoodleForeignFn`/`doodle_foreign_desc_*` where a host defining its own
