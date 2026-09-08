@@ -122,7 +122,12 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
    (`registry.rs:46-49`), not on `DoodleForeignFn`/`doodle_foreign_desc_*` where a host defining its own
    sync FF reads. **Fix:** add the sentence to `desc.rs`/`DoodleForeignFn`/`doodle_foreign_desc_set_callback`
    docs (regenerates into the header). Closes the last open App C item for M7.
-6. **R6 — RATIFIED (user, 2026-09-07): add accessors (Option 2), NOT a spec delta.** The E§3.3
+6. **R6 — RATIFIED (user, 2026-09-07): add accessors (Option 2), NOT a spec delta.**
+   **Part A LANDED (d20ba5b): `raised_value_handle()` — the retained exception value across
+   engine (`Machine.raised_value`, GC-rooted) + C (`DoodleOutcome.value` on `Raised`) + wasm
+   (`raisedValue`), with a GC-stress rooting test on each surface. Part B (retained-trace
+   reader, extending `TraceFrame` to carry the callable per E§9) is next — both before M7.7
+   certifies.** The E§3.3
    post-mortem promise is load-bearing: S-58's display design reads the exception's **details** by
    §8.4 structural inspection (localization, `{index,length}`, fix data — all consumed *at* the
    uncaught-raise moment), and the multi-frame trace is core kid UX (already captured + rooted in
