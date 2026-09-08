@@ -81,7 +81,19 @@ cross-thread `&Instance`, is FIXED — M7.6a).**
 **Four found by the M7.7 C-ABI exit review (2026-09-07). Fix in priority order R1,R2 (CRITICAL) →
 R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
 
-3. **R3 — Host-supplied enums unvalidated → UB on an out-of-range discriminant.** `doodle_drive(…,
+3. **R3 — RATIFIED (user, 2026-09-07): validate (Option 1).** The 4 host-supplied enum params cross
+   as `uint32_t` + range-check → `ErrContract` on an unknown value. Rationale: enums are *checkable*
+   (one compare each) unlike pointer contracts; version skew (a newer host passing a new enum value
+   to an older engine) is the *designed-for* case, so it must be defined, not UB — completing D-M7-3's
+   symmetry (engine→host unknowns cross via the reserved unknown-tag; host→engine unknowns validate to
+   `ErrContract`); and "never UB across the boundary" must stay Miri-testable. **Riders:** (1) add a
+   **freeze-conventions checklist entry** (lib.rs): any host-supplied discriminant crosses as
+   `uint32_t` + range-check → `ErrContract` — no future enum param regresses to the typed-param habit;
+   (2) D-M7-11 test list gains an invalid-enum case per param; (3) keep the named enum types in the
+   header for the *values*; the `uint32_t` params name the enum in their doc (standard C practice);
+   (4) the embedder README versioning section says hosts gate new-enum features on
+   `doodle_abi_version()` — an `ErrContract` on an enum value is the "you skipped the version check"
+   signal. **Original report:** `doodle_drive(…,
    directive: DoodleDirective, …)` (also `DoodleObservationMode`, `DoodleBodyKind`, `DoodleBuiltin`) is
    received **by value**; an out-of-range `uint32_t` is UB at the boundary, *before* the fallback-less
    match — which `catch` cannot intercept (violates convention-5 "never UB across the boundary").
@@ -105,7 +117,21 @@ R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
    (`registry.rs:46-49`), not on `DoodleForeignFn`/`doodle_foreign_desc_*` where a host defining its own
    sync FF reads. **Fix:** add the sentence to `desc.rs`/`DoodleForeignFn`/`doodle_foreign_desc_set_callback`
    docs (regenerates into the header). Closes the last open App C item for M7.
-6. **R6 — Terminal `Raised` post-mortem not exposed (E§3.3 divergence — NEEDS A DECISION).** E§3.3 says
+6. **R6 — RATIFIED (user, 2026-09-07): add accessors (Option 2), NOT a spec delta.** The E§3.3
+   post-mortem promise is load-bearing: S-58's display design reads the exception's **details** by
+   §8.4 structural inspection (localization, `{index,length}`, fix data — all consumed *at* the
+   uncaught-raise moment), and the multi-frame trace is core kid UX (already captured + rooted in
+   `Raised(exception, trace)` — the missing piece is the accessor, not the data). It's M7.4's own exit
+   criterion (render an uncaught raise with spans → show the trace + details hints) and the M6 IDE
+   error panel's consumer. Consistent absence across surfaces is a gap shipped 3×, not a decision.
+   **Scoped shape:** (1) **`raised_value() → handle`** — the retained value; §8.4 inspection reads the
+   details dict today (no M9a text rendering needed) — **non-negotiable half (S-58's consumer)**; (2)
+   a **retained-trace reader** mirroring the stack-walk lazy shape (frame position + callable name +
+   tail counts, E§8.3 format) — a projection of the already-retained trace; (3) **×3 surfaces** in
+   their idioms (C additive per D-M7-3; wasm plain objects; native `pub` methods), keeping the
+   described kind/message + span as the convenience layer; (4) transcript schema **unaffected** (the
+   v1 raised-line ruling — kind+position now, details at v1.1 — already governs). **Both halves before
+   M7.7 certifies** (value accessor first if staging is needed). **Original report:** E§3.3 says
    the exception value + trace stay observable (§4.2/§8.4), but the C surface exposes only the *described*
    kind/message + one span (`DoodleOutcome.value == 0`, no trace accessor after the stack unwinds).
    **Consistent across native/wasm/C**, so it's an engine-wide scope reduction, not a C regression.
