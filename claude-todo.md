@@ -81,7 +81,12 @@ cross-thread `&Instance`, is FIXED — M7.6a).**
 **Four found by the M7.7 C-ABI exit review (2026-09-07). Fix in priority order R1,R2 (CRITICAL) →
 R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
 
-3. **R3 — RATIFIED (user, 2026-09-07): validate (Option 1).** The 4 host-supplied enum params cross
+3. **R3 — FIXED (doodle-rust `3766ee8`).** Validated per the ruling: the 4 host-supplied enum params
+   cross as `uint32_t` + range-check → `ErrContract`/NULL/ignored; **freeze convention 7** added
+   (lib.rs); enum types forced into the header via cbindgen `[export].include` so hosts keep the
+   constants; `doodle_registry_add_builtin` also wrapped in `catch` (a prior convention-5 gap); an
+   invalid-value-per-param test (passes under Miri). **Ratified approach:** the 4 host-supplied enum
+   params cross
    as `uint32_t` + range-check → `ErrContract` on an unknown value. Rationale: enums are *checkable*
    (one compare each) unlike pointer contracts; version skew (a newer host passing a new enum value
    to an older engine) is the *designed-for* case, so it must be defined, not UB — completing D-M7-3's
