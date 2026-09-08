@@ -12,7 +12,31 @@ go at the top, per CLAUDE.md.
 
 ## CRITICAL
 
-(none)
+**Two found by the M7.7 C-ABI exit review (2026-09-07, multi-lens adversarial, read-only). Both are
+must-fix-before-freeze and invisible to Miri/sanitizers — no exercised path hits them.**
+
+1. **R1 — The foreign-value finalizer is UNCALLABLE from C (frozen-ABI defect).** cbindgen emits
+   `Option_DoodleFinalizer` as an *incomplete* struct (`include/doodle.h:651`) and passes it **by
+   value** in `doodle_make_foreign` (`doodle.h:2372`) and `doodle_call_make_foreign` (`1186`) — a
+   conforming C host cannot construct/pass an incomplete-type value, so the foreign-value-with-
+   destructor feature (E§4.5) is unreachable from C, and the `DoodleFinalizer` typedef D-M7-3 requires
+   is absent. Builds only because the example hosts + the Rust-level `gc_stress` test call the Rust fn
+   directly, never the C signature. **Fix:** get cbindgen to emit a named `DoodleFinalizer` fn-ptr
+   typedef and pass it as a nullable pointer directly (so `Option<extern "C" fn(u64)>` gets NPO'd),
+   then regen. Changes a frozen param type — land before the ABI truly ships. `abi.rs:26`,
+   `value.rs:219`, `call_value.rs:233`, `crates/doodle-capi/cbindgen.toml`.
+2. **R2 — Reentrancy `&mut Instance` aliasing UB on the instance-pointer path.** During a foreign
+   callback the engine holds `&mut Instance`; any instance-pointer entry the host calls
+   (`doodle_drive`/`doodle_output`/`doodle_make_*`/`doodle_resolve`/…) re-forms a `&mut`/`&Instance`
+   aliasing that live borrow → instantaneous UB. `di_mut`/`di_ref` (`instance.rs`) and
+   `instance_mut`/`instance_ref` (`value.rs:43`) do a bare `as_mut()`/`as_ref()` with **no** reentrancy
+   guard; `CURRENT_CTX` protects only the ctx path; the prohibition is documented only in the observe
+   module, and the `di_mut` SAFETY note argues cross-thread, not same-thread reentrancy. **Fix:** a
+   **drive-scoped** reentrancy guard (thread-local depth set around `run`/`resolve` in
+   `drive_and_fill`/`resolve_and_fill`), checked at the top of `di_mut`/`di_ref`/`instance_mut`/`_ref`
+   → `ErrContract` when already inside a drive (drive-scoped, NOT ctx-scoped: `CURRENT_CTX` is null
+   during a GC-time finalizer). Make the `# Safety` reentrancy prohibition uniform across the
+   instance-pointer entries.
 
 ## MAJOR
 
@@ -41,6 +65,60 @@ cross-thread `&Instance`, is FIXED — M7.6a).**
    → M5.1** (multi-module): resolve the node against the *caller* frame's module for
    both `frame_info` and `stack_walk`; a cross-module-stack regression test lands
    with M5.1. `machine/observe.rs`.
+
+**Four found by the M7.7 C-ABI exit review (2026-09-07). Fix in priority order R1,R2 (CRITICAL) →
+R3,R4,R5 → R6. R6 needs a spec-delta-vs-accessor decision from the user.**
+
+3. **R3 — Host-supplied enums unvalidated → UB on an out-of-range discriminant.** `doodle_drive(…,
+   directive: DoodleDirective, …)` (also `DoodleObservationMode`, `DoodleBodyKind`, `DoodleBuiltin`) is
+   received **by value**; an out-of-range `uint32_t` is UB at the boundary, *before* the fallback-less
+   match — which `catch` cannot intercept (violates convention-5 "never UB across the boundary").
+   Reachable via version skew or a host bug. **Fix:** receive as `u32`, validate → `ErrContract`.
+   `instance.rs:58/77`, `config.rs`, `desc.rs:129`, `registry.rs:95`.
+4. **R4 — NULL-`out` constructor handle leak.** `doodle_make_*`/`doodle_call_make_*`/`doodle_call_arg`
+   mint the handle **then** write it out, so a NULL `out` returns `ErrNullPointer` but orphans a
+   refcount-1 GC root (rooted for the instance's life; unbounded if looped; invisible to ASAN/LSAN).
+   `value.rs::emit` (69) mints-then-writes while `inspect.rs::minted` (56) deliberately checks-first.
+   **Fix:** null-check `out` before minting in `value.rs`/`call_value.rs`; reorder `doodle_call_arg`
+   (`call.rs:220`). (`doodle_capability_arg` is NOT affected — it returns bits of an already-owned handle.)
+5. **R5 — S-19 discharge incomplete (App C).** E§5.2 normatively requires the "sync foreign functions
+   must be deterministic; a clock/random/input/external read must be a suspending capability" contract
+   **at the foreign-function descriptor**; it appears only on the `Time`/`Random` builtins
+   (`registry.rs:46-49`), not on `DoodleForeignFn`/`doodle_foreign_desc_*` where a host defining its own
+   sync FF reads. **Fix:** add the sentence to `desc.rs`/`DoodleForeignFn`/`doodle_foreign_desc_set_callback`
+   docs (regenerates into the header). Closes the last open App C item for M7.
+6. **R6 — Terminal `Raised` post-mortem not exposed (E§3.3 divergence — NEEDS A DECISION).** E§3.3 says
+   the exception value + trace stay observable (§4.2/§8.4), but the C surface exposes only the *described*
+   kind/message + one span (`DoodleOutcome.value == 0`, no trace accessor after the stack unwinds).
+   **Consistent across native/wasm/C**, so it's an engine-wide scope reduction, not a C regression.
+   **Fix (user decision):** either add `doodle_raised_value` + a retained-trace accessor, or file an
+   E§3.3 spec delta narrowing the post-mortem promise to described-form + span. `instance.rs:331`.
+
+**M7.7 review — MINOR / NIT (open, batch-fixable after the CRITICAL/MAJOR set):**
+- `doodle_free` (`instance/load.rs:154`) and `doodle_registry_add_builtin` (`registry.rs:92`) run
+  outside `guard::catch` (convention-5 gaps; panic-free today but the frozen contract promises `ErrPanic`).
+- The shipped `doodle_load` reads `DOODLE_GC_STRESS` from the env (`instance/load.rs:206`) — ambient
+  input in the shipping lib (not a leak today; consider `cfg`-gating or a non-frozen entry point).
+- `doodle_resolve`/`_resolve_raise` handle-ownership unstated — NOT consumed (release it yourself),
+  asymmetric with the consuming ctx setters. `instance.rs:142-174`.
+- S-41 version-mismatch check runs **after** parse/resolve (`instance/load.rs:187`), so a parse error
+  masks `ErrUnsupportedUnicode`; validate the pure config field first.
+- resolve/result/raise consuming paths collapse a cross-instance/stale handle to `Faulted(Internal)`
+  (`drive.rs:280/295/355`), losing the `ForeignInstance`↔`Stale` distinction the readers keep
+  (defensible; consider a note or a dedicated fault).
+- No `doodle_retain` (E§4.2 abstract contract lists it); `doodle_release`'s "as many times as obtained"
+  over-promises (only a mint obtains). Additive later.
+- No unknown-tag sentinel enumerator (docs/convention-2 claim one); safe via the fixed `uint32_t`
+  underlying type — fix the doc or add a sentinel. `abi.rs`.
+- `DoodlePosition` (`abi.rs:286`) has no reserved tail and is embedded by value → can't grow; confirm
+  intentional or add a tail before freeze.
+- "No platform-varying sizes in `doodle.h`" (convention-6/D-M7-9) is overstated — `uintptr_t` in
+  signatures (not in by-value structs); narrow the doc.
+- `u32` vs `uintptr_t` mismatch between `doodle_list_length`/`_get` and `doodle_call_list_length`/`_get`.
+- `doodle_drive_slice(fuel=0)` bumps the pause generation despite zero progress (`instance.rs:297`),
+  spuriously staleness-invalidating a host's frame tokens.
+- `doodle_frame_local_value`/`_dynamic_value`/`module_global_value` return NULL for an out-of-range slot
+  while their `_name`/`_count` siblings return `ErrIndexOutOfBounds` (`observe/bindings.rs`).
 
 **Three bugs found by the M4.10 multi-lens exit review — all FIXED (2026-08-26,
 doodle-rust `61ca2a2`).**
