@@ -173,11 +173,28 @@ mechanical + doc batch below in a follow-up commit).**
   (verified: `resume_with_value` reads via `handles.resolve` without releasing) — release it yourself.
 - ✓FIXED (S-41) the Unicode-version config check moved **before** parse/resolve, so a parse error no
   longer masks `ErrUnsupportedUnicode`. Test: `a_bad_target_unicode_is_reported_even_with_a_parse_error`.
-- ✓NOTED resolve consuming paths collapse a bad (stale/cross-instance) handle to `Faulted(Internal)`:
-  documented as **intentional** (the suspension is cleared, non-recoverable; readers keep the
-  distinction because they're retryable). A dedicated `EngineFault` kind to surface `Stale`↔
-  `ForeignInstance` on the consuming path remains an OPEN OPTION for the user (it is an E-spec
-  addition, not applied unilaterally).
+- ✓RESOLVED (user, 2026-09-08) → **DriveReject contract (Option C, not a dedicated fault).** The
+  RATIFIED principle: **invalid API calls reject and change nothing; `Faulted` is reserved for
+  conditions arising from execution.** `run`/`run_slice`/`resolve`/`resolve_slice`/`resolve_import`/
+  `resolve_import_slice` now return `Result<Outcome, DriveReject>` (`WrongState` | `BadHandle`); the
+  six `Faulted(Internal)` entry-guards became rejections, so `Internal` narrows to real engine
+  invariants (its doc updated). `resume_with_value`/`_raise`/`raise_import_value` **validate the
+  handle before consuming the suspension** — a bad handle leaves the instance byte-for-byte
+  unchanged (the half-state is now *unconstructible*, not carefully handled). Surfaces: C maps both
+  reasons → the one `ErrContract` (never `Stale`); native/wasm expose the full `DriveReject`
+  (wasm throws a reason-bearing `JsError`). Spec: **E§7.5** gained the invalid-call-rejection
+  paragraph; `Internal`'s doc narrowed. Drive-script grammar: `expect: reject <wrong-state |
+  bad-handle>` added (parser + matcher + `StepOutcome`), and rejected calls **produce no transcript
+  record** (documented in the drivescript grammar). Tests: engine (drive_directives.rs
+  re-drive-terminal / resolve-non-suspended / bad-handle-recover; modules.rs wrong-resolver), capi
+  (`an_invalid_call_is_rejected_...`, also the Miri use-after-release case), wasm
+  (`an_invalid_call_is_rejected_...`), drivescript parser. ~200 mechanical `.expect("valid drive")`
+  edits across the test corpus (a string/comment-aware transform). **DEFERRED (noted for the user):
+  a `.doodle` CONFORMANCE fixture using `expect: reject` — the grammar is defined + spec'd + tested
+  above, but a fixture needs (a) C-host cross-surface reject handling in `examples/c-host/
+  conformance.c`, and (b) the bad-handle case isn't expressible in the drive-script at all (no
+  stale-handle `resolve:` primitive). Wrong-state is expressible; bad-handle would need a
+  drive-script vocabulary extension. Behavior is fully covered by the Rust/capi/wasm/Miri tests.**
 - ✓FIXED (freeze decision 3) `doodle_retain` added; `doodle_release` doc now accurate.
 - ✓FIXED (doc) convention-2 no longer claims an unknown-tag *enumerator*; the guarantee is the
   fixed-width tag repr + a host `switch` default (convention 7 reworded to match).

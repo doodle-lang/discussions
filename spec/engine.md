@@ -708,6 +708,19 @@ and replayed (§11). An `import` (§6) suspends with a request of the same kind 
 identity the module path — resolved with `Source`/`NotFound`/`Raise` rather than
 `Value`.
 
+**An invalid call is rejected, not a fault.** A `run`/`resolve`/`resolve_import`
+that cannot proceed — driving a terminal or `Suspended` instance, resolving an
+instance with no pending request (or with the wrong resolver for its suspension),
+or a resolution carrying a stale, released, or foreign value handle (§4.2) — is
+**rejected**: it does nothing. The instance's state and any pending request are
+byte-for-byte unchanged, and the host may correct the call and try again — a
+resumable suspension stays resumable, so a mistaken resolution does not cost the
+running program. A rejection is **not** a drive: it advances no program work and
+contributes nothing to a replay transcript (§11). It is distinct from `Faulted`
+(§3.3, §10), which is a terminal state reached *by execution*; the host learns a
+call was rejected through the embedding surface's error channel (a status or
+exception), never through the instance's outcome.
+
 ### 7.6 Reentrant drives
 
 A synchronous foreign function (§5.2) may drive the instance reentrantly by invoking
