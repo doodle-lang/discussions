@@ -189,12 +189,15 @@ mechanical + doc batch below in a follow-up commit).**
   re-drive-terminal / resolve-non-suspended / bad-handle-recover; modules.rs wrong-resolver), capi
   (`an_invalid_call_is_rejected_...`, also the Miri use-after-release case), wasm
   (`an_invalid_call_is_rejected_...`), drivescript parser. ~200 mechanical `.expect("valid drive")`
-  edits across the test corpus (a string/comment-aware transform). **DEFERRED (noted for the user):
-  a `.doodle` CONFORMANCE fixture using `expect: reject` — the grammar is defined + spec'd + tested
-  above, but a fixture needs (a) C-host cross-surface reject handling in `examples/c-host/
-  conformance.c`, and (b) the bad-handle case isn't expressible in the drive-script at all (no
-  stale-handle `resolve:` primitive). Wrong-state is expressible; bad-handle would need a
-  drive-script vocabulary extension. Behavior is fully covered by the Rust/capi/wasm/Miri tests.**
+  edits across the test corpus (a string/comment-aware transform). **CONFORMANCE FIXTURES ADDED
+  (user asked, 2026-09-08): `conformance/v0.1/eng/E7.5/reject_re-drive-terminal.doodle` and
+  `reject_resolve-on-paused-resumes.doodle` — both pass native + through the C host + under the
+  gc-stress gate. The C host (`examples/c-host/conformance.c`) now skips a step whose drive/resolve
+  returns `ErrContract`, matching the native oracle (which records nothing for a reject). Only
+  WRONG-STATE is exercised in the corpus: the bad-handle case is not expressible in the drive-script
+  (`resolve:` always supplies a fresh value — no stale-handle primitive), so it stays covered by the
+  Rust/capi/wasm/Miri tests; a bad-handle conformance fixture would need a drive-script vocabulary
+  extension (a possible future item, not needed now).**
 - ✓FIXED (freeze decision 3) `doodle_retain` added; `doodle_release` doc now accurate.
 - ✓FIXED (doc) convention-2 no longer claims an unknown-tag *enumerator*; the guarantee is the
   fixed-width tag repr + a host `switch` default (convention 7 reworded to match).
