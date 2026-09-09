@@ -1500,7 +1500,11 @@ reports its build-pinned version and `create` fails on any other requested
 version (`None` uses the pin). Chosen over dropping the field because it lets
 a replay assert its recording's version at create time (loud failure, not a
 silent grapheme/normalization divergence). Spec: E§3.1; code: `Instance::create`
-+ `unicode::UNICODE_VERSION` (read from the `unicode-normalization` crate pin). ·
++ `unicode::UNICODE_VERSION` (read from the `unicode-normalization` crate pin).
+**M7.7 DISCHARGE (carried into the C config):** `doodle_config_set_target_unicode`
+(config.rs) + the `doodle_load` validation, which now runs **before** parse/resolve so a
+mismatch surfaces as `ErrUnsupportedUnicode` even when the source also has a parse error;
+tested by `abi.rs::a_bad_target_unicode_is_reported_even_with_a_parse_error`. ·
 S-43 (E§5.5/L§11.4) Provisional pre-module native-intrinsic registration
 (global-scope foreign bindings) so core names exist before the module
 system; superseded by the prelude star-import at M5 — specify the
@@ -1722,14 +1726,22 @@ descriptor "resumable" flag is the designated extension shape (unflagged
 callbacks keep fault semantics; loosening only). S-42's C-ABI
 conformance suite gains the `NestedSuspend` fault fixture + the
 Doodle-consumer parity control. **[E§5.4 frozen-rule + idiom text landed
-2026-09-02.]** ·
+2026-09-02.]** **M7.7 DISCHARGE (fully closed, C form):** both controls pass
+through the C host (native + C-host + gc-stress) —
+`conformance/v0.1/eng/E5.4/reentry-001_nested-suspend-faults` (the
+`Faulted(NestedSuspend)`) and `reentry-002_doodle-consumer-suspends` (a Doodle
+consumer suspends normally). No yield protocol was built (frozen-rule). ·
 S-16 (E§5.4/§7.6) Abandoned nested drives (a callback returns without driving
 its nested drive to completion): define as a host-contract fault. **Note:** under
 the S-15 forbid-and-fault resolution a block-invocation nested drive cannot be
 left `Suspended`/`Paused` (it completes, raises, exits, or faults `NestedSuspend`),
 so the "still Suspended/Paused" form is moot until the M7 suspend-the-outer-drive
 extension; the live abandoned-drive cases today are the `NonLocalExit` contract
-violations (already faulted, E§7.6). ·
+violations (already faulted, E§7.6). **M7.7 DISCHARGE (re-verified, C form):** the C
+callback trampoline (`examples/c-host/conformance.c`) enforces the return-promptly
+rule, exercised through C by `E5.1/foreign-003_block-nonlocal-exit`; the violation
+faults (a host returning a value / re-driving after a `NonLocalExit`) stay engine-level
+(a misbehaving host), covered by `intrinsic/tests.rs`. ·
 S-17 (E§7.5/§8) Observation while Suspended: capability call sits at an
 implicit safe point; request-argument handles are host-owned. ·
 S-18 (E§8.7) Raise-trap unified across `raise`/foreign-raise/
@@ -1749,7 +1761,11 @@ input/ambient state must be a suspending capability (§5.3) whose result crosses
 the boundary, or replay + cross-surface trace identity break silently. The
 engine cannot enforce it; the host owns it, and the C ABI documents it at the
 foreign-function descriptor (M7.2). **[E§5.2 host-contract paragraph landed
-M7.1; the CLI's `time`/`random`/`read_line` are capabilities per D-M7-4.]** ·
+M7.1; the CLI's `time`/`random`/`read_line` are capabilities per D-M7-4.]**
+**M7.7 DISCHARGE (C form):** the determinism obligation is stated at the C foreign-fn
+descriptor — the `DoodleForeignFn` / `doodle_foreign_desc_set_callback` docs (call.rs /
+desc.rs, R5). A host obligation the engine cannot enforce, so there is no runtime fixture;
+the gc-stress determinism gate is the corpus-wide backstop against any leak that does occur. ·
 S-20 (E§7.7/§10.2) Step-budget unit is mode-independent regardless of
 observation granularity. **[Refined by R8 (M4.10): the unit is now **work
 units**, not just statement safe points — a result-growing op (`*`/`**`,
@@ -1893,7 +1909,11 @@ receiving only the `host_ptr` — never the instance — so non-re-entrancy
 `Finalizer` widened to `Box<dyn FnOnce(u64) + Send>` so `Instance: Send`
 (D-M7-5), asserted at compile time. **[spec landed: E§5.1 defaults + E§4.5
 finalizer C-form. Code: M7.0. The C-ABI descriptor *builders* + the
-`extern "C"` trampoline are the marshalling in M7.1/M7.2.]** ·
+`extern "C"` trampoline are the marshalling in M7.1/M7.2.]**
+**M7.7 DISCHARGE (C form):** the descriptor builders + finalizer trampoline are verified —
+`E5.1/foreign-001_default-and-block` (immutable-constant defaults + a block param through C)
+and `crates/doodle-capi/tests/gc_stress.rs` (a host finalizer fires **exactly once** at GC
+across the `extern "C"` trampoline, under Miri + the gc-stress gate). ·
 **S-46 (E§7.2/§5.4) RESOLVED (user, 2026-08-02): support non-local exits
 across a native block-consuming callee** via the machine-design §12
 mechanism (chosen over disallowing them, so a native `each`/`repeat`
@@ -1905,6 +1925,10 @@ with the value; anything else keeps unwinding); a host that returns a
 value/raises/re-drives after `NonLocalExit` faults. Found by the
 machine-design review (v0.2 §12 — S-16 covers abandoned drives, not this).
 Spec landed E§7.6 + §5.4 + App B.1. **Code: M2b.5 implements.**
+**M7.7 DISCHARGE (re-verified, C form):** a `break`/`return` across a **native** block
+consumer works through the C ABI — `E5.1/foreign-003_block-nonlocal-exit` passes native +
+C-host (the c-host's `each`, via `doodle_call_block`, resuming the parked unwind at the
+foreign call's apply site and returning promptly on the `NonLocalExit`).
 
 **S-58 (L§12.1/§4.12, E§9/§4.3) RESOLVED (user, 2026-08-24; plan-m4
 D-M4-2): engine-raised errors are one built-in `Error` value record

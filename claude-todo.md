@@ -212,6 +212,25 @@ mechanical + doc batch below in a follow-up commit).**
   `NULL` handle unambiguously means "not yet initialized". Test assertions in
   `observation_frame_locals_and_module_globals`.
 
+**M7.7 CERTIFICATION CLOSE-OUT (status):**
+- ✓ **Multi-lens adversarial exit review** (R1–R6, all landed + CI-green).
+- ✓ **Embedder README** — `crates/doodle-capi/README.md` (a2859cf): build/link recipe, ABI
+  versioning, handle-ownership / strings-by-copy / invalid-call-reject contracts, R6 post-mortem
+  inspection, the `gc-stress` feature (artifact ships without it). Linked via the crate `readme` key.
+- ✓ **C-ABI distribution artifact** = `doodle.h` (committed + gated) + built lib (the README recipe)
+  + the README. No packaging *script* is required (publication waits for D-8).
+- ✓ **Appendix C discharge** (implementation.md, 2026-09-08): each item re-verified in its C form —
+  **S-15** fully closed (`E5.4/reentry-001`+`002` through C); **S-16** (return-promptly enforced by
+  the C trampoline; violation-faults engine-level); **S-19** (determinism contract on the C
+  descriptor docs; gc-stress backstop); **S-41** (carried into the C config + parse-error-doesn't-mask
+  test); **S-42** (`E5.1/foreign-001` + `gc_stress.rs` finalizer-once-through-C, Miri + gc-stress);
+  **S-46** (`E5.1/foreign-003_block-nonlocal-exit` through C).
+- ⏸ **Publish dry-runs (D-M7-10)** — PENDING the user's release-posture call: `cargo publish
+  --dry-run` refuses on `publish = false`, so making the dry-run pass means flipping the publish
+  keys (which enables real publication). D-8 (release cadence) is the user's open §10 decision.
+  Options surfaced: `publish = true` + doodle-core README disclaimer / restricted-registry allowlist
+  / hold until D-8. Not done unilaterally.
+
 **M7.7 FREEZE-SHAPE DECISIONS — RATIFIED (user, 2026-09-08); ALL FOUR LANDED (697475e),
 CI pending. Do(ne) before certification (the ABI freezes there); the "freeze decisions first"
 chunk.**
